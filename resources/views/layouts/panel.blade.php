@@ -167,7 +167,12 @@
             @if($isSecretary) {!! sidebarLink('panel.packages.index', 'Paketler', '⊞', 'panel.packages*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.staff.index', 'Personel', '◈', 'panel.staff*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.payroll.index', 'Bordro', '◑', 'panel.payroll*', $slug) !!}
-            @elseif($role === 'personel') {!! sidebarLink('panel.payroll.show', 'Bordrolarım', '◑', 'panel.payroll*', $slug) !!}
+            @elseif($role === 'personel')
+            @php $payrollUrl = route('panel.payroll.show', ['tenant_slug' => $slug, 'user_id' => auth()->id()]); $payrollActive = request()->routeIs('panel.payroll*'); @endphp
+            <a href="{{ $payrollUrl }}" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm {{ $payrollActive ? 'active' : '' }}">
+                <span class="text-base opacity-70">◑</span>
+                <span class="{{ $payrollActive ? 'text-white font-medium' : 'font-normal' }}" style="{{ $payrollActive ? '' : 'color:#9CA3AF;' }}">Bordrolarım</span>
+            </a>
             @endif
             {!! sidebarLink('panel.sales.index', 'Satışlar', '◈', 'panel.sales*', $slug) !!}
             @if($isSecretary) {!! sidebarLink('panel.inventory.index', 'Stok', '⊟', 'panel.inventory*', $slug) !!} @endif
@@ -330,6 +335,7 @@
                 ['route' => 'panel.packages.index', 'label' => 'Paketler', 'icon' => '📦', 'match' => 'panel.packages*', 'show' => $isSecretary],
                 ['route' => 'panel.staff.index', 'label' => 'Personel', 'icon' => '👤', 'match' => 'panel.staff*', 'show' => $isManager],
                 ['route' => 'panel.payroll.index', 'label' => 'Bordro', 'icon' => '💰', 'match' => 'panel.payroll*', 'show' => $isManager],
+
                 ['route' => 'panel.sales.index', 'label' => 'Satışlar', 'icon' => '🛍️', 'match' => 'panel.sales*', 'show' => true],
                 ['route' => 'panel.inventory.index', 'label' => 'Stok', 'icon' => '📊', 'match' => 'panel.inventory*', 'show' => $isSecretary],
                 ['route' => 'panel.cash.index', 'label' => 'Kasa', 'icon' => '💳', 'match' => 'panel.cash*', 'show' => $isSecretary],
@@ -344,6 +350,16 @@
                 ['route' => 'panel.settings.index', 'label' => 'Ayarlar', 'icon' => '⚙️', 'match' => 'panel.settings*', 'show' => $isManager],
             ];
             @endphp
+
+            @if($role === 'personel')
+            @php $myPayrollUrl = route('panel.payroll.show', ['tenant_slug' => $slug, 'user_id' => auth()->id()]); @endphp
+            <a href="{{ $myPayrollUrl }}" onclick="closeMobileMenu()"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm {{ request()->routeIs('panel.payroll*') ? 'text-white' : '' }}"
+               style="{{ request()->routeIs('panel.payroll*') ? 'background:rgba(99,102,241,0.15);' : '' }}">
+                <span class="text-lg w-6 text-center">💰</span>
+                <span class="{{ request()->routeIs('panel.payroll*') ? 'text-white font-medium' : 'font-normal' }}" style="{{ request()->routeIs('panel.payroll*') ? '' : 'color:#9CA3AF;' }}">Bordrolarım</span>
+            </a>
+            @endif
 
             @foreach($menuItems as $item)
             @if($item['show'])
