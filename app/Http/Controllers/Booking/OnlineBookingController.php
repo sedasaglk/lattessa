@@ -202,6 +202,28 @@ class OnlineBookingController extends Controller
             'updated_at' => now(),
         ]);
 
+        // WhatsApp / SMS onay mesaji
+        try {
+            $message = "Sayin {$validated['customer_name']}, online randevunuz alinmistir.\n\n"
+                . "Tarih: " . $startTime->format('d.m.Y') . "\n"
+                . "Saat: " . $startTime->format('H:i') . "\n"
+                . "Hizmet: {$service->name}\n\n"
+                . "Randevunuz onaylandiginda bilgilendirileceksiniz.\n"
+                . "- " . $tenant->company_name;
+
+            $notificationService = app(\App\Services\Notification\NotificationService::class);
+            $notificationService->notify(
+                $tenant->id,
+                $validated['customer_phone'],
+                $message,
+                'appointment_confirmation',
+                $customerId,
+                'auto'
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Online randevu onay mesaji gonderilemedi: ' . $e->getMessage());
+        }
+
         return redirect()
             ->route('booking.success', ['tenant_slug' => $tenant->slug])
             ->with('booking_success', [

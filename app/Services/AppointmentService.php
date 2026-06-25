@@ -34,7 +34,7 @@ class AppointmentService
             ]);
         }
 
-        return Appointment::create([
+        $appointment = Appointment::create([
             'tenant_id' => app('current_tenant_id'),
             'branch_id' => $data['branch_id'],
             'customer_id' => $data['customer_id'],
@@ -47,6 +47,39 @@ class AppointmentService
             'notes' => $data['notes'] ?? null,
             'price' => $service->price,
         ]);
+
+        // WhatsApp onay mesaji gonder
+        try {
+            $customer = \App\Models\Customer::find($appointment->customer_id);
+            $staff = \App\Models\User::find($appointment->staff_id);
+            $tenant = \Illuminate\Support\Facades\DB::table('tenants')->where('id', $appointment->tenant_id)->first();
+
+            if ($customer && $customer->phone) {
+                $dateText = $start->format('d.m.Y');
+                $timeText = $start->format('H:i');
+                $message = "Sayin {$customer->name}, randevunuz olusturulmustur.\n\n"
+                    . "Tarih: {$dateText}\n"
+                    . "Saat: {$timeText}\n"
+                    . "Hizmet: {$service->name}\n"
+                    . "Personel: " . ($staff->name ?? '') . "\n\n"
+                    . "Iptal icin lutfen bizi arayin.\n"
+                    . "- " . ($tenant->company_name ?? 'Lattessa');
+
+                $notificationService = app(\App\Services\Notification\NotificationService::class);
+                $notificationService->notify(
+                    $appointment->tenant_id,
+                    $customer->phone,
+                    $message,
+                    'appointment_confirmation',
+                    $customer->id,
+                    'auto'
+                );
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Randevu onay mesaji gonderilemedi: ' . $e->getMessage());
+        }
+
+        return $appointment;
     }
 
     public function getAvailableSlots(User $staff, Service $service, Carbon $date): array
