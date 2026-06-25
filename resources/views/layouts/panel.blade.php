@@ -49,6 +49,26 @@
         .alert-error { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; border-radius: 12px; padding: 12px 16px; font-size: 14px; }
     </style>
     @stack('styles')
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6366F1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lattessa">
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW error:', err));
+            });
+        }
+    </script>
 </head>
 <body class="h-full">
 @php
@@ -58,6 +78,89 @@
     $isSecretary = in_array($role, ['firma_sahibi', 'sube_muduru', 'sekreter']);
     $isStaff = in_array($role, ['firma_sahibi', 'sube_muduru', 'sekreter', 'personel']);
 @endphp
+
+<!-- iOS Ana Ekrana Ekle Banner -->
+<div id="ios-install-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:9999; background:#111; border-top:1px solid #333; padding:12px 16px; align-items:center; justify-content:space-between; gap:12px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <img src="/icons/icon-72x72.png" style="width:40px; height:40px; border-radius:10px;">
+        <div>
+            <p style="color:#fff; font-size:13px; font-weight:600; margin:0;">Lattessa</p>
+            <p style="color:#9CA3AF; font-size:11px; margin:0;">Ana ekrana ekle</p>
+        </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+        <div style="background:#6366F1; color:#fff; border-radius:8px; padding:6px 14px; font-size:12px; font-weight:600; cursor:pointer;" onclick="showIOSInstructions()">Ekle</div>
+        <div style="color:#6B7280; font-size:18px; cursor:pointer; padding:4px 8px;" onclick="dismissBanner()">✕</div>
+    </div>
+</div>
+
+<!-- iOS Kurulum Modal -->
+<div id="ios-modal" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.7); align-items:flex-end; justify-content:center;">
+    <div style="background:#1F2937; border-radius:20px 20px 0 0; padding:24px; width:100%; max-width:480px;">
+        <div style="text-align:center; margin-bottom:16px;">
+            <img src="/icons/icon-96x96.png" style="width:60px; height:60px; border-radius:14px; margin-bottom:8px;">
+            <p style="color:#fff; font-size:16px; font-weight:700; margin:0;">Lattessa'yi Yükle</p>
+            <p style="color:#9CA3AF; font-size:13px; margin:4px 0 0;">Ana ekrana ekleyerek uygulama gibi kullan</p>
+        </div>
+        <div style="space-y:12px;">
+            <div style="display:flex; align-items:center; gap:12px; padding:12px; background:#374151; border-radius:12px; margin-bottom:8px;">
+                <span style="font-size:22px;">1️⃣</span>
+                <p style="color:#E5E7EB; font-size:13px; margin:0;">Tarayıcının alt kısmındaki <strong style="color:#fff;">Paylaş</strong> butonuna bas <span style="font-size:16px;">⬆</span></p>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; padding:12px; background:#374151; border-radius:12px; margin-bottom:8px;">
+                <span style="font-size:22px;">2️⃣</span>
+                <p style="color:#E5E7EB; font-size:13px; margin:0;"><strong style="color:#fff;">"Ana Ekrana Ekle"</strong> seçeneğine dokun</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; padding:12px; background:#374151; border-radius:12px; margin-bottom:16px;">
+                <span style="font-size:22px;">3️⃣</span>
+                <p style="color:#E5E7EB; font-size:13px; margin:0;"><strong style="color:#fff;">"Ekle"</strong> butonuna bas</p>
+            </div>
+        </div>
+        <div style="background:#6366F1; color:#fff; border-radius:12px; padding:12px; text-align:center; font-size:14px; font-weight:600; cursor:pointer;" onclick="document.getElementById('ios-modal').style.display='none'">Anladım</div>
+    </div>
+</div>
+
+<script>
+// iOS cihaz kontrolu
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone === true;
+const dismissed = localStorage.getItem('lattessa-banner-dismissed');
+
+if (isIOS && !isStandalone && !dismissed) {
+    document.getElementById('ios-install-banner').style.display = 'flex';
+}
+
+// Android / Chrome - beforeinstallprompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!localStorage.getItem('lattessa-banner-dismissed')) {
+        document.getElementById('ios-install-banner').style.display = 'flex';
+        document.getElementById('ios-install-banner').querySelector('[onclick="showIOSInstructions()"]')
+            .setAttribute('onclick', 'installAndroid()');
+    }
+});
+
+function installAndroid() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choice => {
+            deferredPrompt = null;
+            dismissBanner();
+        });
+    }
+}
+
+function showIOSInstructions() {
+    document.getElementById('ios-modal').style.display = 'flex';
+}
+
+function dismissBanner() {
+    document.getElementById('ios-install-banner').style.display = 'none';
+    localStorage.setItem('lattessa-banner-dismissed', '1');
+}
+</script>
 
 <div class="flex h-screen overflow-hidden">
 
