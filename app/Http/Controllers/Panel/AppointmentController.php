@@ -40,7 +40,7 @@ class AppointmentController extends Controller
             $appointments = collect();
         }
 
-        $branches = Branch::where('status', 'active')->get();
+        $branches = Branch::where('tenant_id', $tenant->id)->where('status', 'active')->get();
 
         return view('panel.appointments.index', compact(
             'tenant', 'appointments', 'date', 'branches', 'view'
@@ -133,13 +133,14 @@ class AppointmentController extends Controller
     public function create(TenantContext $ctx, string $tenant_slug): View
     {
         $tenant = $ctx->get();
-        $customers = Customer::orderBy('name')->get();
-        $services = Service::where('status', 'active')->orderBy('name')->get();
+        $customers = Customer::where('tenant_id', $tenant->id)->orderBy('name')->get();
+        $services = Service::where('tenant_id', $tenant->id)->where('status', 'active')->orderBy('name')->get();
         $staff = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
+            ->where('tenant_id', $tenant->id)
             ->where('status', 'active')
             ->orderBy('name')
             ->get();
-        $branches = Branch::where('status', 'active')->get();
+        $branches = Branch::where('tenant_id', $tenant->id)->where('status', 'active')->get();
         $defaultDate = request('date', now()->format('Y-m-d\TH:i'));
 
         return view('panel.appointments.create', compact(
