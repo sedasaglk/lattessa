@@ -376,6 +376,19 @@
             @endforeach
         </nav>
 
+        {{-- Online Randevu Linki --}}
+        <div class="px-4 py-3 border-t border-white/10 mt-2">
+            <a href="{{ route('booking.show', ['tenant_slug' => $slug]) }}" target="_blank"
+               class="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm" style="color:#6366F1;">
+                <span class="text-lg">🔗</span>
+                <div>
+                    <span class="font-medium">Online Randevu Linki</span>
+                    <p class="text-xs mt-0.5" style="color:#9CA3AF;">Müşterilere paylaş</p>
+                </div>
+                <span class="ml-auto text-xs" style="color:#9CA3AF;">↗</span>
+            </a>
+        </div>
+
         {{-- Çıkış --}}
         <div class="px-4 py-3 border-t border-white/10 mt-2">
             <form method="POST" action="{{ route('logout', ['tenant_slug' => $slug]) }}">
