@@ -72,35 +72,54 @@ class AppointmentController extends Controller
                 'appointments.is_recurring',
                 'customers.name as customer_name',
                 'services.name as service_name',
-                'users.name as staff_name'
+                'users.name as staff_name',
+                'users.id as staff_id'
             )
             ->get();
 
-        $events = $appointments->map(function ($appt) use ($tenant_slug) {
-            $color = match($appt->status) {
-                'confirmed' => '#16a34a',
-                'pending' => '#d97706',
-                'completed' => '#2563eb',
-                'cancelled' => '#dc2626',
-                'no_show' => '#6b7280',
-                default => '#6b7280',
+        // Personel renk paleti
+        $staffColors = [
+            '#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6',
+            '#8B5CF6', '#EF4444', '#14B8A6', '#F97316', '#84CC16',
+        ];
+
+        // Personellere renk ata
+        $staffColorMap = [];
+        $staffIds = $appointments->pluck('staff_id')->unique()->values();
+        foreach ($staffIds as $i => $sid) {
+            $staffColorMap[$sid] = $staffColors[$i % count($staffColors)];
+        }
+
+        $events = $appointments->map(function ($appt) use ($tenant_slug, $staffColorMap) {
+            $color = $staffColorMap[$appt->staff_id] ?? '#6366F1';
+
+            // Iptal ve tamamlanan randevular soluk gosterilsin
+            $opacity = match($appt->status) {
+                'cancelled', 'no_show' => true,
+                default => false,
             };
 
-            $title = "{$appt->customer_name} - {$appt->service_name}";
+            $title = "{$appt->customer_name}";
             if ($appt->is_recurring) $title = "↻ " . $title;
+
+            $borderColor = $opacity ? '#9CA3AF' : $color;
+            $bgColor = $opacity ? '#9CA3AF' : $color;
 
             return [
                 'id' => $appt->id,
                 'title' => $title,
                 'start' => $appt->start_time,
                 'end' => $appt->end_time,
-                'backgroundColor' => $color,
-                'borderColor' => $color,
+                'backgroundColor' => $bgColor,
+                'borderColor' => $borderColor,
+                'textColor' => '#ffffff',
                 'url' => "/{$tenant_slug}/randevular/{$appt->id}",
                 'extendedProps' => [
                     'customer' => $appt->customer_name,
                     'service' => $appt->service_name,
                     'staff' => $appt->staff_name,
+                    'staff_id' => $appt->staff_id,
+                    'staff_color' => $color,
                     'status' => $appt->status,
                     'price' => $appt->price,
                     'is_recurring' => $appt->is_recurring,
