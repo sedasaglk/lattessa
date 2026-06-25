@@ -243,6 +243,15 @@
                     <span class="{{ request()->routeIs('panel.support*') ? 'text-white font-medium' : 'font-normal' }}" style="{{ request()->routeIs('panel.support*') ? '' : 'color:#9CA3AF;' }}">Destek</span>
                 </a>
 
+                {{-- Faturalar - Sadece Firma Sahibi --}}
+                @if($isOwner)
+                <a href="{{ route('panel.invoices.index', ['tenant_slug' => $tenant->slug]) }}"
+                   class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('panel.invoices*') ? 'active' : '' }}">
+                    <span class="text-base opacity-70">◈</span>
+                    <span class="{{ request()->routeIs('panel.invoices*') ? 'text-white font-medium' : 'font-normal' }}" style="{{ request()->routeIs('panel.invoices*') ? '' : 'color:#9CA3AF;' }}">Faturalar</span>
+                </a>
+                @endif
+
                 {{-- Abonelik - Sadece Firma Sahibi --}}
                 @if($isOwner)
                 <a href="{{ route('panel.subscription.index', ['tenant_slug' => $tenant->slug]) }}"

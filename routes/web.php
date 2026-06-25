@@ -219,6 +219,9 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
         Route::post('/bekleme/{id}/iptal', [WaitingListController::class, 'cancel'])->name('panel.waiting.cancel');
 
         Route::get('/destek', [SupportController::class, 'index'])->name('panel.support.index');
+        Route::get('/faturalar', [\App\Http\Controllers\Panel\InvoiceController::class, 'index'])->name('panel.invoices.index');
+        Route::get('/faturalar/{id}/goruntule', [\App\Http\Controllers\Panel\InvoiceController::class, 'show'])->name('panel.invoices.show');
+        Route::get('/faturalar/{id}/indir', [\App\Http\Controllers\Panel\InvoiceController::class, 'download'])->name('panel.invoices.download');
         Route::get('/destek/yeni', [SupportController::class, 'create'])->name('panel.support.create');
         Route::post('/destek', [SupportController::class, 'store'])->name('panel.support.store');
         Route::get('/destek/{id}', [SupportController::class, 'show'])->name('panel.support.show');
