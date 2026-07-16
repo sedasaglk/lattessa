@@ -91,6 +91,12 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
     Route::post('/giris', [LoginController::class, 'store'])->name('login.store');
     Route::post('/cikis', [LoginController::class, 'destroy'])->name('logout');
 
+    Route::get('/sifremi-unuttum', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'showForgotForm'])->name('password.forgot.form');
+    Route::post('/sifremi-unuttum', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLink'])->name('password.forgot.send');
+    Route::get('/sifre-sifirla/{token}', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'showResetForm'])->name('password.reset.form');
+    Route::post('/sifre-sifirla', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'resetPassword'])->name('password.reset');
+
+
     Route::get('/randevu', [OnlineBookingController::class, 'show'])->name('booking.show');
     Route::post('/randevu', [OnlineBookingController::class, 'store'])->name('booking.store');
     Route::get('/randevu/basarili', [OnlineBookingController::class, 'success'])->name('booking.success');
