@@ -193,6 +193,10 @@
                         <input type="tel" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="05XX XXX XX XX" required>
                     </div>
                     <div>
+                        <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">E-posta (opsiyonel)</label>
+                        <input type="email" name="customer_email" value="{{ old('customer_email') }}" placeholder="ornek@mail.com">
+                    </div>
+                    <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">Not (opsiyonel)</label>
                         <textarea name="customer_notes" rows="2" placeholder="Eklemek istediğiniz notlar...">{{ old('customer_notes') }}</textarea>
                     </div>

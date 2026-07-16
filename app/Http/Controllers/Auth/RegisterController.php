@@ -30,6 +30,21 @@ class RegisterController extends Controller
 
         Auth::login($owner);
 
+        // Hos geldin maili gonder
+        try {
+            \Illuminate\Support\Facades\Mail::to($owner->email)->send(
+                new \App\Mail\WelcomeMail(
+                    companyName: $tenant->company_name,
+                    ownerName: $owner->name,
+                    tenantSlug: $tenant->slug,
+                    loginUrl: route('login.form', ['tenant_slug' => $tenant->slug]),
+                    bookingUrl: route('booking.show', ['tenant_slug' => $tenant->slug]),
+                )
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Hos geldin maili gonderilemedi: ' . $e->getMessage());
+        }
+
         return redirect()->route('tenant.home', ['tenant_slug' => $tenant->slug])
             ->with('success', 'Kaydiniz basariyla olusturuldu! 14 gunluk ucretsiz deneme sureniz basladi.');
     }

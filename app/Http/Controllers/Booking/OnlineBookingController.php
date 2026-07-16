@@ -202,6 +202,26 @@ class OnlineBookingController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Email onay gonder
+        try {
+            if (!empty($validated['customer_email'])) {
+                $startTime2 = \Carbon\Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time'] ?? $startTime);
+                \Illuminate\Support\Facades\Mail::to($validated['customer_email'])->send(
+                    new \App\Mail\AppointmentConfirmationMail(
+                        customerName: $validated['customer_name'],
+                        companyName: $tenant->company_name,
+                        serviceName: $service->name,
+                        staffName: $staff ? $staff->name : 'Belirlenecek',
+                        date: $startTime->format('d.m.Y'),
+                        time: $startTime->format('H:i'),
+                        price: number_format($service->price, 0, ',', '.'),
+                    )
+                );
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Randevu email gonderilemedi: ' . $e->getMessage());
+        }
+
         // WhatsApp / SMS onay mesaji
         try {
             $message = "Sayin {$validated['customer_name']}, online randevunuz alinmistir.\n\n"

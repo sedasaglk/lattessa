@@ -51,6 +51,10 @@
                 class="w-full bg-gray-900 text-white py-3 rounded-lg font-medium text-sm hover:bg-gray-800 transition">
             Giris Yap
         </button>
+        <div class="text-center mt-4">
+            <a href="{{ route('password.forgot.form', ['tenant_slug' => $tenant->slug]) }}"
+               class="text-sm text-indigo-600 hover:underline">Şifremi Unuttum</a>
+        </div>
     </form>
 </div>
 @endsection
