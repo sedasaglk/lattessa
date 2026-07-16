@@ -488,5 +488,33 @@ function dismissBanner() { document.getElementById('ios-install-banner').style.d
 </script>
 
 @stack('scripts')
+<script>
+// Expo Push Token'i Laravel'e kaydet
+function registerExpoPushToken(token) {
+    fetch('/api/push-token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ token: token, platform: /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : 'android' })
+    }).catch(e => console.log('Push token error:', e));
+}
+
+// Native app'ten token gelince
+window.onExpoPushToken = function(token) {
+    if (token && token.startsWith('ExponentPushToken')) {
+        registerExpoPushToken(token);
+    }
+};
+
+// Sayfa yuklenince localStorage'dan kontrol et
+document.addEventListener('DOMContentLoaded', function() {
+    const token = localStorage.getItem('expo_push_token');
+    if (token && token.startsWith('ExponentPushToken')) {
+        registerExpoPushToken(token);
+    }
+});
+</script>
 </body>
 </html>

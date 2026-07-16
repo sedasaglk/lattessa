@@ -48,6 +48,19 @@ class AppointmentService
             'price' => $service->price,
         ]);
 
+        // Push notification gonder (firma sahibine)
+        try {
+            $pushService = app(\App\Services\Notification\PushNotificationService::class);
+            $pushService->sendToTenant(
+                $appointment->tenant_id,
+                'Yeni Randevu!',
+                "{$customer->name} - {$service->name} - " . $start->format('d.m.Y H:i'),
+                ['url' => '/' . $tenant_slug . '/randevular/' . $appointment->id, 'type' => 'new_appointment']
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Push notification hatasi: ' . $e->getMessage());
+        }
+
         // WhatsApp onay mesaji gonder
         try {
             $customer = \App\Models\Customer::find($appointment->customer_id);

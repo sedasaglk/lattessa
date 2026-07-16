@@ -248,3 +248,5 @@ Route::get('/{tenant_slug}/abonelik-suresi-doldu', function ($tenant_slug) {
 
 Route::post('/webhooks/lemonsqueezy', [\App\Http\Controllers\Webhooks\LemonSqueezyWebhookController::class, 'handle'])
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::middleware('auth')->post('/api/push-token', [\App\Http\Controllers\Api\PushTokenController::class, 'store'])->name('api.push.token');
