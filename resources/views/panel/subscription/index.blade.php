@@ -2,6 +2,24 @@
 @section('title', 'Abonelik')
 @section('content')
 
+{{-- iOS WebView tespiti --}}
+@if(request()->userAgent() && str_contains(request()->userAgent(), 'LattessaApp'))
+<div class="card p-8 text-center" style="max-width:480px; margin:0 auto;">
+    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
+    <h2 class="text-xl font-bold text-gray-900 mb-3">Abonelik Yönetimi</h2>
+    <p class="text-gray-500 text-sm mb-6">
+        Abonelik planlarını görüntülemek ve satın almak için web tarayıcınızı kullanın.
+        Apple App Store politikaları gereği abonelik işlemleri uygulama üzerinden yapılamamaktadır.
+    </p>
+    <a href="https://lattessa.com/{{ $tenant->slug }}/abonelik-web"
+       target="_blank"
+       class="btn-primary inline-block px-6 py-3 text-sm">
+        Tarayıcıda Aç →
+    </a>
+    <p class="text-xs text-gray-400 mt-4">lattessa.com üzerinden güvenli ödeme</p>
+</div>
+@else
+
 <div class="mb-6">
     <h1 class="text-2xl font-semibold text-gray-900">Abonelik</h1>
 </div>
@@ -213,3 +231,5 @@
 </div>
 
 @endsection
+
+@endif
