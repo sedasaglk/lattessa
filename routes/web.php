@@ -30,6 +30,7 @@ use App\Http\Controllers\Booking\OnlineBookingController;
 Route::get('/', function () { return view('welcome'); });
 Route::get('/gizlilik', function () { return view('gizlilik'); })->name('gizlilik');
 Route::get('/kullanim-sartlari', function () { return view('kullanim-sartlari'); })->name('kullanim-sartlari');
+Route::get('/destek', function () { return view('destek'); })->name('public.destek');
 Route::get('/kayit', [RegisterController::class, 'create'])->name('register.form');
 Route::post('/kayit', [RegisterController::class, 'store'])->name('register.store');
 
