@@ -17,9 +17,14 @@
             <a href="#fiyatlandirma" class="text-sm text-gray-600 hover:text-gray-900">Fiyatlandirma</a>
             <a href="#sektorler" class="text-sm text-gray-600 hover:text-gray-900">Sektorler</a>
         </div>
-        <a href="/kayit" class="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-800 transition font-medium">
-            Ucretsiz Baslat
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="/giris" class="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                Giris Yap
+            </a>
+            <a href="/kayit" class="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-800 transition font-medium">
+                Ucretsiz Baslat
+            </a>
+        </div>
     </div>
 </nav>
 
@@ -223,8 +228,6 @@
             <p class="text-gray-500">Gizli ucret yok. Istediginiz zaman iptal edebilirsiniz.</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            {{-- Baslangic --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
                 <p class="text-sm font-medium text-gray-500 mb-1">Baslangic</p>
                 <p class="text-3xl font-semibold text-gray-900">299 TL<span class="text-base text-gray-400 font-normal">/ay</span></p>
@@ -242,8 +245,6 @@
                     14 Gun Dene
                 </a>
             </div>
-
-            {{-- Profesyonel --}}
             <div class="bg-gray-900 rounded-2xl p-6 relative">
                 <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-gray-900 text-xs font-semibold px-3 py-1 rounded-full">
                     En Populer
@@ -265,8 +266,6 @@
                     14 Gun Dene
                 </a>
             </div>
-
-            {{-- Kurumsal --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
                 <p class="text-sm font-medium text-gray-500 mb-1">Kurumsal</p>
                 <p class="text-3xl font-semibold text-gray-900">1.999 TL<span class="text-base text-gray-400 font-normal">/ay</span></p>
@@ -285,7 +284,6 @@
                     14 Gun Dene
                 </a>
             </div>
-
         </div>
     </div>
 </section>
