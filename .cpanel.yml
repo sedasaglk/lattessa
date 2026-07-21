@@ -1,6 +1,0 @@
----
-deployment:
-  tasks:
-    - /usr/local/bin/php /home/lattessa/lattessa_app/artisan config:clear
-    - /usr/local/bin/php /home/lattessa/lattessa_app/artisan route:clear
-    - /usr/local/bin/php /home/lattessa/lattessa_app/artisan view:clear
