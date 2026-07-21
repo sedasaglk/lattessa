@@ -1,0 +1,6 @@
+---
+deployment:
+  tasks:
+    - /usr/local/bin/php artisan config:clear
+    - /usr/local/bin/php artisan route:clear
+    - /usr/local/bin/php artisan view:clear
