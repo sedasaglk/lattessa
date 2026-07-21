@@ -29,14 +29,12 @@ class TenantRegistrationService
             'referral_code' => $this->generateReferralCode(),
         ]);
 
-        // Varsayılan şube oluştur
         $branch = Branch::create([
             'tenant_id' => $tenant->id,
-            'name' => 'Merkez Şube',
+            'name' => 'Merkez Sube',
             'status' => 'active',
         ]);
 
-        // Firma sahibi kullanıcı oluştur
         User::create([
             'tenant_id' => $tenant->id,
             'name' => $data['owner_name'],
@@ -48,18 +46,20 @@ class TenantRegistrationService
             'status' => 'active',
         ]);
 
-        // Profesyonel paket ile deneme aboneliği başlat (tüm özellikler açık)
-        $package = Package::where('slug', 'profesyonel')->first();
+        $package = Package::where('slug', 'profesyonel')->first()
+            ?? Package::orderBy('id')->first();
 
-        Subscription::create([
-            'tenant_id' => $tenant->id,
-            'package_id' => $package->id,
-            'status' => 'trial',
-            'billing_cycle' => 'monthly',
-            'starts_at' => now(),
-            'trial_ends_at' => now()->addDays(14),
-            'ends_at' => now()->addDays(14),
-        ]);
+        if ($package) {
+            Subscription::create([
+                'tenant_id' => $tenant->id,
+                'package_id' => $package->id,
+                'status' => 'trial',
+                'billing_cycle' => 'monthly',
+                'starts_at' => now(),
+                'trial_ends_at' => now()->addDays(14),
+                'ends_at' => now()->addDays(14),
+            ]);
+        }
 
         return $tenant;
     }

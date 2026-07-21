@@ -34,6 +34,24 @@ Route::get('/destek', function () { return view('destek'); })->name('public.dest
 Route::get('/kayit', [RegisterController::class, 'create'])->name('register.form');
 Route::post('/kayit', [RegisterController::class, 'store'])->name('register.store');
 
+// E-posta ile hesap bulma ve giris yonlendirme
+Route::get('/giris', function () {
+    return view('auth.find-account');
+})->name('find-account.form');
+
+Route::post('/giris', function (\Illuminate\Http\Request $request) {
+    $request->validate(['email' => 'required|email']);
+    $user = \App\Models\User::where('email', $request->email)->first();
+    if (!$user || !$user->tenant_id) {
+        return back()->with('error', 'Bu e-posta ile kayitli bir hesap bulunamadi.')->withInput();
+    }
+    $tenant = \App\Models\Tenant::find($user->tenant_id);
+    if (!$tenant) {
+        return back()->with('error', 'Hesabiniz bulunamadi.')->withInput();
+    }
+    return redirect()->route('login.form', ['tenant_slug' => $tenant->slug]);
+})->name('find-account.lookup');
+
 Route::prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/giris', [\App\Http\Controllers\SuperAdmin\AuthController::class, 'showLogin'])->name('login');
     Route::post('/giris', [\App\Http\Controllers\SuperAdmin\AuthController::class, 'login'])->name('login.post');
@@ -44,43 +62,36 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('/firmalar/{id}', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'show'])->name('tenants.show');
         Route::patch('/firmalar/{id}/durum', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'updateStatus'])->name('tenants.status');
 
-        // Paket yonetimi
         Route::get('/paketler', [\App\Http\Controllers\SuperAdmin\PackageController::class, 'index'])->name('packages.index');
         Route::get('/paketler/{id}/duzenle', [\App\Http\Controllers\SuperAdmin\PackageController::class, 'edit'])->name('packages.edit');
         Route::put('/paketler/{id}', [\App\Http\Controllers\SuperAdmin\PackageController::class, 'update'])->name('packages.update');
         Route::post('/paketler', [\App\Http\Controllers\SuperAdmin\PackageController::class, 'store'])->name('packages.store');
 
-        // Destek talepleri
         Route::get('/destek', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'index'])->name('support.index');
         Route::get('/destek/{id}', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'show'])->name('support.show');
         Route::post('/destek/{id}/yanitla', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'reply'])->name('support.reply');
         Route::post('/destek/{id}/oncelik', [\App\Http\Controllers\SuperAdmin\SupportTicketController::class, 'updatePriority'])->name('support.priority');
 
-        // SMS saglayici
         Route::get('/sms', [\App\Http\Controllers\SuperAdmin\SmsProviderController::class, 'index'])->name('sms.index');
         Route::post('/sms', [\App\Http\Controllers\SuperAdmin\SmsProviderController::class, 'store'])->name('sms.store');
         Route::post('/sms/{id}/varsayilan', [\App\Http\Controllers\SuperAdmin\SmsProviderController::class, 'setDefault'])->name('sms.default');
         Route::post('/sms/{id}/toggle', [\App\Http\Controllers\SuperAdmin\SmsProviderController::class, 'toggle'])->name('sms.toggle');
         Route::delete('/sms/{id}', [\App\Http\Controllers\SuperAdmin\SmsProviderController::class, 'destroy'])->name('sms.destroy');
 
-        // Sistem loglari
         Route::get('/loglar', [\App\Http\Controllers\SuperAdmin\SystemLogController::class, 'index'])->name('logs.index');
 
-        // WhatsApp yonetimi
         Route::get('/whatsapp', [\App\Http\Controllers\SuperAdmin\WhatsAppController::class, 'index'])->name('whatsapp.index');
         Route::post('/whatsapp/giris/telefon', [\App\Http\Controllers\SuperAdmin\WhatsAppController::class, 'startPhoneLogin'])->name('whatsapp.login.phone');
         Route::post('/whatsapp/giris/qr', [\App\Http\Controllers\SuperAdmin\WhatsAppController::class, 'startQrLogin'])->name('whatsapp.login.qr');
         Route::get('/whatsapp/{id}/durum', [\App\Http\Controllers\SuperAdmin\WhatsAppController::class, 'checkStatus'])->name('whatsapp.check');
         Route::post('/whatsapp/{id}/baglanti-kes', [\App\Http\Controllers\SuperAdmin\WhatsAppController::class, 'disconnect'])->name('whatsapp.disconnect');
 
-        // 2FA yonetimi
         Route::get('/2fa', [\App\Http\Controllers\SuperAdmin\TwoFactorController::class, 'setup'])->name('2fa.setup');
         Route::post('/2fa/etkinlestir', [\App\Http\Controllers\SuperAdmin\TwoFactorController::class, 'enable'])->name('2fa.enable');
         Route::post('/2fa/devre-disi', [\App\Http\Controllers\SuperAdmin\TwoFactorController::class, 'disable'])->name('2fa.disable');
     });
 });
 
-// 2FA challenge (auth oncesi)
 Route::prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/2fa-dogrula', [\App\Http\Controllers\SuperAdmin\TwoFactorController::class, 'challenge'])->name('2fa.challenge');
     Route::post('/2fa-dogrula', [\App\Http\Controllers\SuperAdmin\TwoFactorController::class, 'verify'])->name('2fa.verify');
@@ -96,7 +107,6 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
     Route::post('/sifremi-unuttum', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLink'])->name('password.forgot.send');
     Route::get('/sifre-sifirla/{token}', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'showResetForm'])->name('password.reset.form');
     Route::post('/sifre-sifirla', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'resetPassword'])->name('password.reset');
-
 
     Route::get('/randevu', [OnlineBookingController::class, 'show'])->name('booking.show');
     Route::post('/randevu', [OnlineBookingController::class, 'store'])->name('booking.store');
