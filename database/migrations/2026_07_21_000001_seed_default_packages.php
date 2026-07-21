@@ -1,13 +1,11 @@
 <?php
 
-namespace Database\Seeders;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
-use App\Models\Package;
-use Illuminate\Database\Seeder;
-
-class PackageSeeder extends Seeder
+return new class extends Migration
 {
-    public function run(): void
+    public function up(): void
     {
         $packages = [
             [
@@ -20,9 +18,11 @@ class PackageSeeder extends Seeder
                 'branch_limit' => 1,
                 'sms_limit' => 100,
                 'storage_limit_mb' => 1024,
-                'features' => ['appointments', 'crm', 'inventory', 'sales', 'reports'],
+                'features' => json_encode(['appointments', 'crm', 'inventory', 'sales', 'reports']),
                 'is_active' => true,
                 'sort_order' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
                 'name' => 'Profesyonel',
@@ -34,9 +34,11 @@ class PackageSeeder extends Seeder
                 'branch_limit' => 5,
                 'sms_limit' => 500,
                 'storage_limit_mb' => 5120,
-                'features' => ['appointments', 'crm', 'inventory', 'sales', 'reports', 'loyalty', 'marketing'],
+                'features' => json_encode(['appointments', 'crm', 'inventory', 'sales', 'reports', 'loyalty', 'marketing']),
                 'is_active' => true,
                 'sort_order' => 2,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
                 'name' => 'Kurumsal',
@@ -48,17 +50,24 @@ class PackageSeeder extends Seeder
                 'branch_limit' => null,
                 'sms_limit' => 2000,
                 'storage_limit_mb' => 25600,
-                'features' => ['appointments', 'crm', 'inventory', 'sales', 'reports', 'loyalty', 'marketing', 'affiliate'],
+                'features' => json_encode(['appointments', 'crm', 'inventory', 'sales', 'reports', 'loyalty', 'marketing', 'affiliate']),
                 'is_active' => true,
                 'sort_order' => 3,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
         ];
 
         foreach ($packages as $package) {
-            Package::updateOrCreate(
+            DB::table('packages')->updateOrInsert(
                 ['slug' => $package['slug']],
                 $package
             );
         }
     }
-}
+
+    public function down(): void
+    {
+        DB::table('packages')->whereIn('slug', ['baslangic', 'profesyonel', 'kurumsal'])->delete();
+    }
+};
