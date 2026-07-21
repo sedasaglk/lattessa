@@ -1,7 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/lattessa/lattessa_app
-    - /usr/local/bin/php $DEPLOYPATH/artisan config:clear
-    - /usr/local/bin/php $DEPLOYPATH/artisan route:clear
-    - /usr/local/bin/php $DEPLOYPATH/artisan view:clear
+    - /usr/local/bin/php /home/lattessa/lattessa_app/artisan config:clear
+    - /usr/local/bin/php /home/lattessa/lattessa_app/artisan route:clear
+    - /usr/local/bin/php /home/lattessa/lattessa_app/artisan view:clear
