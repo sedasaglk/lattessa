@@ -346,7 +346,7 @@
                 ['route' => 'panel.whatsapp.index', 'label' => 'WhatsApp', 'icon' => '💬', 'match' => 'panel.whatsapp*', 'show' => $isManager],
                 ['route' => 'panel.support.index', 'label' => 'Destek', 'icon' => '🎧', 'match' => 'panel.support*', 'show' => true],
                 ['route' => 'panel.invoices.index', 'label' => 'Faturalar', 'icon' => '🧾', 'match' => 'panel.invoices*', 'show' => $isOwner],
-                ['route' => 'panel.subscription.index', 'label' => 'Abonelik', 'icon' => '💎', 'match' => 'panel.subscription*', 'show' => $isOwner],
+                ['route' => 'panel.subscription.index', 'label' => 'Abonelik', 'icon' => '💎', 'match' => 'panel.subscription*', 'show' => $isOwner && !(request()->userAgent() && str_contains(request()->userAgent(), 'LattessaApp'))],
                 ['route' => 'panel.settings.index', 'label' => 'Ayarlar', 'icon' => '⚙️', 'match' => 'panel.settings*', 'show' => $isManager],
             ];
             @endphp

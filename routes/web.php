@@ -248,8 +248,18 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
         Route::post('/destek/{id}/kapat', [SupportController::class, 'close'])->name('panel.support.close');
 
         Route::get('/raporlar', [ReportController::class, 'index'])->name('panel.reports.index');
-        Route::get('/abonelik', [SubscriptionController::class, 'index'])->name('panel.subscription.index');
-        Route::post('/abonelik/checkout', [\App\Http\Controllers\Panel\CheckoutController::class, 'redirect'])->name('panel.checkout');
+        Route::get('/abonelik', function(\Illuminate\Http\Request $request, string $tenant_slug) {
+            if ($request->userAgent() && str_contains($request->userAgent(), 'LattessaApp')) {
+                return redirect()->route('panel.dashboard', ['tenant_slug' => $tenant_slug]);
+            }
+            return app()->call([\App\Http\Controllers\Panel\SubscriptionController::class, 'index'], ['tenant_slug' => $tenant_slug]);
+        })->name('panel.subscription.index');
+        Route::post('/abonelik/checkout', function(\Illuminate\Http\Request $request, string $tenant_slug) {
+            if ($request->userAgent() && str_contains($request->userAgent(), 'LattessaApp')) {
+                return redirect()->route('panel.dashboard', ['tenant_slug' => $tenant_slug]);
+            }
+            return app()->call([\App\Http\Controllers\Panel\CheckoutController::class, 'redirect'], ['tenant_slug' => $tenant_slug]);
+        })->name('panel.checkout');
         Route::get('/ayarlar', [SettingsController::class, 'index'])->name('panel.settings.index');
         Route::put('/ayarlar/isletme', [SettingsController::class, 'updateBusiness'])->name('panel.settings.business');
         Route::put('/ayarlar/sube', [SettingsController::class, 'updateBranch'])->name('panel.settings.branch');
@@ -259,8 +269,11 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
 
 });
 
-Route::get('/{tenant_slug}/abonelik-suresi-doldu', function ($tenant_slug) {
-    return "Aboneliginizin suresi doldu. (Firma: {$tenant_slug})";
+Route::get('/{tenant_slug}/abonelik-suresi-doldu', function (\Illuminate\Http\Request $request, $tenant_slug) {
+    if ($request->userAgent() && str_contains($request->userAgent(), 'LattessaApp')) {
+        return redirect("/{$tenant_slug}/giris");
+    }
+    return "Aboneliginizin suresi doldu. Lutfen lattessa.com adresinden giris yapiniz.";
 })->name('subscription.expired');
 
 Route::post('/webhooks/lemonsqueezy', [\App\Http\Controllers\Webhooks\LemonSqueezyWebhookController::class, 'handle'])
