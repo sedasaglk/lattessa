@@ -30,10 +30,10 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Telefon <span class="text-gray-400 text-xs">(opsiyonel)</span></label>
             <input type="text" name="phone" value="{{ old('phone') }}"
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-sm"
-                   placeholder="05XX XXX XX XX" required>
+                   placeholder="05XX XXX XX XX">
         </div>
 
         <div>

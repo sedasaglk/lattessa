@@ -15,7 +15,7 @@ class RegisterTenantRequest extends FormRequest
     {
         return [
             'owner_name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['required', 'email', 'max:255', 'unique:tenants,email'],
             'company_name' => ['required', 'string', 'max:255'],
             'business_type' => ['required', 'string', 'in:kuafor,berber,guzellik_merkezi,diyetisyen,psikolog,spa,estetik,klinik'],
@@ -27,7 +27,7 @@ class RegisterTenantRequest extends FormRequest
     {
         return [
             'owner_name.required' => 'Ad soyad alanı zorunludur.',
-            'phone.required' => 'Telefon numarası zorunludur.',
+            
             'email.required' => 'E-posta adresi zorunludur.',
             'email.email' => 'Geçerli bir e-posta adresi girin.',
             'email.unique' => 'Bu e-posta adresi zaten kayıtlı.',
