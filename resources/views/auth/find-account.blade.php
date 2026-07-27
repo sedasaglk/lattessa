@@ -46,10 +46,12 @@
                 </button>
             </form>
 
+            @if(!(request()->userAgent() && str_contains(request()->userAgent(), 'LattessaApp')))
             <p class="text-center text-sm text-gray-500 mt-6">
                 Hesabiniz yok mu?
                 <a href="/kayit" class="text-gray-900 font-medium hover:underline">Ucretsiz baslatin</a>
             </p>
+            @endif
         </div>
     </div>
 </div>
