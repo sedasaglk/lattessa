@@ -31,17 +31,17 @@ Route::get('/', function () { return view('welcome'); });
 Route::get('/gizlilik', function () { return view('gizlilik'); })->name('gizlilik');
 Route::get('/kullanim-sartlari', function () { return view('kullanim-sartlari'); })->name('kullanim-sartlari');
 Route::get('/destek', function () { return view('destek'); })->name('public.destek');
-Route::get('/kayit', function(\Illuminate\Http\Request $request) {
+Route::get('/kayit', [\App\Http\Controllers\Auth\RegisterController::class, 'create'])->middleware(function($request, $next) {
     if ($request->userAgent() && str_contains($request->userAgent(), 'LattessaApp')) {
         return redirect('/giris');
     }
-    return app()->call([\App\Http\Controllers\Auth\RegisterController::class, 'create']);
+    return $next($request);
 })->name('register.form');
-Route::post('/kayit', function(\Illuminate\Http\Request $request) {
+Route::post('/kayit', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->middleware(function($request, $next) {
     if ($request->userAgent() && str_contains($request->userAgent(), 'LattessaApp')) {
         return redirect('/giris');
     }
-    return app()->call([\App\Http\Controllers\Auth\RegisterController::class, 'store']);
+    return $next($request);
 })->name('register.store');
 
 // E-posta ile hesap bulma ve giris yonlendirme
