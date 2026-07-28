@@ -360,6 +360,30 @@
             </div>
         </div>
 
+        {{-- Branch Switcher (mobil) --}}
+        @if($isOwner && $allBranches->count() > 1)
+        <div class="mx-3 mt-3 mb-1" x-data="{ open: false }" @click.outside="open = false">
+            <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#A5B4FC;">
+                <span class="truncate">🏪 {{ $activeBranchName }}</span>
+                <span x-text="open ? '▲' : '▼'" style="font-size:9px;margin-left:4px;"></span>
+            </button>
+            <div x-show="open" x-cloak class="mt-1 rounded-lg overflow-hidden" style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);">
+                <form method="POST" action="{{ route('panel.branch.switch', ['tenant_slug' => $slug]) }}">
+                    @csrf
+                    <input type="hidden" name="branch_id" value="">
+                    <button type="submit" class="w-full text-left px-3 py-2 text-xs hover:bg-white/10 {{ $activeBranchId === null ? 'text-white font-semibold' : '' }}" style="color:#9CA3AF;">🌐 Tüm Şubeler</button>
+                </form>
+                @foreach($allBranches as $branch)
+                <form method="POST" action="{{ route('panel.branch.switch', ['tenant_slug' => $slug]) }}">
+                    @csrf
+                    <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+                    <button type="submit" class="w-full text-left px-3 py-2 text-xs hover:bg-white/10 {{ $activeBranchId === $branch->id ? 'text-white font-semibold' : '' }}" style="color:#9CA3AF;">🏪 {{ $branch->name }}</button>
+                </form>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         {{-- Menü Linkleri --}}
         <nav class="px-3 py-3 space-y-0.5">
             @php
