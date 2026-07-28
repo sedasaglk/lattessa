@@ -121,10 +121,10 @@
     $slug = $tenant->slug;
 
     // Branch context
-    $branchCtx = app(\\App\\Services\\BranchContext::class);
+    $branchCtx = app(\App\Services\BranchContext::class);
     $activeBranchId = $branchCtx->getBranchId();
     $allBranches = $isOwner
-        ? \\Illuminate\\Support\\Facades\\DB::table("branches")
+        ? \Illuminate\Support\Facades\DB::table("branches")
             ->where("tenant_id", $tenant->id)
             ->whereNull("deleted_at")
             ->where("status", "active")
