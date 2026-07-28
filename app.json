@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "b15baa71-a092-4d15-8595-c7beae660293"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.ssglk.lattessa",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
