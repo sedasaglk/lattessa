@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => \App\Http\Middleware\TenantResolver::class,
             'tenant.auth' => \App\Http\Middleware\EnsureTenantUser::class,
             'super.admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'branch' => \App\Http\Middleware\ResolveBranchContext::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

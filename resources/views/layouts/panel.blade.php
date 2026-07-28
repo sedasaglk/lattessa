@@ -119,6 +119,21 @@
     $isManager = in_array($role, ['firma_sahibi', 'sube_muduru']);
     $isSecretary = in_array($role, ['firma_sahibi', 'sube_muduru', 'sekreter']);
     $slug = $tenant->slug;
+
+    // Branch context
+    $branchCtx = app(\\App\\Services\\BranchContext::class);
+    $activeBranchId = $branchCtx->getBranchId();
+    $allBranches = $isOwner
+        ? \\Illuminate\\Support\\Facades\\DB::table("branches")
+            ->where("tenant_id", $tenant->id)
+            ->whereNull("deleted_at")
+            ->where("status", "active")
+            ->orderBy("name")
+            ->get()
+        : collect();
+    $activeBranchName = $activeBranchId
+        ? $allBranches->firstWhere("id", $activeBranchId)?->name ?? "Sube"
+        : "Tum Subeler";
 @endphp
 
 {{-- ==================== DESKTOP LAYOUT ==================== --}}
@@ -137,6 +152,29 @@
                 </div>
             </div>
         </div>
+
+        @if($isOwner && $allBranches->count() > 1)
+        <div class="mx-3 mt-3" x-data="{ open: false }" @click.outside="open = false">
+            <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#A5B4FC;">
+                <span class="truncate">        @if($tenant->status === 'trial' && $isOwner)#127978; {{ $activeBranchName }}</span>
+                <span x-text="open ? '▲' : '▼'" style="font-size:9px;margin-left:4px;"></span>
+            </button>
+            <div x-show="open" x-cloak class="mt-1 rounded-lg overflow-hidden" style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);">
+                <form method="POST" action="{{ route('panel.branch.switch', ['tenant_slug' => $slug]) }}">
+                    @csrf
+                    <input type="hidden" name="branch_id" value="">
+                    <button type="submit" class="w-full text-left px-3 py-2 text-xs hover:bg-white/10 {{ $activeBranchId === null ? 'text-white font-semibold' : '' }}" style="color:#9CA3AF;">🌐 Tum Subeler</button>
+                </form>
+                @foreach($allBranches as $branch)
+                <form method="POST" action="{{ route('panel.branch.switch', ['tenant_slug' => $slug]) }}">
+                    @csrf
+                    <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+                    <button type="submit" class="w-full text-left px-3 py-2 text-xs hover:bg-white/10 {{ $activeBranchId === $branch->id ? 'text-white font-semibold' : '' }}" style="color:#9CA3AF;">🏪 {{ $branch->name }}</button>
+                </form>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
         @if($tenant->status === 'trial' && $isOwner)
         @php $daysLeft = max(0, (int) ceil(now()->diffInHours($tenant->trial_ends_at, false) / 24)); @endphp

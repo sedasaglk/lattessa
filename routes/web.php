@@ -26,6 +26,7 @@ use App\Http\Controllers\Panel\NotificationController;
 use App\Http\Controllers\Panel\WhatsAppConnectionController;
 use App\Http\Controllers\Panel\ClientFileController;
 use App\Http\Controllers\Booking\OnlineBookingController;
+use App\Http\Controllers\Panel\BranchSwitchController;
 
 Route::get('/', function () { return view('welcome'); });
 Route::get('/gizlilik', function () { return view('gizlilik'); })->name('gizlilik');
@@ -114,7 +115,9 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
     Route::get('/randevu/personel', [OnlineBookingController::class, 'getStaff'])->name('booking.staff');
     Route::get('/randevu/saatler', [OnlineBookingController::class, 'getAvailableSlots'])->name('booking.slots');
 
-    Route::middleware('tenant.auth')->group(function () {
+    Route::middleware(['tenant.auth', 'branch'])->group(function () {
+
+        Route::post('/sube-sec', [BranchSwitchController::class, 'switch'])->name('panel.branch.switch');
 
         Route::get('/', [DashboardController::class, 'index'])->name('tenant.home');
 
