@@ -579,5 +579,65 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+{{-- Firebase FCM --}}
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+<script>
+(function() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD_DmXQ1ciIbmvV77upMPP8l3flW0kTSqk",
+        authDomain: "lattessa-7d7cc.firebaseapp.com",
+        projectId: "lattessa-7d7cc",
+        storageBucket: "lattessa-7d7cc.firebasestorage.app",
+        messagingSenderId: "600523513554",
+        appId: "1:600523513554:web:5e5261cb5450ae06f6170b"
+    };
+
+    const VAPID_KEY = "B0iDkuZ6-QOWhjjgnfLy_kbxxoU9xIguIsHT_WvgtPylrG__Ug8Jx_U25tOaZiFcM53QorqjFv7oPirH5xM8S5U";
+    const SAVE_URL = "/{{ $slug }}/fcm-token";
+
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    async function initFCM() {
+        try {
+            const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return;
+
+            const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+            if (!token) return;
+
+            const saved = localStorage.getItem('fcm_token');
+            if (saved === token) return;
+
+            await fetch(SAVE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                body: JSON.stringify({ token })
+            });
+            localStorage.setItem('fcm_token', token);
+        } catch(e) {
+            console.warn('FCM init error:', e);
+        }
+    }
+
+    messaging.onMessage(function(payload) {
+        const { title, body } = payload.notification || {};
+        if (Notification.permission === 'granted') {
+            new Notification(title || 'Lattessa', { body: body || '', icon: '/icons/icon-192x192.png' });
+        }
+    });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFCM);
+    } else {
+        initFCM();
+    }
+})();
+</script>
 </body>
 </html>
