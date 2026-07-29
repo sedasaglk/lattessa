@@ -266,8 +266,9 @@ function showModal(event) {
     const timeStr = start.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}) + ' - ' + end.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
     const dateStr = start.toLocaleDateString('tr-TR', {day:'2-digit',month:'long',year:'numeric'});
 
-    document.getElementById('modalStaffColor').style.background = props.staff_color || '#6366F1';
-    document.getElementById('modalContent').innerHTML = `
+    const modal = getVisibleModal();
+    modal.querySelector('[id="modalStaffColor"]').style.background = props.staff_color || '#6366F1';
+    modal.querySelector('[id="modalContent"]').innerHTML = `
         <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Müşteri</span><span class="font-medium text-gray-900">${props.customer}</span></div>
         <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Hizmet</span><span class="font-medium text-gray-900">${props.service}</span></div>
         <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Personel</span><span class="font-medium" style="color:${props.staff_color}">${props.staff}</span></div>
@@ -276,7 +277,7 @@ function showModal(event) {
         <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Durum</span><span class="font-medium text-gray-900">${statusMap[props.status] || props.status}</span></div>
         <div class="flex justify-between py-2"><span class="text-gray-500">Ücret</span><span class="font-medium text-gray-900">${parseFloat(props.price).toLocaleString('tr-TR')} TL</span></div>
     `;
-    document.getElementById('modalDetailLink').href = event.url;
+    modal.querySelector('[id="modalDetailLink"]').href = event.url;
     getVisibleModal().classList.remove('hidden');
 }
 
