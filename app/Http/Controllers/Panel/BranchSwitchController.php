@@ -28,6 +28,7 @@ class BranchSwitchController extends Controller
             if (!$exists) abort(403);
         }
 
+        $branchCtx->setFromUser();
         $branchCtx->switchTo($branchId ? (int) $branchId : null);
         return redirect()->back()->with('success', 'Şube değiştirildi.');
     }
