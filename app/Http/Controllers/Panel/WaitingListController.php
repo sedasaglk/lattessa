@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Panel;
 
 use App\Http\Controllers\Controller;
+use App\Services\BranchContext;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,15 +12,17 @@ use Illuminate\Http\RedirectResponse;
 
 class WaitingListController extends Controller
 {
-    public function index(TenantContext $ctx, string $tenant_slug): View
+    public function index(TenantContext $ctx, BranchContext $branchCtx, string $tenant_slug): View
     {
         $tenant = $ctx->get();
+        $branchId = $branchCtx->getBranchId();
 
         $waiting = DB::table('waiting_list')
             ->leftJoin('customers', 'waiting_list.customer_id', '=', 'customers.id')
             ->leftJoin('services', 'waiting_list.service_id', '=', 'services.id')
             ->leftJoin('users', 'waiting_list.staff_id', '=', 'users.id')
             ->where('waiting_list.tenant_id', $tenant->id)
+            ->when($branchId, fn($q) => $q->where('waiting_list.branch_id', $branchId))
             ->whereIn('waiting_list.status', ['waiting', 'notified'])
             ->select(
                 'waiting_list.*',
@@ -33,6 +36,7 @@ class WaitingListController extends Controller
         $history = DB::table('waiting_list')
             ->leftJoin('services', 'waiting_list.service_id', '=', 'services.id')
             ->where('waiting_list.tenant_id', $tenant->id)
+            ->when($branchId, fn($q) => $q->where('waiting_list.branch_id', $branchId))
             ->whereIn('waiting_list.status', ['booked', 'cancelled'])
             ->select('waiting_list.*', 'services.name as service_name')
             ->orderByDesc('waiting_list.updated_at')
@@ -51,6 +55,7 @@ class WaitingListController extends Controller
             ->whereNull('deleted_at')
             ->where('status', 'active')
             ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel'])
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->orderBy('name')
             ->get();
 

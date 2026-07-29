@@ -87,37 +87,68 @@
 
     {{-- Adim Göstergesi --}}
     <div class="step-indicator" id="stepIndicator">
-        <div class="step active" id="stepEl1">
+        @if($branches->count() > 1)
+        <div class="step active" id="stepEl0">
             <div class="step-circle">1</div>
+            <span class="step-label">Şube</span>
+        </div>
+        @endif
+        <div class="step {{ $branches->count() <= 1 ? 'active' : '' }}" id="stepEl1">
+            <div class="step-circle">{{ $branches->count() > 1 ? '2' : '1' }}</div>
             <span class="step-label">Hizmet</span>
         </div>
         <div class="step" id="stepEl2">
-            <div class="step-circle">2</div>
+            <div class="step-circle">{{ $branches->count() > 1 ? '3' : '2' }}</div>
             <span class="step-label">Personel</span>
         </div>
         <div class="step" id="stepEl3">
-            <div class="step-circle">3</div>
+            <div class="step-circle">{{ $branches->count() > 1 ? '4' : '3' }}</div>
             <span class="step-label">Tarih</span>
         </div>
         <div class="step" id="stepEl4">
-            <div class="step-circle">4</div>
+            <div class="step-circle">{{ $branches->count() > 1 ? '5' : '4' }}</div>
             <span class="step-label">Saat</span>
         </div>
         <div class="step" id="stepEl5">
-            <div class="step-circle">5</div>
+            <div class="step-circle">{{ $branches->count() > 1 ? '6' : '5' }}</div>
             <span class="step-label">Bilgi</span>
         </div>
     </div>
 
     <form method="POST" action="{{ route('booking.store', ['tenant_slug' => $tenant->slug]) }}" id="bookingForm">
         @csrf
+        <input type="hidden" name="branch_id" id="branchIdInput" value="{{ $branches->count() === 1 ? $branches->first()->id : '' }}">
         <input type="hidden" name="service_id" id="serviceIdInput">
         <input type="hidden" name="staff_id" id="staffIdInput">
         <input type="hidden" name="date" id="dateInput">
         <input type="hidden" name="time" id="timeInput">
 
-        {{-- ADIM 1: HİZMET --}}
-        <div id="step1" class="fade-in">
+        {{-- ADIM 0: ŞUBE (sadece birden fazla şube varsa) --}}
+        @if($branches->count() > 1)
+        <div id="step0" class="fade-in">
+            <div class="section-card">
+                <p class="section-title">Şube seçin</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    @foreach($branches as $branch)
+                    <div class="service-card" onclick="selectBranch({{ $branch->id }}, '{{ addslashes($branch->name) }}')">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:#6366F1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;">
+                                {{ strtoupper(substr($branch->name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <p style="font-weight:600;font-size:14px;color:#111;margin:0;">{{ $branch->name }}</p>
+                                @if($branch->address)<p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">📍 {{ $branch->address }}</p>@endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+                {{-- ADIM 1: HİZMET --}}
+        <div id="step1" @if($branches->count() > 1) style="display:none;" @endif class="fade-in">
             <div class="section-card">
                 <p class="section-title">Hangi hizmeti istiyorsunuz?</p>
                 @if($services->isEmpty())
@@ -140,6 +171,11 @@
                     </div>
                 @endif
             </div>
+        @if($branches->count() > 1)
+        <button type="button" onclick="goStep(0)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+            ← Geri
+        </button>
+        @endif
         </div>
 
         {{-- ADIM 2: PERSONEL --}}
@@ -148,7 +184,7 @@
                 <p class="section-title">Personel seçin</p>
                 <div id="staffList" style="display:flex;flex-direction:column;gap:8px;"></div>
             </div>
-            <button type="button" onclick="goStep(1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+            <button type="button" onclick="goStep(hasBranches ? 1 : 1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
                 ← Geri
             </button>
         </div>
@@ -217,24 +253,27 @@
 
 <script>
 const tenantSlug = '{{ $tenant->slug }}';
-let sel = { serviceId: null, serviceName: '', serviceDuration: 0, servicePrice: 0, staffId: null, staffName: '', date: '', time: '' };
-let currentStep = 1;
+const hasBranches = {{ $branches->count() > 1 ? 'true' : 'false' }};
+let sel = { branchId: {{ $branches->count() === 1 ? $branches->first()->id : 'null' }}, branchName: '{{ $branches->count() === 1 ? addslashes($branches->first()->name) : '' }}', serviceId: null, serviceName: '', serviceDuration: 0, servicePrice: 0, staffId: null, staffName: '', date: '', time: '' };
+let currentStep = hasBranches ? 0 : 1;
 
 function updateStepIndicator(active) {
-    for (let i = 1; i <= 5; i++) {
+    const start = hasBranches ? 0 : 1;
+    const end = hasBranches ? 5 : 5;
+    for (let i = start; i <= end; i++) {
         const el = document.getElementById('stepEl' + i);
+        if (!el) continue;
         el.classList.remove('active', 'done');
         if (i < active) el.classList.add('done');
         if (i === active) el.classList.add('active');
-        // Checkmark for done
         const circle = el.querySelector('.step-circle');
         if (i < active) circle.innerHTML = '✓';
-        else circle.innerHTML = i;
+        else circle.innerHTML = hasBranches ? (i + 1) : i;
     }
 }
 
 function showStep(n) {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 0; i <= 5; i++) {
         const el = document.getElementById('step' + i);
         if (el) el.style.display = 'none';
     }
@@ -247,6 +286,14 @@ function showStep(n) {
 
 function goStep(n) { showStep(n); }
 
+function selectBranch(id, name) {
+    sel.branchId = id; sel.branchName = name;
+    document.getElementById('branchIdInput').value = id;
+    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    setTimeout(() => showStep(1), 200);
+}
+
 function selectService(id, name, duration, price) {
     sel.serviceId = id; sel.serviceName = name; sel.serviceDuration = duration; sel.servicePrice = price;
     document.getElementById('serviceIdInput').value = id;
@@ -257,7 +304,7 @@ function selectService(id, name, duration, price) {
     document.getElementById('staffList').innerHTML = '<p style="color:#9CA3AF;font-size:13px;">Yükleniyor...</p>';
     showStep(2);
 
-    fetch(`/${tenantSlug}/randevu/personel?service_id=${id}`)
+    fetch(`/${tenantSlug}/randevu/personel?service_id=${id}&branch_id=${sel.branchId || ''}`)
         .then(r => r.json())
         .then(staff => {
             const list = document.getElementById('staffList');

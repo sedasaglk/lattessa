@@ -71,6 +71,25 @@ class BranchController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
         ]);
 
+        // Paket limiti kontrolu
+        $package = DB::table('packages')
+            ->join('tenant_subscriptions', 'packages.id', '=', 'tenant_subscriptions.package_id')
+            ->where('tenant_subscriptions.tenant_id', $tenant->id)
+            ->where('tenant_subscriptions.status', 'active')
+            ->select('packages.branch_limit')
+            ->first();
+
+        if ($package && $package->branch_limit !== null) {
+            $currentCount = DB::table('branches')
+                ->where('tenant_id', $tenant->id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            if ($currentCount >= $package->branch_limit) {
+                return back()->withErrors(['name' => 'Paketinizin izin verdiği maksimum sube sayisina (' . $package->branch_limit . ') ulastiniz.'])->withInput();
+            }
+        }
+
         DB::table('branches')->insert([
             'tenant_id' => $tenant->id,
             'name' => $validated['name'],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Panel;
 
 use App\Http\Controllers\Controller;
+use App\Services\BranchContext;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,9 +12,10 @@ use Illuminate\Http\RedirectResponse;
 
 class PayrollController extends Controller
 {
-    public function index(TenantContext $ctx, string $tenant_slug): View
+    public function index(TenantContext $ctx, BranchContext $branchCtx, string $tenant_slug): View
     {
         $tenant = $ctx->get();
+        $branchId = $branchCtx->getBranchId();
         $period = request('period', now()->format('Y-m'));
 
         $staff = DB::table('users')
@@ -21,6 +23,7 @@ class PayrollController extends Controller
             ->whereNull('deleted_at')
             ->where('status', 'active')
             ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'sekreter', 'personel', 'muhasebe'])
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->orderBy('name')
             ->get();
 

@@ -25,18 +25,28 @@ class OnlineBookingController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('booking.show', compact('tenant', 'services'));
+        $branches = DB::table('branches')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get();
+
+        return view('booking.show', compact('tenant', 'services', 'branches'));
     }
 
     public function getStaff(Request $request, TenantContext $ctx, string $tenant_slug): JsonResponse
     {
         $tenant = $ctx->get();
 
+        $branchId = $request->input('branch_id');
+
         $staff = DB::table('users')
             ->where('tenant_id', $tenant->id)
             ->where('status', 'active')
             ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel'])
             ->whereNull('deleted_at')
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->select('id', 'name')
             ->get();
 
@@ -120,6 +130,7 @@ class OnlineBookingController extends Controller
         \Illuminate\Support\Facades\RateLimiter::hit($rateLimitKey, 60);
 
         $validated = $request->validate([
+            'branch_id' => ['required', 'integer'],
             'service_id' => ['required', 'integer'],
             'staff_id' => ['required', 'integer'],
             'date' => ['required', 'date', 'after_or_equal:today'],
@@ -128,6 +139,7 @@ class OnlineBookingController extends Controller
             'customer_phone' => ['required', 'string', 'max:20'],
             'customer_notes' => ['nullable', 'string', 'max:500'],
         ], [
+            'branch_id.required' => 'Sube secmelisiniz.',
             'service_id.required' => 'Hizmet secmelisiniz.',
             'staff_id.required' => 'Personel secmelisiniz.',
             'date.required' => 'Tarih secmelisiniz.',
@@ -181,9 +193,14 @@ class OnlineBookingController extends Controller
         }
 
         $branch = DB::table('branches')
+            ->where('id', $validated['branch_id'])
             ->where('tenant_id', $tenant->id)
             ->whereNull('deleted_at')
             ->first();
+
+        if (!$branch) {
+            return back()->with('error', 'Gecersiz sube secimi.')->withInput();
+        }
 
         DB::table('appointments')->insert([
             'tenant_id' => $tenant->id,

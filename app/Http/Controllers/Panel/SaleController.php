@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Panel;
 
 use App\Http\Controllers\Controller;
+use App\Services\BranchContext;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,15 +12,17 @@ use Illuminate\Http\RedirectResponse;
 
 class SaleController extends Controller
 {
-    public function index(TenantContext $ctx, string $tenant_slug): View
+    public function index(TenantContext $ctx, BranchContext $branchCtx, string $tenant_slug): View
     {
         $tenant = $ctx->get();
+        $branchId = $branchCtx->getBranchId();
         $date = request('date', today()->format('Y-m-d'));
 
         $sales = DB::table('sales')
             ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
             ->leftJoin('users', 'sales.staff_id', '=', 'users.id')
             ->where('sales.tenant_id', $tenant->id)
+            ->when($branchId, fn($q) => $q->where('sales.branch_id', $branchId))
             ->whereDate('sales.created_at', $date)
             ->select(
                 'sales.*',
