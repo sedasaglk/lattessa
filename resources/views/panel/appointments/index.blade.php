@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         slotMinTime: '07:00:00',
         slotMaxTime: '22:00:00',
         allDaySlot: false,
-        height: isMobile ? 'auto' : 700,
+        height: isMobile ? 600 : 700,
         slotDuration: '00:30:00',
         nowIndicator: true,
         events: fetchEvents,
