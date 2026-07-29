@@ -1,4 +1,8 @@
 <?php
+Route::get('/firebase-messaging-sw.js', function() {
+    return response()->file(public_path('firebase-messaging-sw.js'), ['Content-Type' => 'application/javascript']);
+});
+
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
