@@ -64,7 +64,7 @@ foreach ($staffMembers as $i => $member) {
         </div>
     </div>
 
-    <div id="calendar"></div>
+    <div id="calendar" style="height:600px;min-height:600px;"></div>
 </div>
 
 {{-- Randevu Detay Modal --}}
