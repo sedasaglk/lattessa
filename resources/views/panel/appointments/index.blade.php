@@ -254,7 +254,8 @@ function toggleAllStaff() {
 
 function getVisibleModal() {
     const modals = document.querySelectorAll('#appointmentModal');
-    return Array.from(modals).find(el => el.offsetParent !== null) || modals[0];
+    // Desktop layout DOM'da önce gelir, mobil layout sonra
+    return window.innerWidth < 768 ? modals[modals.length - 1] : modals[0];
 }
 
 function showModal(event) {
