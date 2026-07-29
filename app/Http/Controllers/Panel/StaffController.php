@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Panel;
 
 use App\Http\Controllers\Controller;
 use App\Services\TenantContext;
+use App\Services\BranchContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -12,16 +13,18 @@ use Illuminate\Http\RedirectResponse;
 
 class StaffController extends Controller
 {
-    public function index(TenantContext $ctx, string $tenant_slug): View
+    public function index(TenantContext $ctx, BranchContext $branch, string $tenant_slug): View
     {
         $tenant = $ctx->get();
+        $branch->setFromUser();
 
-        $staff = DB::table('users')
-            ->where('tenant_id', $tenant->id)
-            ->whereNull('deleted_at')
-            ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'sekreter', 'personel', 'muhasebe'])
-            ->orderBy('name')
-            ->get();
+        $staff = $branch->applyTo(
+            DB::table('users')
+                ->where('tenant_id', $tenant->id)
+                ->whereNull('deleted_at')
+                ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'sekreter', 'personel', 'muhasebe'])
+                ->orderBy('name')
+        )->get();
 
         // Her personel icin bu ayki performans
         $currentMonth = now()->format('Y-m');
