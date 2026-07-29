@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\AppointmentService;
 use App\Services\RecurringAppointmentService;
 use App\Services\TenantContext;
+use App\Services\BranchContext;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -46,11 +47,16 @@ class AppointmentController extends Controller
             '#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6',
             '#8B5CF6', '#EF4444', '#14B8A6', '#F97316', '#84CC16',
         ];
-        $staffMembers = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
+        $branchCtx = app(BranchContext::class);
+        $branchCtx->setFromUser();
+        $staffQuery = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
             ->where('tenant_id', $tenant->id)
             ->where('status', 'active')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+        if ($branchCtx->getBranchId()) {
+            $staffQuery->where('branch_id', $branchCtx->getBranchId());
+        }
+        $staffMembers = $staffQuery->get();
         $staffColorMap = [];
         foreach ($staffMembers as $i => $member) {
             $staffColorMap[$member->id] = $staffColors[$i % count($staffColors)];
