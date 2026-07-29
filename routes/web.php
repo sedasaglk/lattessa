@@ -129,6 +129,8 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
         Route::patch('/randevular/{id}/durum', [AppointmentController::class, 'updateStatus'])->name('panel.appointments.status');
         Route::delete('/randevular/{id}', [AppointmentController::class, 'destroy'])->name('panel.appointments.destroy');
 
+        Route::get('/musteriler/sablon', [CustomerController::class, 'downloadTemplate'])->name('panel.customers.template');
+        Route::post('/musteriler/import', [CustomerController::class, 'import'])->name('panel.customers.import');
         Route::get('/musteriler', [CustomerController::class, 'index'])->name('panel.customers.index');
         Route::get('/musteriler/yeni', [CustomerController::class, 'create'])->name('panel.customers.create');
         Route::post('/musteriler', [CustomerController::class, 'store'])->name('panel.customers.store');
