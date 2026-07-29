@@ -12,6 +12,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(\App\Services\BranchContext::class);
         $this->app->singleton(TenantContext::class);
         $this->app->singleton(\App\Services\Sms\SmsService::class);
         $this->app->singleton(\App\Services\Notification\NotificationService::class);

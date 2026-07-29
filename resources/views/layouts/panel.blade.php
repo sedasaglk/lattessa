@@ -123,6 +123,7 @@
 
     // Branch context
     $branchCtx = app(\App\Services\BranchContext::class);
+    $branchCtx->setFromUser();
     $activeBranchId = $branchCtx->getBranchId();
     $allBranches = $isOwner
         ? \Illuminate\Support\Facades\DB::table("branches")
