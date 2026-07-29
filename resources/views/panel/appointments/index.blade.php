@@ -252,6 +252,11 @@ function toggleAllStaff() {
     calendar.refetchEvents();
 }
 
+function getVisibleModal() {
+    const modals = document.querySelectorAll('#appointmentModal');
+    return Array.from(modals).find(el => el.offsetParent !== null) || modals[0];
+}
+
 function showModal(event) {
     const props = event.extendedProps;
     const statusMap = { 'pending':'Bekliyor','confirmed':'Onaylı','completed':'Tamamlandı','cancelled':'İptal','no_show':'Gelmedi' };
@@ -271,15 +276,15 @@ function showModal(event) {
         <div class="flex justify-between py-2"><span class="text-gray-500">Ücret</span><span class="font-medium text-gray-900">${parseFloat(props.price).toLocaleString('tr-TR')} TL</span></div>
     `;
     document.getElementById('modalDetailLink').href = event.url;
-    document.getElementById('appointmentModal').classList.remove('hidden');
+    getVisibleModal().classList.remove('hidden');
 }
 
 function closeModal() {
-    document.getElementById('appointmentModal').classList.add('hidden');
+    getVisibleModal().classList.add('hidden');
 }
-document.getElementById('appointmentModal').addEventListener('click', function(e) {
+document.querySelectorAll('#appointmentModal').forEach(function(modal) { modal.addEventListener('click', function(e) {
     if (e.target === this) closeModal();
-});
+}); });
 </script>
 <style>
 .fc .fc-timegrid-event { border-radius: 6px !important; border-width: 0 !important; }
