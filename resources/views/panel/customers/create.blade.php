@@ -66,4 +66,34 @@
         </div>
     </form>
 </div>
+@push('scripts')
+<script>
+// Contact Picker API - Android Chrome destekler, iOS'ta gizlenir
+if ('contacts' in navigator && 'ContactsManager' in window) {
+    document.getElementById('contactPickerBtn').classList.remove('hidden');
+}
+
+async function pickContact() {
+    try {
+        const props = ['name', 'tel', 'email'];
+        const opts = { multiple: false };
+        const contacts = await navigator.contacts.select(props, opts);
+        if (!contacts || contacts.length === 0) return;
+
+        const contact = contacts[0];
+        if (contact.name && contact.name[0]) {
+            document.getElementById('nameInput').value = contact.name[0];
+        }
+        if (contact.tel && contact.tel[0]) {
+            document.getElementById('phoneInput').value = contact.tel[0].replace(/\s/g, '');
+        }
+        if (contact.email && contact.email[0]) {
+            document.getElementById('emailInput').value = contact.email[0];
+        }
+    } catch (err) {
+        console.log('Contact picker iptal edildi veya hata:', err);
+    }
+}
+</script>
+@endpush
 @endsection
