@@ -202,6 +202,19 @@ class AppointmentController extends Controller
 
             $this->appointmentService->create($validated);
 
+            // FCM bildirimi gonder
+            try {
+                $customer = \App\Models\Customer::find($validated['customer_id']);
+                $service = \App\Models\Service::find($validated['service_id']);
+                $startTime = \Carbon\Carbon::parse($validated['start_time']);
+                app(FcmService::class)->sendToTenant(
+                    $tenant->id,
+                    '📅 Yeni Randevu',
+                    ($customer?->name ?? 'Musteri') . ' — ' . ($service?->name ?? '') . ' ' . $startTime->format('d.m H:i'),
+                    ['type' => 'new_appointment']
+                );
+            } catch (\Throwable $e) {}
+
             return redirect()
                 ->route('panel.appointments.index', ['tenant_slug' => $tenant->slug])
                 ->with('success', 'Randevu basariyla olusturuldu.');

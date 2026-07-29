@@ -27,6 +27,7 @@ use App\Http\Controllers\Panel\WhatsAppConnectionController;
 use App\Http\Controllers\Panel\ClientFileController;
 use App\Http\Controllers\Booking\OnlineBookingController;
 use App\Http\Controllers\Panel\BranchSwitchController;
+use App\Http\Controllers\Panel\FcmTokenController;
 
 Route::get('/', function () { return view('welcome'); });
 Route::get('/gizlilik', function () { return view('gizlilik'); })->name('gizlilik');
@@ -118,6 +119,8 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
     Route::middleware(['tenant.auth', 'branch'])->group(function () {
 
         Route::post('/sube-sec', [BranchSwitchController::class, 'switch'])->name('panel.branch.switch');
+        Route::post('/fcm-token', [FcmTokenController::class, 'store'])->name('panel.fcm.store');
+        Route::delete('/fcm-token', [FcmTokenController::class, 'destroy'])->name('panel.fcm.destroy');
 
         Route::get('/', fn($tenant_slug) => redirect()->route('panel.appointments.index', ['tenant_slug' => $tenant_slug]))->name('tenant.home');
 

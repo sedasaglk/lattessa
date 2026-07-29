@@ -261,6 +261,17 @@ class OnlineBookingController extends Controller
             \Illuminate\Support\Facades\Log::warning('Online randevu onay mesaji gonderilemedi: ' . $e->getMessage());
         }
 
+        // FCM bildirimi gonder
+        try {
+            $staffName = DB::table('users')->where('id', $validated['staff_id'])->value('name') ?? 'Personel';
+            app(\App\Services\FcmService::class)->sendToTenant(
+                $tenant->id,
+                '🌐 Online Randevu',
+                $validated['customer_name'] . ' — ' . $service->name . ' ' . $startTime->format('d.m H:i'),
+                ['type' => 'online_appointment']
+            );
+        } catch (\Throwable $e) {}
+
         return redirect()
             ->route('booking.success', ['tenant_slug' => $tenant->slug])
             ->with('booking_success', [
