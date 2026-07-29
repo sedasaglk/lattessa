@@ -158,8 +158,8 @@ foreach ($staffMembers as $i => $member) {
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script>
 var tenantSlug = '{{ $tenant->slug }}';
-let calendar;
-let activeStaffIds = new Set([...document.querySelectorAll('.staff-filter-btn')].map(b => parseInt(b.dataset.staffId)));
+var calendar;
+var activeStaffIds = new Set([...document.querySelectorAll('.staff-filter-btn')].map(b => parseInt(b.dataset.staffId)));
 
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = Array.from(document.querySelectorAll('[id="calendar"]')).find(el => el.offsetParent !== null) || document.getElementById('calendar');
