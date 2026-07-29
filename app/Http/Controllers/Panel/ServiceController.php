@@ -6,21 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Services\TenantContext;
+use App\Services\BranchContext;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class ServiceController extends Controller
 {
-    public function index(TenantContext $ctx, string $tenant_slug): View
+    public function index(TenantContext $ctx, BranchContext $branch, string $tenant_slug): View
     {
         $tenant = $ctx->get();
+        $branch->setFromUser();
 
-        $services = \Illuminate\Support\Facades\DB::table('services')
-            ->where('tenant_id', $tenant->id)
-            ->whereNull('deleted_at')
-            ->orderBy('name')
-            ->get();
+        $services = $branch->applyTo(
+            \Illuminate\Support\Facades\DB::table('services')
+                ->where('tenant_id', $tenant->id)
+                ->whereNull('deleted_at')
+                ->orderBy('name')
+        )->get();
 
         $categoryIds = $services->pluck('category_id')->filter()->unique();
         $categories = \Illuminate\Support\Facades\DB::table('service_categories')
@@ -41,9 +44,10 @@ class ServiceController extends Controller
         return view('panel.services.create', compact('tenant', 'categories'));
     }
 
-    public function store(Request $request, TenantContext $ctx, string $tenant_slug): RedirectResponse
+    public function store(Request $request, TenantContext $ctx, BranchContext $branch, string $tenant_slug): RedirectResponse
     {
         $tenant = $ctx->get();
+        $branch->setFromUser();
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -60,6 +64,7 @@ class ServiceController extends Controller
 
         \Illuminate\Support\Facades\DB::table('services')->insert([
             'tenant_id' => $tenant->id,
+            'branch_id' => $branch->getBranchId(),
             'name' => $validated['name'],
             'category_id' => $validated['category_id'] ?? null,
             'duration_minutes' => $validated['duration_minutes'],
