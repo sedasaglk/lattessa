@@ -157,7 +157,7 @@ foreach ($staffMembers as $i => $member) {
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script>
-const tenantSlug = '{{ $tenant->slug }}';
+var tenantSlug = '{{ $tenant->slug }}';
 let calendar;
 let activeStaffIds = new Set([...document.querySelectorAll('.staff-filter-btn')].map(b => parseInt(b.dataset.staffId)));
 
