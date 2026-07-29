@@ -2,6 +2,12 @@
 Route::get('/firebase-messaging-sw.js', function() {
     return response()->file(public_path('firebase-messaging-sw.js'), ['Content-Type' => 'application/javascript']);
 });
+Route::get('/manifest.json', function() {
+    return response()->file(public_path('manifest.json'), ['Content-Type' => 'application/manifest+json']);
+});
+Route::get('/sw.js', function() {
+    return response()->file(public_path('sw.js'), ['Content-Type' => 'application/javascript']);
+});
 
 
 use Illuminate\Support\Facades\Route;
