@@ -42,8 +42,22 @@ class AppointmentController extends Controller
 
         $branches = Branch::where('tenant_id', $tenant->id)->where('status', 'active')->get();
 
+        $staffColors = [
+            '#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6',
+            '#8B5CF6', '#EF4444', '#14B8A6', '#F97316', '#84CC16',
+        ];
+        $staffMembers = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+        $staffColorMap = [];
+        foreach ($staffMembers as $i => $member) {
+            $staffColorMap[$member->id] = $staffColors[$i % count($staffColors)];
+        }
+
         return view('panel.appointments.index', compact(
-            'tenant', 'appointments', 'date', 'branches', 'view'
+            'tenant', 'appointments', 'date', 'branches', 'view', 'staffMembers', 'staffColorMap'
         ));
     }
 
