@@ -26,7 +26,7 @@ class SendAppointmentReminders extends Command
             ->whereBetween('start_time', [$from, $to])
             ->whereNull('deleted_at')
             ->whereIn('status', ['confirmed', 'pending'])
-            ->whereNotExists(function ($q) use ($type) {
+            ->whereNotExists(function ($q) use ($type, $hours) {
                 $q->select(DB::raw(1))
                     ->from('sms_logs')
                     ->whereColumn('sms_logs.tenant_id', 'appointments.tenant_id')

@@ -9,6 +9,16 @@
         <p class="text-gray-500 mt-2 text-sm">Panele giris yapin</p>
     </div>
 
+
+    {{-- iOS uygulama kayit mesaji --}}
+    @if(request()->header('User-Agent') && str_contains(request()->header('User-Agent'), 'LattessaApp'))
+    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-center">
+        <p class="text-sm text-blue-700 font-medium">Kayıt olmak için</p>
+        <a href="https://lattessa.com/kayit" class="text-sm text-blue-600 underline font-semibold">lattessa.com/kayit</a>
+        <p class="text-xs text-blue-500 mt-1">adresini ziyaret edin</p>
+    </div>
+    @endif
+
     @if ($errors->any())
         <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
             <ul class="list-disc list-inside space-y-1">
