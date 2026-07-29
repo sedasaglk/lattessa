@@ -256,6 +256,7 @@
 <script>
 const tenantSlug = '{{ $tenant->slug }}';
 const hasBranches = {{ $branches->count() > 1 ? 'true' : 'false' }};
+const showPriceOnline = {{ $tenant->show_price_online ? 'true' : 'false' }};
 let sel = { branchId: {{ $branches->count() === 1 ? $branches->first()->id : 'null' }}, branchName: '{{ $branches->count() === 1 ? addslashes($branches->first()->name) : '' }}', serviceId: null, serviceName: '', serviceDuration: 0, servicePrice: 0, staffId: null, staffName: '', date: '', time: '' };
 let currentStep = hasBranches ? 0 : 1;
 
@@ -375,7 +376,7 @@ function selectSlot(time, btn) {
         <p style="font-size:18px;font-weight:700;margin:0 0 4px;">${sel.serviceName}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">📅 ${dateStr}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">🕐 ${time} • ⏱ ${sel.serviceDuration} dk</p>
-        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName || 'Personel'}{{ $tenant->show_price_online ? " • 💰 ${sel.servicePrice.toLocaleString('tr-TR')} ₺" : '' }}</p>
+        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName || 'Personel'}${showPriceOnline ? ' • 💰 ' + sel.servicePrice.toLocaleString('tr-TR') + ' ₺' : ''}</p>
     `;
 
     setTimeout(() => showStep(5), 200);
