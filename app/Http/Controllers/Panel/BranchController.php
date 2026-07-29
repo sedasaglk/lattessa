@@ -72,12 +72,16 @@ class BranchController extends Controller
         ]);
 
         // Paket limiti kontrolu
-        $package = DB::table('packages')
-            ->join('tenant_subscriptions', 'packages.id', '=', 'tenant_subscriptions.package_id')
-            ->where('tenant_subscriptions.tenant_id', $tenant->id)
-            ->where('tenant_subscriptions.status', 'active')
-            ->select('packages.branch_limit')
-            ->first();
+        try {
+            $package = DB::table('packages')
+                ->join('tenant_subscriptions', 'packages.id', '=', 'tenant_subscriptions.package_id')
+                ->where('tenant_subscriptions.tenant_id', $tenant->id)
+                ->where('tenant_subscriptions.status', 'active')
+                ->select('packages.branch_limit')
+                ->first();
+        } catch (\Exception $e) {
+            $package = null;
+        }
 
         if ($package && $package->branch_limit !== null) {
             $currentCount = DB::table('branches')
