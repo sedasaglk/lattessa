@@ -196,7 +196,7 @@
             }
             @endphp
 
-            {!! sidebarLink('tenant.home', 'Dashboard', '▦', 'tenant.home', $slug) !!}
+            {!! sidebarLink('panel.dashboard', 'Dashboard', '▦', 'panel.dashboard', $slug) !!}
             {!! sidebarLink('panel.appointments.index', 'Randevular', '◷', 'panel.appointments*', $slug) !!}
             @if($isSecretary) {!! sidebarLink('panel.waiting.index', 'Bekleme Listesi', '◈', 'panel.waiting*', $slug) !!} @endif
             {!! sidebarLink('panel.customers.index', 'Müşteriler', '◉', 'panel.customers*', $slug) !!}
@@ -308,8 +308,8 @@
     {{-- Bottom Navigation --}}
     <nav class="bottom-nav flex-shrink-0">
         <div class="flex items-center">
-            <a href="{{ route('tenant.home', ['tenant_slug' => $slug]) }}"
-               class="bottom-nav-item {{ request()->routeIs('tenant.home') ? 'active' : '' }}">
+            <a href="{{ route('panel.dashboard', ['tenant_slug' => $slug]) }}"
+               class="bottom-nav-item {{ request()->routeIs('panel.dashboard') ? 'active' : '' }}">
                 <span class="icon">🏠</span>
                 <span class="label">Ana Sayfa</span>
             </a>
@@ -388,7 +388,7 @@
         <nav class="px-3 py-3 space-y-0.5">
             @php
             $menuItems = [
-                ['route' => 'tenant.home', 'label' => 'Dashboard', 'icon' => '🏠', 'match' => 'tenant.home', 'show' => true],
+                ['route' => 'panel.dashboard', 'label' => 'Dashboard', 'icon' => '🏠', 'match' => 'panel.dashboard', 'show' => true],
                 ['route' => 'panel.appointments.index', 'label' => 'Randevular', 'icon' => '📅', 'match' => 'panel.appointments*', 'show' => true],
                 ['route' => 'panel.waiting.index', 'label' => 'Bekleme Listesi', 'icon' => '⏳', 'match' => 'panel.waiting*', 'show' => $isSecretary],
                 ['route' => 'panel.customers.index', 'label' => 'Müşteriler', 'icon' => '👥', 'match' => 'panel.customers*', 'show' => true],
