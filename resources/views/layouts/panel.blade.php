@@ -88,6 +88,7 @@
 
         /* Mobile slide-over menu */
         .mobile-menu { position: fixed; inset: 0; z-index: 100; }
+        .main-content { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
         .mobile-menu-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
         .mobile-menu-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 280px; background: #111; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); }
 
