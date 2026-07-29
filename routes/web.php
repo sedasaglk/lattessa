@@ -119,7 +119,7 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
 
         Route::post('/sube-sec', [BranchSwitchController::class, 'switch'])->name('panel.branch.switch');
 
-        Route::get('/', [DashboardController::class, 'index'])->name('tenant.home');
+        Route::get('/', fn($tenant_slug) => redirect()->route('panel.appointments.index', ['tenant_slug' => $tenant_slug]))->name('tenant.home');
 
         Route::get('/randevular', [AppointmentController::class, 'index'])->name('panel.appointments.index');
         Route::get('/randevular/events', [AppointmentController::class, 'calendarEvents'])->name('panel.appointments.events');

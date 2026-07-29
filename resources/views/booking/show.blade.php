@@ -162,9 +162,11 @@
                                     <p style="font-weight:600;font-size:14px;color:#111;margin:0;">{{ $service->name }}</p>
                                     <p style="font-size:12px;color:#9CA3AF;margin:4px 0 0;">⏱ {{ $service->duration_minutes }} dakika</p>
                                 </div>
+                                @if($tenant->show_price_online)
                                 <div style="text-align:right;">
                                     <p style="font-weight:700;font-size:16px;color:#6366F1;margin:0;">{{ number_format($service->price, 0, ',', '.') }} ₺</p>
                                 </div>
+                                @endif
                             </div>
                         </div>
                         @endforeach
@@ -373,7 +375,7 @@ function selectSlot(time, btn) {
         <p style="font-size:18px;font-weight:700;margin:0 0 4px;">${sel.serviceName}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">📅 ${dateStr}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">🕐 ${time} • ⏱ ${sel.serviceDuration} dk</p>
-        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName || 'Personel'} • 💰 ${sel.servicePrice.toLocaleString('tr-TR')} ₺</p>
+        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName || 'Personel'}{{ $tenant->show_price_online ? ' • 💰 ${sel.servicePrice.toLocaleString('tr-TR')} ₺' : '' }}</p>
     `;
 
     setTimeout(() => showStep(5), 200);

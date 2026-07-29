@@ -61,6 +61,19 @@
                     </select>
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Online Randevuda Fiyat Göster</label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" name="show_price_online" value="1" class="sr-only peer"
+                                {{ old('show_price_online', $tenant->show_price_online ?? true) ? 'checked' : '' }}>
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-gray-900 transition-colors"></div>
+                            <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+                        </div>
+                        <span class="text-sm text-gray-600">Müşteriler online randevu alırken fiyatları görsün</span>
+                    </label>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Online Randevu Linki</label>
                     <div class="flex items-center gap-2">
                         <input type="text" value="{{ config('app.url') }}/{{ $tenant->slug }}/randevu" readonly

@@ -42,7 +42,11 @@ class SettingsController extends Controller
 
         DB::table('tenants')
             ->where('id', $tenant->id)
-            ->update([...$validated, 'updated_at' => now()]);
+            ->update([
+                ...$validated,
+                'show_price_online' => $request->boolean('show_price_online'),
+                'updated_at' => now(),
+            ]);
 
         return back()->with('success', 'Isletme bilgileri guncellendi.');
     }
