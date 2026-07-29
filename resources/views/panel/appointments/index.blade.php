@@ -162,7 +162,7 @@ let calendar;
 let activeStaffIds = new Set([...document.querySelectorAll('.staff-filter-btn')].map(b => parseInt(b.dataset.staffId)));
 
 document.addEventListener('DOMContentLoaded', function() {
-    const calendarEl = document.getElementById('calendar');
+    const calendarEl = Array.from(document.querySelectorAll('[id="calendar"]')).find(el => el.offsetParent !== null) || document.getElementById('calendar');
     const isMobile = window.innerWidth < 768;
 
     calendar = new FullCalendar.Calendar(calendarEl, {
