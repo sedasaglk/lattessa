@@ -61,6 +61,11 @@
 <body>
 
 {{-- Header --}}
+@auth
+<div style="background:#4F46E5;padding:10px 16px;text-align:center;">
+    <a href="{{ route('panel.appointments.index', ['tenant_slug' => $tenant->slug]) }}" style="color:#fff;font-size:13px;text-decoration:none;">← Panele Dön</a>
+</div>
+@endauth
 <div style="background:#111; padding: 20px 16px 20px; padding-top: calc(20px + env(safe-area-inset-top));">
     <div style="max-width:480px; margin:0 auto; display:flex; align-items:center; gap:12px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#6366F1;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:16px;flex-shrink:0;">
