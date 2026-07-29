@@ -375,7 +375,7 @@ function selectSlot(time, btn) {
         <p style="font-size:18px;font-weight:700;margin:0 0 4px;">${sel.serviceName}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">📅 ${dateStr}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">🕐 ${time} • ⏱ ${sel.serviceDuration} dk</p>
-        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName || 'Personel'}{{ $tenant->show_price_online ? ' • 💰 ${sel.servicePrice.toLocaleString('tr-TR')} ₺' : '' }}</p>
+        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName || 'Personel'}{{ $tenant->show_price_online ? " • 💰 ${sel.servicePrice.toLocaleString('tr-TR')} ₺" : '' }}</p>
     `;
 
     setTimeout(() => showStep(5), 200);
