@@ -453,12 +453,14 @@ function selectDate(date) {
     document.getElementById('dateInput').value = date;
     document.getElementById('datePickerInput').value = date;
     renderCalendar(); // seçili günü highlight et
-    // Şube seçimi gerekiyorsa oraya git, yoksa personel yükle
-    if (hasBranches) {
-        showStep(3);
-    } else {
-        loadStaff();
-    }
+    // Kısa gecikme ile adım ilerle (render tamamlansın)
+    setTimeout(function() {
+        if (hasBranches) {
+            showStep(3);
+        } else {
+            loadStaff();
+        }
+    }, 250);
 }
 
 function selectBranch(id, name, el) {
