@@ -60,10 +60,13 @@ class OnlineBookingController extends Controller
 
         $staff = DB::table('users')
             ->where('tenant_id', $tenant->id)
-            ->where('status', 'active')
             ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel'])
             ->whereNull('deleted_at')
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->where(function($q) use ($branchId) {
+                if ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhere('role', 'firma_sahibi');
+                }
+            })
             ->select('id', 'name')
             ->get();
 

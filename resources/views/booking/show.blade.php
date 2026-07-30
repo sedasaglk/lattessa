@@ -349,11 +349,6 @@ function selectService(id, name, duration, price) {
         .then(staff => {
             const list = document.getElementById('staffList');
             list.innerHTML = '';
-            // "Farketmez" seçeneği ekle
-            list.innerHTML += `<div class="staff-card" onclick="selectStaff(0, 'Farketmez')">
-                <div class="avatar" style="background:#9CA3AF;">?</div>
-                <div><p style="font-weight:600;font-size:14px;color:#111;margin:0;">Farketmez</p><p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">Uygun personeli seç</p></div>
-            </div>`;
             staff.forEach(m => {
                 list.innerHTML += `<div class="staff-card" onclick="selectStaff(${m.id}, '${m.name.replace(/'/g, "\\'")}')">
                     <div class="avatar">${m.name.charAt(0).toUpperCase()}</div>
