@@ -122,31 +122,31 @@
     </div>
     @endif
 
-    {{-- Adim Göstergesi --}}
+    {{-- Adim Göstergesi: Hizmet → Tarih → Şube → Personel → Saat → Bilgi --}}
     <div class="step-indicator" id="stepIndicator">
-        @if($branches->count() > 1)
-        <div class="step active" id="stepEl0">
+        <div class="step active" id="stepEl1">
             <div class="step-circle">1</div>
-            <span class="step-label">Şube</span>
-        </div>
-        @endif
-        <div class="step {{ $branches->count() <= 1 ? 'active' : '' }}" id="stepEl1">
-            <div class="step-circle">{{ $branches->count() > 1 ? '2' : '1' }}</div>
             <span class="step-label">Hizmet</span>
         </div>
         <div class="step" id="stepEl2">
-            <div class="step-circle">{{ $branches->count() > 1 ? '3' : '2' }}</div>
-            <span class="step-label">Personel</span>
-        </div>
-        <div class="step" id="stepEl3">
-            <div class="step-circle">{{ $branches->count() > 1 ? '4' : '3' }}</div>
+            <div class="step-circle">2</div>
             <span class="step-label">Tarih</span>
         </div>
+        @if($branches->count() > 1)
+        <div class="step" id="stepEl3">
+            <div class="step-circle">3</div>
+            <span class="step-label">Şube</span>
+        </div>
+        @endif
         <div class="step" id="stepEl4">
+            <div class="step-circle">{{ $branches->count() > 1 ? '4' : '3' }}</div>
+            <span class="step-label">Personel</span>
+        </div>
+        <div class="step" id="stepEl5">
             <div class="step-circle">{{ $branches->count() > 1 ? '5' : '4' }}</div>
             <span class="step-label">Saat</span>
         </div>
-        <div class="step" id="stepEl5">
+        <div class="step" id="stepEl6">
             <div class="step-circle">{{ $branches->count() > 1 ? '6' : '5' }}</div>
             <span class="step-label">Bilgi</span>
         </div>
@@ -160,32 +160,8 @@
         <input type="hidden" name="date" id="dateInput">
         <input type="hidden" name="time" id="timeInput">
 
-        {{-- ADIM 0: ŞUBE (sadece birden fazla şube varsa) --}}
-        @if($branches->count() > 1)
-        <div id="step0" class="fade-in">
-            <div class="section-card">
-                <p class="section-title">Şube seçin</p>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                    @foreach($branches as $branch)
-                    <div class="service-card" onclick="selectBranch({{ $branch->id }}, '{{ addslashes($branch->name) }}')">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <div style="width:36px;height:36px;border-radius:8px;background:#6366F1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;">
-                                {{ strtoupper(substr($branch->name, 0, 1)) }}
-                            </div>
-                            <div>
-                                <p style="font-weight:600;font-size:14px;color:#111;margin:0;">{{ $branch->name }}</p>
-                                @if($branch->address)<p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">📍 {{ $branch->address }}</p>@endif
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-        @endif
-
-                {{-- ADIM 1: HİZMET --}}
-        <div id="step1" @if($branches->count() > 1) style="display:none;" @endif class="fade-in">
+        {{-- ADIM 1: HİZMET --}}
+        <div id="step1" class="fade-in">
             <div class="section-card">
                 <p class="section-title">Hangi hizmeti istiyorsunuz?</p>
                 @if($services->isEmpty())
@@ -210,49 +186,72 @@
                     </div>
                 @endif
             </div>
-        @if($branches->count() > 1)
-        <button type="button" onclick="goStep(0)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
-            ← Geri
-        </button>
-        @endif
         </div>
 
-        {{-- ADIM 2: PERSONEL --}}
+        {{-- ADIM 2: TARİH --}}
         <div id="step2" style="display:none;" class="fade-in">
-            <div class="section-card">
-                <p class="section-title">Personel seçin</p>
-                <div id="staffList" style="display:flex;flex-direction:column;gap:8px;"></div>
-            </div>
-            <button type="button" onclick="goStep(hasBranches ? 1 : 1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
-                ← Geri
-            </button>
-        </div>
-
-        {{-- ADIM 3: TARİH --}}
-        <div id="step3" style="display:none;" class="fade-in">
             <div class="section-card">
                 <p class="section-title">Tarih seçin</p>
                 <input type="date" id="datePickerInput" min="{{ date('Y-m-d') }}" onchange="selectDate(this.value)"
                        style="font-size:16px;">
             </div>
+            <button type="button" onclick="goStep(1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+                ← Geri
+            </button>
+        </div>
+
+        {{-- ADIM 3: ŞUBE (sadece birden fazla şube varsa) --}}
+        @if($branches->count() > 1)
+        <div id="step3" style="display:none;" class="fade-in">
+            <div class="section-card">
+                <p class="section-title">Şube seçin</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    @foreach($branches as $branch)
+                    <div class="service-card branch-card" data-id="{{ $branch->id }}" data-name="{{ addslashes($branch->name) }}"
+                         onclick="selectBranch({{ $branch->id }}, '{{ addslashes($branch->name) }}', this)">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:#6366F1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;">
+                                {{ strtoupper(substr($branch->name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <p style="font-weight:600;font-size:14px;color:#111;margin:0;">{{ $branch->name }}</p>
+                                @if($branch->address)<p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">📍 {{ $branch->address }}</p>@endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
             <button type="button" onclick="goStep(2)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
                 ← Geri
             </button>
         </div>
+        @endif
 
-        {{-- ADIM 4: SAAT --}}
+        {{-- ADIM 4: PERSONEL --}}
         <div id="step4" style="display:none;" class="fade-in">
             <div class="section-card">
-                <p class="section-title">Saat seçin</p>
-                <div id="slotsList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+                <p class="section-title">Personel seçin</p>
+                <div id="staffList" style="display:flex;flex-direction:column;gap:8px;"></div>
             </div>
-            <button type="button" onclick="goStep(3)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+            <button type="button" onclick="goStep(hasBranches ? 3 : 2)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
                 ← Geri
             </button>
         </div>
 
-        {{-- ADIM 5: BİLGİLER --}}
+        {{-- ADIM 5: SAAT --}}
         <div id="step5" style="display:none;" class="fade-in">
+            <div class="section-card">
+                <p class="section-title">Saat seçin</p>
+                <div id="slotsList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+            </div>
+            <button type="button" onclick="goStep(4)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+                ← Geri
+            </button>
+        </div>
+
+        {{-- ADIM 6: BİLGİLER --}}
+        <div id="step6" style="display:none;" class="fade-in">
             {{-- Özet --}}
             <div class="summary-card" id="summaryCard"></div>
 
@@ -282,7 +281,7 @@
                 ✓ Randevu Oluştur
             </button>
 
-            <button type="button" onclick="goStep(4)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:8px;">
+            <button type="button" onclick="goStep(5)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:8px;">
                 ← Geri
             </button>
         </div>
@@ -294,29 +293,32 @@
 const tenantSlug = '{{ $tenant->slug }}';
 const hasBranches = {{ $branches->count() > 1 ? 'true' : 'false' }};
 const showPriceOnline = {{ $tenant->show_price_online ? 'true' : 'false' }};
-let sel = { branchId: {{ $branches->count() === 1 ? $branches->first()->id : 'null' }}, branchName: '{{ $branches->count() === 1 ? addslashes($branches->first()->name) : '' }}', serviceId: null, serviceName: '', serviceDuration: 0, servicePrice: 0, staffId: null, staffName: '', date: '', time: '' };
-let currentStep = hasBranches ? 0 : 1;
+// Tek şube varsa otomatik seç
+let sel = {
+    branchId: {{ $branches->count() === 1 ? $branches->first()->id : 'null' }},
+    branchName: '{{ $branches->count() === 1 ? addslashes($branches->first()->name) : '' }}',
+    serviceId: null, serviceName: '', serviceDuration: 0, servicePrice: 0,
+    staffId: null, staffName: '', date: '', time: ''
+};
+let currentStep = 1;
 
+// Adım göstergesi: 1=Hizmet, 2=Tarih, 3=Şube(opt), 4=Personel, 5=Saat, 6=Bilgi
 function updateStepIndicator(active) {
-    const start = hasBranches ? 0 : 1;
-    const end = hasBranches ? 5 : 5;
-    for (let i = start; i <= end; i++) {
+    [1,2,3,4,5,6].forEach(i => {
         const el = document.getElementById('stepEl' + i);
-        if (!el) continue;
+        if (!el) return;
         el.classList.remove('active', 'done');
-        if (i < active) el.classList.add('done');
-        if (i === active) el.classList.add('active');
         const circle = el.querySelector('.step-circle');
-        if (i < active) circle.innerHTML = '✓';
-        else circle.innerHTML = hasBranches ? (i + 1) : i;
-    }
+        if (i < active) { el.classList.add('done'); circle.innerHTML = '✓'; }
+        else if (i === active) { el.classList.add('active'); circle.innerHTML = circle.dataset.num || circle.innerHTML; }
+    });
 }
 
 function showStep(n) {
-    for (let i = 0; i <= 5; i++) {
+    [1,2,3,4,5,6].forEach(i => {
         const el = document.getElementById('step' + i);
         if (el) el.style.display = 'none';
-    }
+    });
     const target = document.getElementById('step' + n);
     if (target) { target.style.display = 'block'; target.classList.add('fade-in'); }
     currentStep = n;
@@ -326,61 +328,74 @@ function showStep(n) {
 
 function goStep(n) { showStep(n); }
 
-function selectBranch(id, name) {
-    sel.branchId = id; sel.branchName = name;
-    document.getElementById('branchIdInput').value = id;
-    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-    event.currentTarget.classList.add('selected');
-    setTimeout(() => showStep(1), 200);
-}
-
 function selectService(id, name, duration, price) {
     sel.serviceId = id; sel.serviceName = name; sel.serviceDuration = duration; sel.servicePrice = price;
     document.getElementById('serviceIdInput').value = id;
     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
     event.currentTarget.classList.add('selected');
+    setTimeout(() => showStep(2), 200);
+}
 
-    // Personel yükle
+function selectDate(date) {
+    if (!date) return;
+    sel.date = date;
+    document.getElementById('dateInput').value = date;
+    // Şube seçimi gerekiyorsa oraya git, yoksa personel yükle
+    if (hasBranches) {
+        showStep(3);
+    } else {
+        loadStaff();
+    }
+}
+
+function selectBranch(id, name, el) {
+    sel.branchId = id; sel.branchName = name;
+    document.getElementById('branchIdInput').value = id;
+    document.querySelectorAll('.branch-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    setTimeout(() => loadStaff(), 200);
+}
+
+function loadStaff() {
     document.getElementById('staffList').innerHTML = '<p style="color:#9CA3AF;font-size:13px;">Yükleniyor...</p>';
-    showStep(2);
+    showStep(4);
 
-    fetch(`/${tenantSlug}/randevu/personel?service_id=${id}&branch_id=${sel.branchId || ''}&date=${sel.date || ''}`)
+    fetch(`/${tenantSlug}/randevu/personel?service_id=${sel.serviceId}&branch_id=${sel.branchId || ''}&date=${sel.date || ''}`)
         .then(r => r.json())
         .then(staff => {
             const list = document.getElementById('staffList');
             list.innerHTML = '';
+            if (!staff || staff.length === 0) {
+                list.innerHTML = '<p style="color:#9CA3AF;font-size:14px;">Bu tarihte uygun personel bulunamadı. Farklı bir tarih deneyin.</p>';
+                return;
+            }
             staff.forEach(m => {
-                list.innerHTML += `<div class="staff-card" onclick="selectStaff(${m.id}, '${m.name.replace(/'/g, "\\'")}')">
-                    <div class="avatar">${m.name.charAt(0).toUpperCase()}</div>
-                    <div><p style="font-weight:600;font-size:14px;color:#111;margin:0;">${m.name}</p></div>
-                </div>`;
+                const card = document.createElement('div');
+                card.className = 'staff-card';
+                card.innerHTML = `<div class="avatar">${m.name.charAt(0).toUpperCase()}</div><div><p style="font-weight:600;font-size:14px;color:#111;margin:0;">${m.name}</p></div>`;
+                card.onclick = () => selectStaff(m.id, m.name, card);
+                list.appendChild(card);
             });
         });
 }
 
-function selectStaff(id, name) {
+function selectStaff(id, name, el) {
     sel.staffId = id; sel.staffName = name;
     document.getElementById('staffIdInput').value = id;
     document.querySelectorAll('.staff-card').forEach(c => c.classList.remove('selected'));
-    event.currentTarget.classList.add('selected');
-    setTimeout(() => showStep(3), 200);
-}
+    el.classList.add('selected');
 
-function selectDate(date) {
-    sel.date = date;
-    document.getElementById('dateInput').value = date;
-    if (!date) return;
-
+    // Saat yükle
     document.getElementById('slotsList').innerHTML = '<p style="color:#9CA3AF;font-size:13px;">Uygun saatler yükleniyor...</p>';
-    showStep(4);
+    setTimeout(() => showStep(5), 200);
 
-    fetch(`/${tenantSlug}/randevu/saatler?staff_id=${sel.staffId}&service_id=${sel.serviceId}&date=${date}`)
+    fetch(`/${tenantSlug}/randevu/saatler?staff_id=${id}&service_id=${sel.serviceId}&date=${sel.date}`)
         .then(r => r.json())
         .then(data => {
             const list = document.getElementById('slotsList');
             list.innerHTML = '';
             if (!data.slots || data.slots.length === 0) {
-                list.innerHTML = '<p style="color:#9CA3AF;font-size:14px;width:100%;">Bu tarihte müsait saat bulunmuyor. Farklı bir tarih seçin.</p>';
+                list.innerHTML = '<p style="color:#9CA3AF;font-size:14px;width:100%;">Bu tarihte müsait saat bulunmuyor. Geri dönüp farklı bir tarih seçin.</p>';
                 return;
             }
             data.slots.forEach(slot => {
@@ -400,7 +415,6 @@ function selectSlot(time, btn) {
     document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
 
-    // Özet güncelle
     const dateObj = new Date(sel.date + 'T00:00:00');
     const dateStr = dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
     document.getElementById('summaryCard').innerHTML = `
@@ -408,10 +422,10 @@ function selectSlot(time, btn) {
         <p style="font-size:18px;font-weight:700;margin:0 0 4px;">${sel.serviceName}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">📅 ${dateStr}</p>
         <p style="font-size:13px;opacity:0.9;margin:0 0 2px;">🕐 ${time} • ⏱ ${sel.serviceDuration} dk</p>
-        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName || 'Personel'}${showPriceOnline ? ' • 💰 ' + sel.servicePrice.toLocaleString('tr-TR') + ' ₺' : ''}</p>
+        <p style="font-size:13px;opacity:0.9;margin:0;">👤 ${sel.staffName}${hasBranches ? ' • 🏢 ' + sel.branchName : ''}${showPriceOnline ? ' • 💰 ' + sel.servicePrice.toLocaleString('tr-TR') + ' ₺' : ''}</p>
     `;
 
-    setTimeout(() => showStep(5), 200);
+    setTimeout(() => showStep(6), 200);
 }
 </script>
 
