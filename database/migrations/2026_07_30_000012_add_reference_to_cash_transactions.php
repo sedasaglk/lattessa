@@ -8,8 +8,12 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('cash_transactions', function (Blueprint $table) {
-            $table->string('reference_type')->nullable()->after('appointment_id');
-            $table->unsignedBigInteger('reference_id')->nullable()->after('reference_type');
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('cash_transactions', 'reference_type')) {
+                $table->string('reference_type')->nullable()->after('appointment_id');
+            }
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('cash_transactions', 'reference_id')) {
+                $table->unsignedBigInteger('reference_id')->nullable()->after('reference_type');
+            }
         });
 
         // Mevcut appointment kayıtlarını güncelle
