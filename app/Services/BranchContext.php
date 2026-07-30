@@ -29,7 +29,6 @@ class BranchContext
 
     public function switchTo(?int $branchId): void
     {
-        if (!$this->canSeeAll) return;
         $this->branchId = $branchId;
         Session::put('active_branch_id', $branchId);
     }
