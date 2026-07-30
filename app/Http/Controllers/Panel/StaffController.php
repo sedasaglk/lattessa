@@ -288,6 +288,10 @@ class StaffController extends Controller
                         'updated_at' => now(),
                     ]);
             } else {
+                // branch_id için fallback: kullanıcının kendi branch_id'si veya ilk aktif şube
+                $fallbackBranchId = $branchId ?? DB::table('users')->where('id', $id)->value('branch_id')
+                    ?? DB::table('branches')->where('tenant_id', $tenant->id)->where('status','active')->value('id');
+
                 DB::table('staff_schedules')->insert([
                     'tenant_id' => $tenant->id,
                     'user_id' => $id,
@@ -295,7 +299,7 @@ class StaffController extends Controller
                     'is_working' => $isWorking,
                     'start_time' => $startTime,
                     'end_time' => $endTime,
-                    'branch_id' => $branchId ?? 0,
+                    'branch_id' => $fallbackBranchId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
