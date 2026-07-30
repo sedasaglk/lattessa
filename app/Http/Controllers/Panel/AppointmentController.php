@@ -49,7 +49,6 @@ class AppointmentController extends Controller
         ];
         $branchCtx = app(BranchContext::class);
         $branchCtx->setFromUser();
-        \Illuminate\Support\Facades\Log::info('BRANCH DEBUG', ['session_branch' => session('active_branch_id'), 'branch_id' => $branchCtx->getBranchId()]);
         $staffQuery = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
             ->where('tenant_id', $tenant->id)
             ->where('status', 'active')
@@ -63,9 +62,8 @@ class AppointmentController extends Controller
             $staffColorMap[$member->id] = $staffColors[$i % count($staffColors)];
         }
 
-        $debugBranchId = $branchCtx->getBranchId();
         return view('panel.appointments.index', compact(
-            'tenant', 'appointments', 'date', 'branches', 'view', 'staffMembers', 'staffColorMap', 'debugBranchId'
+            'tenant', 'appointments', 'date', 'branches', 'view', 'staffMembers', 'staffColorMap'
         ));
     }
 

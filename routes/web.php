@@ -299,12 +299,3 @@ Route::post('/webhooks/lemonsqueezy', [\App\Http\Controllers\Webhooks\LemonSquee
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::middleware('auth')->post('/api/push-token', [\App\Http\Controllers\Api\PushTokenController::class, 'store'])->name('api.push.token');
-
-// GECICI - opcache temizle
-Route::get('/clear-opcache', function() {
-    if (function_exists('opcache_reset')) {
-        opcache_reset();
-        return 'opcache temizlendi';
-    }
-    return 'opcache yok';
-});
