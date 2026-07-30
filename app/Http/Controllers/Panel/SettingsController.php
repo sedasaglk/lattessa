@@ -25,11 +25,15 @@ class SettingsController extends Controller
             ? json_decode($branch->working_hours, true)
             : $this->defaultWorkingHours();
 
-        $closedDays = DB::table('closed_days')
-            ->where('tenant_id', $tenant->id)
-            ->where('end_date', '>=', today()->format('Y-m-d'))
-            ->orderBy('start_date')
-            ->get();
+        try {
+            $closedDays = DB::table('closed_days')
+                ->where('tenant_id', $tenant->id)
+                ->where('end_date', '>=', today()->format('Y-m-d'))
+                ->orderBy('start_date')
+                ->get();
+        } catch (\Exception $e) {
+            $closedDays = collect();
+        }
 
         return view('panel.settings.index', compact('tenant', 'branch', 'workingHours', 'closedDays'));
     }
