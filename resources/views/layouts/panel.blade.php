@@ -204,6 +204,7 @@
             {!! sidebarLink('panel.customers.index', 'Müşteriler', '◉', 'panel.customers*', $slug) !!}
             @if($isSecretary) {!! sidebarLink('panel.crm.index', 'CRM', '◎', 'panel.crm*', $slug) !!} @endif
             {!! sidebarLink('panel.services.index', 'Hizmetler', '✦', 'panel.services*', $slug) !!}
+            {!! sidebarLink('panel.salon.photos', 'Salon Fotoğrafları', '🖼', 'panel.salon*', $slug) !!}
             @if($isSecretary) {!! sidebarLink('panel.packages.index', 'Paketler', '⊞', 'panel.packages*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.staff.index', 'Personel', '◈', 'panel.staff*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.payroll.index', 'Bordro', '◑', 'panel.payroll*', $slug) !!}
@@ -396,6 +397,7 @@
                 ['route' => 'panel.customers.index', 'label' => 'Müşteriler', 'icon' => '👥', 'match' => 'panel.customers*', 'show' => true],
                 ['route' => 'panel.crm.index', 'label' => 'CRM', 'icon' => '🎯', 'match' => 'panel.crm*', 'show' => $isSecretary],
                 ['route' => 'panel.services.index', 'label' => 'Hizmetler', 'icon' => '✂️', 'match' => 'panel.services*', 'show' => true],
+                ['route' => 'panel.salon.photos', 'label' => 'Salon Fotoğrafları', 'icon' => '🖼', 'match' => 'panel.salon*', 'show' => true],
                 ['route' => 'panel.packages.index', 'label' => 'Paketler', 'icon' => '📦', 'match' => 'panel.packages*', 'show' => $isSecretary],
                 ['route' => 'panel.staff.index', 'label' => 'Personel', 'icon' => '👤', 'match' => 'panel.staff*', 'show' => $isManager],
                 ['route' => 'panel.payroll.index', 'label' => 'Bordro', 'icon' => '💰', 'match' => 'panel.payroll*', 'show' => $isManager],

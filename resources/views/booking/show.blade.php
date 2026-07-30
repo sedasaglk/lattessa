@@ -78,6 +78,38 @@
     </div>
 </div>
 
+
+{{-- Salon Fotoğrafları --}}
+@if($photos->count())
+<div style="max-width:480px;margin:0 auto;overflow:hidden;">
+    <div style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:0;scrollbar-width:none;" id="photoSlider">
+        @foreach($photos as $photo)
+        <div style="min-width:100%;scroll-snap-align:start;">
+            <img src="{{ Storage::url($photo->path) }}" style="width:100%;height:220px;object-fit:cover;" alt="Salon">
+        </div>
+        @endforeach
+    </div>
+    @if($photos->count() > 1)
+    <div style="display:flex;justify-content:center;gap:6px;padding:8px 0;background:#111;">
+        @foreach($photos as $i => $photo)
+        <div style="width:6px;height:6px;border-radius:50%;background:{{ $loop->first ? '#fff' : '#555' }};transition:.3s;" class="dot"></div>
+        @endforeach
+    </div>
+    @endif
+</div>
+@endif
+
+{{-- Ortalama Puan --}}
+@if($avgRating)
+<div style="max-width:480px;margin:0 auto;padding:12px 16px;background:#111;border-bottom:1px solid #222;">
+    <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:#FBBF24;font-size:18px;">★</span>
+        <span style="color:#fff;font-weight:600;font-size:15px;">{{ $avgRating }}</span>
+        <span style="color:#9CA3AF;font-size:13px;">{{ $reviews->count() }} değerlendirme</span>
+    </div>
+</div>
+@endif
+
 <div style="max-width:480px; margin:0 auto; padding:20px 16px 40px;">
 
     {{-- Hatalar --}}
@@ -387,6 +419,27 @@ function selectSlot(time, btn) {
     setTimeout(() => showStep(5), 200);
 }
 </script>
+
+
+{{-- Müşteri Yorumları --}}
+@if($reviews->count())
+<div style="max-width:480px;margin:16px auto 0;padding:0 16px;">
+    <h3 style="font-size:15px;font-weight:600;color:#111;margin-bottom:12px;">Müşteri Yorumları</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+        @foreach($reviews as $review)
+        <div style="background:#fff;border-radius:12px;padding:14px;border:1px solid #E5E7EB;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-weight:500;font-size:13px;color:#111;">{{ $review->customer_name }}</span>
+                <span style="color:#FBBF24;font-size:13px;">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span>
+            </div>
+            @if($review->comment)
+            <p style="font-size:13px;color:#6B7280;margin:0;">{{ $review->comment }}</p>
+            @endif
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
 
 </body>
 </html>

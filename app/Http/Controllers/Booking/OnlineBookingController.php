@@ -32,7 +32,24 @@ class OnlineBookingController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('booking.show', compact('tenant', 'services', 'branches'));
+        $photos = DB::table('salon_photos')
+            ->where('tenant_id', $tenant->id)
+            ->orderBy('order')
+            ->get();
+
+        $reviews = DB::table('reviews')
+            ->join('customers', 'reviews.customer_id', '=', 'customers.id')
+            ->where('reviews.tenant_id', $tenant->id)
+            ->where('reviews.is_published', true)
+            ->where('reviews.rating', '>', 0)
+            ->orderByDesc('reviews.created_at')
+            ->limit(10)
+            ->select('reviews.*', 'customers.name as customer_name')
+            ->get();
+
+        $avgRating = $reviews->count() ? round($reviews->avg('rating'), 1) : null;
+
+        return view('booking.show', compact('tenant', 'services', 'branches', 'photos', 'reviews', 'avgRating'));
     }
 
     public function getStaff(Request $request, TenantContext $ctx, string $tenant_slug): JsonResponse

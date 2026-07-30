@@ -6,6 +6,7 @@ use App\Events\AppointmentCompleted;
 use App\Listeners\UpdateCustomerStats;
 use App\Listeners\RecordAppointmentIncome;
 use App\Listeners\AwardLoyaltyPoints;
+use App\Listeners\SendReviewRequest;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -15,6 +16,7 @@ class EventServiceProvider extends ServiceProvider
             UpdateCustomerStats::class,
             RecordAppointmentIncome::class,
             AwardLoyaltyPoints::class,
+            SendReviewRequest::class,
         ],
     ];
 

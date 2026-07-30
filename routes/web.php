@@ -125,6 +125,9 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
     Route::get('/randevu/basarili', [OnlineBookingController::class, 'success'])->name('booking.success');
     Route::get('/randevu/personel', [OnlineBookingController::class, 'getStaff'])->name('booking.staff');
     Route::get('/randevu/saatler', [OnlineBookingController::class, 'getAvailableSlots'])->name('booking.slots');
+    Route::get('/yorum/{token}', [\App\Http\Controllers\Booking\ReviewController::class, 'show'])->name('booking.review.show');
+    Route::post('/yorum/{token}', [\App\Http\Controllers\Booking\ReviewController::class, 'store'])->name('booking.review.store');
+
 
     Route::middleware(['tenant.auth', 'branch'])->group(function () {
 
@@ -161,6 +164,10 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
         Route::post('/whatsapp-baglanti/{id}/baglanti-kes', [WhatsAppConnectionController::class, 'disconnect'])->name('panel.whatsapp.disconnect');
 
         Route::get('/hizmetler', [ServiceController::class, 'index'])->name('panel.services.index');
+        Route::get('/salon/fotograflar', [\App\Http\Controllers\Panel\SalonPhotoController::class, 'index'])->name('panel.salon.photos');
+        Route::post('/salon/fotograflar', [\App\Http\Controllers\Panel\SalonPhotoController::class, 'store'])->name('panel.salon.photos.store');
+        Route::delete('/salon/fotograflar/{id}', [\App\Http\Controllers\Panel\SalonPhotoController::class, 'destroy'])->name('panel.salon.photos.destroy');
+
         Route::get('/hizmetler/yeni', [ServiceController::class, 'create'])->name('panel.services.create');
         Route::post('/hizmetler', [ServiceController::class, 'store'])->name('panel.services.store');
         Route::get('/hizmetler/{id}/duzenle', [ServiceController::class, 'edit'])->name('panel.services.edit');
