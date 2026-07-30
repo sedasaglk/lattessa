@@ -278,6 +278,76 @@ class AppointmentController extends Controller
         return view('panel.appointments.show', compact('tenant', 'appointment', 'seriesAppointments'));
     }
 
+    public function edit(TenantContext $ctx, string $tenant_slug, string $id): View
+    {
+        $tenant = $ctx->get();
+        $authUser = auth()->user();
+
+        $appointment = Appointment::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('id', $id)
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
+
+        $customers = Customer::where('tenant_id', $tenant->id)->orderBy('name')->get();
+        $services = Service::where('tenant_id', $tenant->id)->where('status', 'active')->orderBy('name')->get();
+        $branches = Branch::where('tenant_id', $tenant->id)->where('status', 'active')->get();
+
+        if ($authUser->role === 'firma_sahibi') {
+            $staff = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
+                ->where('tenant_id', $tenant->id)
+                ->orderBy('name')->get();
+        } else {
+            $staff = User::where('id', $authUser->id)->get();
+        }
+
+        $userBranchId = $authUser->branch_id;
+
+        return view('panel.appointments.edit', compact(
+            'tenant', 'appointment', 'customers', 'services', 'staff', 'branches', 'userBranchId', 'authUser'
+        ));
+    }
+
+    public function update(Request $request, TenantContext $ctx, string $tenant_slug, string $id): RedirectResponse
+    {
+        $tenant = $ctx->get();
+        $authUser = auth()->user();
+
+        $appointment = Appointment::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('id', $id)
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'branch_id'  => ['required'],
+            'customer_id'=> ['required'],
+            'staff_id'   => ['required'],
+            'service_id' => ['required'],
+            'start_time' => ['required', 'date'],
+            'notes'      => ['nullable', 'string', 'max:500'],
+        ], [
+            'start_time.required' => 'Tarih ve saat seçmelisiniz.',
+        ]);
+
+        $service = Service::find($validated['service_id']);
+        $startTime = \Carbon\Carbon::parse($validated['start_time']);
+        $endTime   = $startTime->copy()->addMinutes($service->duration_minutes ?? 60);
+
+        $appointment->update([
+            'branch_id'   => $validated['branch_id'],
+            'customer_id' => $validated['customer_id'],
+            'staff_id'    => $authUser->role === 'firma_sahibi' ? $validated['staff_id'] : $authUser->id,
+            'service_id'  => $validated['service_id'],
+            'start_time'  => $startTime,
+            'end_time'    => $endTime,
+            'price'       => $service->price ?? $appointment->price,
+            'notes'       => $validated['notes'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('panel.appointments.show', ['tenant_slug' => $tenant->slug, 'id' => $id])
+            ->with('success', 'Randevu güncellendi.');
+    }
+
     public function updateStatus(Request $request, TenantContext $ctx, string $tenant_slug, string $id): RedirectResponse
     {
         $tenant = $ctx->get();

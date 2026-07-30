@@ -143,8 +143,16 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
         Route::get('/randevular/yeni', [AppointmentController::class, 'create'])->name('panel.appointments.create');
         Route::post('/randevular', [AppointmentController::class, 'store'])->name('panel.appointments.store');
         Route::get('/randevular/{id}', [AppointmentController::class, 'show'])->name('panel.appointments.show');
+        Route::get('/randevular/{id}/duzenle', [AppointmentController::class, 'edit'])->name('panel.appointments.edit');
+        Route::put('/randevular/{id}', [AppointmentController::class, 'update'])->name('panel.appointments.update');
         Route::patch('/randevular/{id}/durum', [AppointmentController::class, 'updateStatus'])->name('panel.appointments.status');
+        Route::post('/randevular/{id}/seri-iptal', [AppointmentController::class, 'cancelSeries'])->name('panel.appointments.cancel-series');
         Route::delete('/randevular/{id}', [AppointmentController::class, 'destroy'])->name('panel.appointments.destroy');
+
+        Route::get('/yorumlar', [\App\Http\Controllers\Panel\ReviewController::class, 'index'])->name('panel.reviews.index');
+        Route::patch('/yorumlar/{id}/yayinla', [\App\Http\Controllers\Panel\ReviewController::class, 'publish'])->name('panel.reviews.publish');
+        Route::patch('/yorumlar/{id}/gizle', [\App\Http\Controllers\Panel\ReviewController::class, 'hide'])->name('panel.reviews.hide');
+        Route::delete('/yorumlar/{id}', [\App\Http\Controllers\Panel\ReviewController::class, 'destroy'])->name('panel.reviews.destroy');
 
         Route::get('/musteriler/sablon', [CustomerController::class, 'downloadTemplate'])->name('panel.customers.template');
         Route::post('/musteriler/import', [CustomerController::class, 'import'])->name('panel.customers.import');

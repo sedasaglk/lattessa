@@ -119,11 +119,24 @@ class OnlineBookingController extends Controller
             ->where('user_id', $request->staff_id)
             ->where('tenant_id', $tenant->id)
             ->where('day_of_week', $date->dayOfWeek)
-            ->where('is_day_off', 0)
+            ->where('is_working', true)
             ->first();
 
         if (!$schedule) {
             return response()->json(['slots' => [], 'message' => 'Bu gun personel musait degil.']);
+        }
+
+        // Personelin izin günü mü?
+        $isOnLeave = DB::table('staff_leaves')
+            ->where('user_id', $request->staff_id)
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $date->format('Y-m-d'))
+            ->where('end_date', '>=', $date->format('Y-m-d'))
+            ->exists();
+
+        if ($isOnLeave) {
+            return response()->json(['slots' => [], 'message' => 'Bu gun personel izinli.']);
         }
 
         $workStart = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->start_time);
