@@ -58,20 +58,39 @@
         {{-- Durum Guncelleme --}}
         <div class="bg-white rounded-xl border border-gray-200 p-5">
             <p class="text-sm font-medium text-gray-700 mb-3">Durum Guncelle</p>
-            <form method="POST" action="{{ route('panel.appointments.status', ['tenant_slug' => $tenant->slug, 'id' => $appointment->id]) }}" class="space-y-3">
+            <form method="POST" action="{{ route('panel.appointments.status', ['tenant_slug' => $tenant->slug, 'id' => $appointment->id]) }}" class="space-y-3" id="statusForm">
                 @csrf
                 @method('PATCH')
-                <select name="status"
-                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
-                    <option value="pending" {{ $appointment->status === 'pending' ? 'selected' : '' }}>Bekliyor</option>
-                    <option value="confirmed" {{ $appointment->status === 'confirmed' ? 'selected' : '' }}>Onaylandi</option>
-                    <option value="completed" {{ $appointment->status === 'completed' ? 'selected' : '' }}>Tamamlandi</option>
-                    <option value="cancelled" {{ $appointment->status === 'cancelled' ? 'selected' : '' }}>Iptal</option>
-                    <option value="no_show" {{ $appointment->status === 'no_show' ? 'selected' : '' }}>Gelmedi</option>
-                </select>
-                <button type="submit"
-                        class="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
-                    Guncelle
+                <input type="hidden" name="status" id="statusInput" value="{{ $appointment->status }}">
+                <input type="hidden" name="payment_method" id="paymentMethodInput" value="cash">
+
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach(['pending'=>'Bekliyor','confirmed'=>'Onaylı','cancelled'=>'İptal','no_show'=>'Gelmedi'] as $val => $label)
+                    <button type="button" onclick="setStatus('{{ $val }}')"
+                            class="status-btn px-3 py-2 rounded-lg text-sm border transition
+                            {{ $appointment->status === $val ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}"
+                            data-status="{{ $val }}">
+                        {{ $label }}
+                    </button>
+                    @endforeach
+                </div>
+
+                {{-- Tamamlandı — özel buton --}}
+                @if($appointment->status !== 'completed')
+                <button type="button" onclick="openCompleteModal()"
+                        class="w-full bg-green-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-green-700 transition">
+                    ✓ Tamamlandı
+                </button>
+                @else
+                <div class="w-full bg-green-50 border border-green-200 text-green-700 py-2.5 rounded-lg text-sm font-semibold text-center">
+                    ✓ Tamamlandı
+                </div>
+                @endif
+
+                {{-- Diğer durumlar için güncelle --}}
+                <button type="submit" id="updateBtn"
+                        class="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition hidden">
+                    Güncelle
                 </button>
             </form>
         </div>
@@ -141,5 +160,171 @@
     </div>
 </div>
 @endif
+
+{{-- Tamamlandı Modalı --}}
+<div id="completeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg font-semibold text-gray-900">✓ Randevuyu Tamamla</h2>
+                <button onclick="closeCompleteModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+            </div>
+
+            <form method="POST" action="{{ route('panel.appointments.status', ['tenant_slug' => $tenant->slug, 'id' => $appointment->id]) }}" id="completeForm">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="completed">
+
+                {{-- Özet --}}
+                <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-500">{{ $appointment->service->name }}</span>
+                        <span class="font-medium" id="servicePriceLabel">{{ number_format($appointment->price, 2, ',', '.') }} ₺</span>
+                    </div>
+                    <div id="productLines"></div>
+                    <div class="flex justify-between text-sm font-semibold text-gray-900 border-t border-gray-200 mt-2 pt-2">
+                        <span>Toplam</span>
+                        <span id="totalLabel">{{ number_format($appointment->price, 2, ',', '.') }} ₺</span>
+                    </div>
+                </div>
+
+                {{-- Ödeme Yöntemi --}}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ödeme Yöntemi</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="payment-opt cursor-pointer">
+                            <input type="radio" name="payment_method" value="cash" checked class="sr-only" onchange="updatePaymentOpt()">
+                            <div class="payment-opt-btn px-3 py-2.5 rounded-lg border-2 border-gray-900 bg-gray-900 text-white text-center text-sm font-medium transition">
+                                💵 Nakit
+                            </div>
+                        </label>
+                        <label class="payment-opt cursor-pointer">
+                            <input type="radio" name="payment_method" value="card" class="sr-only" onchange="updatePaymentOpt()">
+                            <div class="payment-opt-btn px-3 py-2.5 rounded-lg border-2 border-gray-200 text-center text-sm font-medium text-gray-600 transition">
+                                💳 Kart
+                            </div>
+                        </label>
+                        <label class="payment-opt cursor-pointer">
+                            <input type="radio" name="payment_method" value="transfer" class="sr-only" onchange="updatePaymentOpt()">
+                            <div class="payment-opt-btn px-3 py-2.5 rounded-lg border-2 border-gray-200 text-center text-sm font-medium text-gray-600 transition">
+                                🏦 Havale
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Ürün Satışları --}}
+                @if(isset($products) && $products->isNotEmpty())
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ürün Satışı (opsiyonel)</label>
+                    <div id="productInputs" class="space-y-2 mb-2"></div>
+                    <select id="productSelect"
+                            onchange="addProduct(this)"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                        <option value="">+ Ürün ekle...</option>
+                        @foreach($products as $p)
+                        <option value="{{ $p->id }}" data-price="{{ $p->sale_price }}" data-name="{{ $p->name }}" data-unit="{{ $p->unit }}">
+                            {{ $p->name }} — {{ number_format($p->sale_price, 2, ',', '.') }} ₺
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+
+                <button type="submit"
+                        class="w-full bg-green-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-green-700 transition">
+                    Tamamla ve Kasaya Yansıt
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+var servicePrice = {{ (float) $appointment->price }};
+var addedProducts = {}; // id -> {name, price, qty, unit}
+
+function openCompleteModal() {
+    document.getElementById('completeModal').classList.remove('hidden');
+    document.getElementById('completeModal').style.display = 'flex';
+}
+function closeCompleteModal() {
+    document.getElementById('completeModal').classList.add('hidden');
+    document.getElementById('completeModal').style.display = 'none';
+}
+
+function setStatus(val) {
+    document.getElementById('statusInput').value = val;
+    document.querySelectorAll('.status-btn').forEach(function(btn) {
+        var active = btn.dataset.status === val;
+        btn.className = btn.className.replace(/bg-gray-900 text-white border-gray-900|border-gray-200 text-gray-600 hover:bg-gray-50/g, '');
+        btn.classList.add(...(active ? ['bg-gray-900','text-white','border-gray-900'] : ['border-gray-200','text-gray-600','hover:bg-gray-50']));
+    });
+    document.getElementById('updateBtn').classList.remove('hidden');
+}
+
+function updatePaymentOpt() {
+    document.querySelectorAll('.payment-opt input').forEach(function(radio) {
+        var div = radio.nextElementSibling;
+        if (radio.checked) {
+            div.className = div.className.replace('border-gray-200 text-gray-600', 'border-gray-900 bg-gray-900 text-white');
+        } else {
+            div.className = div.className.replace('border-gray-900 bg-gray-900 text-white', 'border-gray-200 text-gray-600');
+        }
+    });
+}
+
+function addProduct(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt.value) return;
+    var id = parseInt(opt.value);
+    if (addedProducts[id]) { sel.value = ''; return; }
+    addedProducts[id] = {name: opt.dataset.name, price: parseFloat(opt.dataset.price), qty: 1, unit: opt.dataset.unit};
+    sel.value = '';
+    renderProducts();
+}
+
+function changeQty(id, delta) {
+    if (!addedProducts[id]) return;
+    addedProducts[id].qty = Math.max(1, addedProducts[id].qty + delta);
+    renderProducts();
+}
+
+function removeProduct(id) {
+    delete addedProducts[id];
+    renderProducts();
+}
+
+function renderProducts() {
+    var container = document.getElementById('productInputs');
+    var lines = document.getElementById('productLines');
+    var html = '';
+    var linesHtml = '';
+    var productTotal = 0;
+
+    Object.keys(addedProducts).forEach(function(id) {
+        var p = addedProducts[id];
+        var sub = p.price * p.qty;
+        productTotal += sub;
+        html += '<div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-sm">' +
+            '<input type="hidden" name="products['+id+'][id]" value="'+id+'">' +
+            '<input type="hidden" name="products['+id+'][qty]" value="'+p.qty+'">' +
+            '<span class="flex-1 text-gray-700">'+p.name+'</span>' +
+            '<button type="button" onclick="changeQty('+id+',-1)" class="w-6 h-6 rounded border border-gray-200 text-gray-500 hover:bg-gray-100 flex items-center justify-center leading-none">−</button>' +
+            '<span class="w-6 text-center font-medium">'+p.qty+'</span>' +
+            '<button type="button" onclick="changeQty('+id+',1)" class="w-6 h-6 rounded border border-gray-200 text-gray-500 hover:bg-gray-100 flex items-center justify-center leading-none">+</button>' +
+            '<span class="w-20 text-right text-gray-900 font-medium">'+sub.toFixed(2).replace('.',',')+' ₺</span>' +
+            '<button type="button" onclick="removeProduct('+id+')" class="text-red-400 hover:text-red-600 ml-1">✕</button>' +
+            '</div>';
+        linesHtml += '<div class="flex justify-between text-sm text-gray-500"><span>'+p.name+' x'+p.qty+'</span><span>'+sub.toFixed(2).replace('.',',')+' ₺</span></div>';
+    });
+
+    container.innerHTML = html;
+    lines.innerHTML = linesHtml;
+
+    var total = servicePrice + productTotal;
+    document.getElementById('totalLabel').textContent = total.toFixed(2).replace('.',',') + ' ₺';
+}
+</script>
 
 @endsection

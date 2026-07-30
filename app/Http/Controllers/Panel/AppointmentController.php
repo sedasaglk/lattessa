@@ -331,7 +331,16 @@ class AppointmentController extends Controller
             );
         }
 
-        return view('panel.appointments.show', compact('tenant', 'appointment', 'seriesAppointments'));
+        // Stok ürünleri (tamamlandı modalı için)
+        $products = \Illuminate\Support\Facades\DB::table('products')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->select('id', 'name', 'sale_price', 'unit')
+            ->get();
+
+        return view('panel.appointments.show', compact('tenant', 'appointment', 'seriesAppointments', 'products'));
     }
 
     public function edit(TenantContext $ctx, string $tenant_slug, string $id): View
@@ -414,7 +423,11 @@ class AppointmentController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'status' => ['required', 'in:pending,confirmed,completed,cancelled,no_show'],
+            'status'         => ['required', 'in:pending,confirmed,completed,cancelled,no_show'],
+            'payment_method' => ['nullable', 'in:cash,card,transfer'],
+            'products'       => ['nullable', 'array'],
+            'products.*.id'  => ['required_with:products', 'integer'],
+            'products.*.qty' => ['required_with:products', 'integer', 'min:1'],
         ]);
 
         $oldStatus = $appointment->status;
@@ -423,15 +436,113 @@ class AppointmentController extends Controller
         $appointment->update(['status' => $newStatus]);
 
         if ($newStatus === 'completed' && $oldStatus !== 'completed') {
+            $paymentMethod = $request->input('payment_method', 'cash');
+            $createdBy     = auth()->id();
+            $servicePrice  = (float) $appointment->price;
+
+            // --- Ürün satışları ---
+            $productTotal = 0;
+            $productLines = [];
+            foreach ((array) $request->input('products', []) as $line) {
+                if (empty($line['id']) || empty($line['qty'])) continue;
+                $product = \Illuminate\Support\Facades\DB::table('products')
+                    ->where('id', $line['id'])
+                    ->where('tenant_id', $tenant->id)
+                    ->first();
+                if (!$product) continue;
+                $qty   = (int) $line['qty'];
+                $price = (float) $product->sale_price;
+                $subtotal = $price * $qty;
+                $productTotal += $subtotal;
+                $productLines[] = compact('product', 'qty', 'price', 'subtotal');
+
+                // Stok hareketi (çıkış)
+                \Illuminate\Support\Facades\DB::table('stock_movements')->insert([
+                    'tenant_id'    => $tenant->id,
+                    'product_id'   => $product->id,
+                    'type'         => 'out',
+                    'quantity'     => $qty,
+                    'reference_type' => 'appointment',
+                    'reference_id' => $appointment->id,
+                    'notes'        => 'Randevu #' . $appointment->id . ' ürün satışı',
+                    'created_by'   => $createdBy,
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ]);
+            }
+
+            $totalAmount = $servicePrice + $productTotal;
+
+            // --- Kasa kaydı (daha önce eklenmemişse) ---
+            $exists = \Illuminate\Support\Facades\DB::table('cash_transactions')
+                ->where('tenant_id', $tenant->id)
+                ->where('reference_type', 'appointment')
+                ->where('reference_id', $appointment->id)
+                ->exists();
+
+            if (!$exists && $totalAmount > 0) {
+                $description = 'Randevu #' . $appointment->id;
+                if (!empty($productLines)) {
+                    $productNames = array_map(fn($l) => $l['product']->name . ' x' . $l['qty'], $productLines);
+                    $description .= ' + ' . implode(', ', $productNames);
+                }
+
+                \Illuminate\Support\Facades\DB::table('cash_transactions')->insert([
+                    'tenant_id'        => $tenant->id,
+                    'branch_id'        => $appointment->branch_id,
+                    'type'             => 'income',
+                    'category_id'      => null,
+                    'amount'           => $totalAmount,
+                    'description'      => $description,
+                    'payment_method'   => $paymentMethod,
+                    'customer_id'      => $appointment->customer_id,
+                    'reference_type'   => 'appointment',
+                    'reference_id'     => $appointment->id,
+                    'appointment_id'   => $appointment->id,
+                    'created_by'       => $createdBy,
+                    'transaction_date' => now()->format('Y-m-d'),
+                    'created_at'       => now(),
+                    'updated_at'       => now(),
+                ]);
+            }
+
+            // --- Personel Prim Hesabı ---
+            $commission = \Illuminate\Support\Facades\DB::table('staff_commissions')
+                ->where('tenant_id', $tenant->id)
+                ->where('user_id', $appointment->staff_id)
+                ->where('type', 'appointment')
+                ->first();
+
+            if ($commission && $commission->rate > 0) {
+                $primAmount = round($totalAmount * $commission->rate / 100, 2);
+                $period     = now()->format('Y-m');
+
+                \Illuminate\Support\Facades\DB::table('staff_commissions')->insert([
+                    'tenant_id'      => $tenant->id,
+                    'user_id'        => $appointment->staff_id,
+                    'type'           => 'appointment',
+                    'rate'           => $commission->rate,
+                    'fixed_amount'   => 0,
+                    'reference_type' => 'appointment',
+                    'reference_id'   => $appointment->id,
+                    'amount'         => $primAmount,
+                    'period'         => $period,
+                    'status'         => 'pending',
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]);
+            }
+
+            // Sadakat puanı ve diğer event'lar (fiyat güncelle)
             event(new AppointmentCompleted(
                 appointmentId: $appointment->id,
                 customerId: $appointment->customer_id,
                 tenantId: $appointment->tenant_id,
-                price: (float) $appointment->price
+                price: $servicePrice
             ));
         }
 
-        return back()->with('success', 'Randevu durumu guncellendi.');
+        return back()->with('success', 'Randevu tamamlandı.');
     }
 
     public function cancelSeries(Request $request, TenantContext $ctx, string $tenant_slug, string $id): RedirectResponse
