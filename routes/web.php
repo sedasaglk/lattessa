@@ -358,6 +358,12 @@ Route::post('/webhooks/lemonsqueezy', [\App\Http\Controllers\Webhooks\LemonSquee
 Route::middleware('auth')->post('/api/push-token', [\App\Http\Controllers\Api\PushTokenController::class, 'store'])->name('api.push.token');
 
 // Salon fotograf servisi
+// GEÇİCİ — migration çalıştırmak için. Çalıştırdıktan sonra bu route'u silin!
+Route::get('/migrate-gizli-anahtar-9x7k2', function() {
+    \Artisan::call('migrate', ['--force' => true]);
+    return '<pre>' . \Artisan::output() . '</pre>';
+});
+
 Route::get('/uploads/salon/{tenant}/{filename}', function($tenant, $filename) {
     $path = public_path("uploads/salon/{$tenant}/{$filename}");
     if (!file_exists($path)) abort(404);
