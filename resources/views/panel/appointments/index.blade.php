@@ -29,12 +29,17 @@
 
 @php
 $staffColors = ['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EF4444','#14B8A6','#F97316','#84CC16'];
-$staffMembers = \Illuminate\Support\Facades\DB::table('users')
+$branchCtxBlade = app(\App\Services\BranchContext::class);
+$branchCtxBlade->setFromUser();
+$staffQuery2 = \Illuminate\Support\Facades\DB::table('users')
     ->where('tenant_id', $tenant->id)
     ->whereNull('deleted_at')
     ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel', 'sekreter'])
-    ->orderBy('name')
-    ->get(['id', 'name']);
+    ->orderBy('name');
+if ($branchCtxBlade->getBranchId()) {
+    $staffQuery2->where('branch_id', $branchCtxBlade->getBranchId());
+}
+$staffMembers = $staffQuery2->get(['id', 'name']);
 $staffColorMap = [];
 foreach ($staffMembers as $i => $member) {
     $staffColorMap[$member->id] = $staffColors[$i % count($staffColors)];
