@@ -266,10 +266,12 @@ function setStatus(val) {
 function updatePaymentOpt() {
     document.querySelectorAll('.payment-opt input').forEach(function(radio) {
         var div = radio.nextElementSibling;
+        // Reset to inactive state first
+        div.classList.remove('border-gray-900', 'bg-gray-900', 'text-white');
+        div.classList.add('border-gray-200', 'text-gray-600');
         if (radio.checked) {
-            div.className = div.className.replace('border-gray-200 text-gray-600', 'border-gray-900 bg-gray-900 text-white');
-        } else {
-            div.className = div.className.replace('border-gray-900 bg-gray-900 text-white', 'border-gray-200 text-gray-600');
+            div.classList.remove('border-gray-200', 'text-gray-600');
+            div.classList.add('border-gray-900', 'bg-gray-900', 'text-white');
         }
     });
 }
