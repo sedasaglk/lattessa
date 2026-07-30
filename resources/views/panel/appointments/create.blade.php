@@ -45,16 +45,50 @@
         </div>
         @endif
 
-        <div>
+        {{-- Grup Randevusu Toggle --}}
+        <div class="border border-indigo-100 rounded-xl p-4 bg-indigo-50/40">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="is_group" value="1" id="isGroup"
+                       onchange="toggleGroupMode()"
+                       class="rounded border-gray-300 accent-indigo-600">
+                <span class="text-sm font-medium text-gray-700">👥 Grup Randevusu</span>
+            </label>
+        </div>
+
+        {{-- Tekil Müşteri (grup değilken görünür) --}}
+        <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <div class="relative cust-search-wrap">
                 <input type="text" autocomplete="off"
                        placeholder="İsim veya son 4 hane telefon..."
                        class="cust-search-input w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
-                <input type="hidden" name="customer_id" class="cust-id-input" required value="{{ old('customer_id') }}">
+                <input type="hidden" name="customer_id" class="cust-id-input" value="{{ old('customer_id') }}">
                 <div class="cust-dropdown absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl hidden"
                      style="max-height:220px; overflow-y:auto; top:calc(100% + 2px); left:0;">
                 </div>
+            </div>
+        </div>
+
+        {{-- Grup Müşteri Listesi (grup modunda görünür) --}}
+        <div id="groupSection" class="hidden space-y-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Grup Kapasitesi (max katılımcı)</label>
+                <input type="number" name="group_capacity" min="1" max="500" value="10"
+                       class="w-32 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
+                <div id="groupCustomerList" class="space-y-2 mb-2"></div>
+                {{-- Müşteri arama (grup) --}}
+                <div class="relative cust-search-wrap group-cust-wrap">
+                    <input type="text" autocomplete="off"
+                           placeholder="Müşteri ekle..."
+                           class="cust-search-input w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                    <div class="cust-dropdown absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl hidden"
+                         style="max-height:220px; overflow-y:auto; top:calc(100% + 2px); left:0;">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin. Her müşteri listeye eklenir.</p>
             </div>
         </div>
 
@@ -157,6 +191,55 @@ function toggleRecurring() {
     opts.classList.toggle('hidden', !cb.checked);
 }
 
+// ---- GRUP RANDEVUSU ----
+var groupCustomers = []; // {id, name, phone}
+
+function toggleGroupMode() {
+    const isGroup = document.getElementById('isGroup').checked;
+    document.getElementById('singleCustomerSection').classList.toggle('hidden', isGroup);
+    document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
+
+    // customer_id zorunluluğunu değiştir
+    var singleInput = document.querySelector('#singleCustomerSection .cust-id-input');
+    singleInput.required = !isGroup;
+
+    // Tekrarlayan ile birlikte kullanılamaz
+    if (isGroup) {
+        document.getElementById('isRecurring').checked = false;
+        document.getElementById('recurringOptions').classList.add('hidden');
+        document.getElementById('isRecurring').disabled = true;
+    } else {
+        document.getElementById('isRecurring').disabled = false;
+    }
+}
+
+function addGroupCustomer(id, name, phone) {
+    if (groupCustomers.find(function(c){ return c.id == id; })) return; // zaten ekli
+    groupCustomers.push({id: id, name: name, phone: phone});
+    renderGroupCustomers();
+}
+
+function removeGroupCustomer(id) {
+    groupCustomers = groupCustomers.filter(function(c){ return c.id != id; });
+    renderGroupCustomers();
+}
+
+function renderGroupCustomers() {
+    var list = document.getElementById('groupCustomerList');
+    if (groupCustomers.length === 0) {
+        list.innerHTML = '<p class="text-xs text-gray-400 italic">Henüz katılımcı eklenmedi.</p>';
+    } else {
+        list.innerHTML = groupCustomers.map(function(c) {
+            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+            return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">' +
+                '<span><strong>' + escHtml(c.name) + '</strong> <span class="text-gray-400 text-xs">···' + last4 + '</span></span>' +
+                '<input type="hidden" name="customer_ids[]" value="' + c.id + '">' +
+                '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>' +
+                '</div>';
+        }).join('');
+    }
+}
+
 // Müşteri arama - her wrap bağımsız çalışır (double-render fix)
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone]));
 
@@ -214,9 +297,51 @@ function initCustomerSearch(wrap) {
 }
 
 window.addEventListener('DOMContentLoaded', function(){
-    document.querySelectorAll('.cust-search-wrap').forEach(function(wrap){
-        if (wrap.offsetParent !== null) initCustomerSearch(wrap);
-    });
+    // Tekil müşteri arama
+    var singleWrap = document.querySelector('#singleCustomerSection .cust-search-wrap');
+    if (singleWrap) initCustomerSearch(singleWrap);
+
+    // Grup müşteri arama (seçince listeye ekler, input'u temizler)
+    var groupWrap = document.querySelector('.group-cust-wrap');
+    if (groupWrap) {
+        var input = groupWrap.querySelector('.cust-search-input');
+        var dd = groupWrap.querySelector('.cust-dropdown');
+
+        function doGroupSearch(q) {
+            q = (q || '').trim();
+            var results = q.length === 0 ? allCustomers.slice(0,50) :
+                allCustomers.filter(function(c){
+                    var ql = q.toLowerCase();
+                    return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q));
+                });
+            if (results.length === 0) {
+                dd.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#9ca3af;">Müşteri bulunamadı</div>';
+            } else {
+                dd.innerHTML = results.slice(0,80).map(function(c){
+                    var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+                    return '<div style="padding:10px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #f3f4f6;" class="cust-item" data-id="'+c.id+'" data-name="'+escHtml(c.name)+'" data-phone="'+escHtml(c.phone||'')+'">'+
+                        '<span style="font-weight:600;color:#111;">'+escHtml(c.name)+'</span> '+
+                        '<span style="color:#9ca3af;font-size:11px;">···'+last4+'</span>'+
+                        '</div>';
+                }).join('');
+                dd.querySelectorAll('.cust-item').forEach(function(item){
+                    item.addEventListener('mousedown', function(e){
+                        e.preventDefault();
+                        addGroupCustomer(parseInt(item.dataset.id), item.dataset.name, item.dataset.phone);
+                        input.value = '';
+                        dd.classList.add('hidden');
+                    });
+                });
+            }
+            dd.classList.remove('hidden');
+        }
+
+        input.addEventListener('input', function(){ doGroupSearch(this.value); });
+        input.addEventListener('focus', function(){ doGroupSearch(this.value); });
+        input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 150); });
+    }
+
+    renderGroupCustomers();
 });
 </script>
 @endsection

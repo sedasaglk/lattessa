@@ -18,6 +18,7 @@ class Appointment extends Model
         'service_id', 'start_time', 'end_time', 'status',
         'source', 'notes', 'price', 'is_recurring',
         'recurrence_rule', 'parent_appointment_id',
+        'group_id', 'group_capacity',
     ];
 
     protected $casts = [

@@ -184,26 +184,82 @@ class AppointmentController extends Controller
     {
         $tenant = $ctx->get();
 
-        $validated = $request->validate([
-            'branch_id' => ['required'],
-            'customer_id' => ['required'],
-            'staff_id' => ['required'],
-            'service_id' => ['required'],
-            'start_time' => ['required', 'date', 'after:now'],
-            'notes' => ['nullable', 'string', 'max:500'],
-            'is_recurring' => ['nullable', 'boolean'],
-            'recurrence_rule' => ['nullable', 'in:daily,weekly,biweekly,monthly'],
+        $isGroup = $request->boolean('is_group');
+
+        $rules = [
+            'branch_id'        => ['required'],
+            'staff_id'         => ['required'],
+            'service_id'       => ['required'],
+            'start_time'       => ['required', 'date', 'after:now'],
+            'notes'            => ['nullable', 'string', 'max:500'],
+            'is_recurring'     => ['nullable', 'boolean'],
+            'recurrence_rule'  => ['nullable', 'in:daily,weekly,biweekly,monthly'],
             'recurrence_count' => ['nullable', 'integer', 'min:2', 'max:52'],
-        ], [
-            'branch_id.required' => 'Sube secmelisiniz.',
-            'customer_id.required' => 'Musteri secmelisiniz.',
-            'staff_id.required' => 'Personel secmelisiniz.',
-            'service_id.required' => 'Hizmet secmelisiniz.',
-            'start_time.required' => 'Tarih ve saat secmelisiniz.',
-            'start_time.after' => 'Gecmis bir tarih secemezsiniz.',
+        ];
+
+        if ($isGroup) {
+            $rules['customer_ids']   = ['required', 'array', 'min:1'];
+            $rules['customer_ids.*'] = ['required', 'integer'];
+            $rules['group_capacity'] = ['required', 'integer', 'min:1', 'max:500'];
+        } else {
+            $rules['customer_id'] = ['required'];
+        }
+
+        $validated = $request->validate($rules, [
+            'branch_id.required'      => 'Sube secmelisiniz.',
+            'customer_id.required'    => 'Musteri secmelisiniz.',
+            'customer_ids.required'   => 'En az bir musteri eklemelisiniz.',
+            'group_capacity.required' => 'Grup kapasitesi giriniz.',
+            'staff_id.required'       => 'Personel secmelisiniz.',
+            'service_id.required'     => 'Hizmet secmelisiniz.',
+            'start_time.required'     => 'Tarih ve saat secmelisiniz.',
+            'start_time.after'        => 'Gecmis bir tarih secemezsiniz.',
         ]);
 
         try {
+            // --- GRUP RANDEVUSU ---
+            if ($isGroup) {
+                $service   = Service::find($validated['service_id']);
+                $startTime = \Carbon\Carbon::parse($validated['start_time']);
+                $endTime   = $startTime->copy()->addMinutes($service->duration_minutes ?? 60);
+                $capacity  = (int) $validated['group_capacity'];
+                $customerIds = array_unique(array_filter($validated['customer_ids']));
+
+                $groupId   = null;
+                $created   = 0;
+                foreach ($customerIds as $custId) {
+                    $apptId = \Illuminate\Support\Facades\DB::table('appointments')->insertGetId([
+                        'tenant_id'      => $tenant->id,
+                        'branch_id'      => $validated['branch_id'],
+                        'customer_id'    => $custId,
+                        'staff_id'       => $validated['staff_id'],
+                        'service_id'     => $validated['service_id'],
+                        'start_time'     => $startTime,
+                        'end_time'       => $endTime,
+                        'price'          => $service->price ?? 0,
+                        'notes'          => $validated['notes'] ?? null,
+                        'status'         => 'confirmed',
+                        'source'         => 'panel',
+                        'group_id'       => $groupId,
+                        'group_capacity' => $capacity,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ]);
+                    if ($groupId === null) {
+                        $groupId = $apptId;
+                        \Illuminate\Support\Facades\DB::table('appointments')
+                            ->where('id', $apptId)
+                            ->update(['group_id' => $groupId]);
+                    }
+                    $created++;
+                }
+
+                return redirect()
+                    ->route('panel.appointments.index', ['tenant_slug' => $tenant->slug])
+                    ->with('success', "Grup randevusu oluşturuldu. {$created} müşteri eklendi.");
+            }
+
+            // --- TEKİL / TEKRARLAYAN ---
             if ($request->boolean('is_recurring') && $request->recurrence_rule && $request->recurrence_count) {
                 // Hizmet suresini al
                 $service = Service::find($validated['service_id']);

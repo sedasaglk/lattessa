@@ -371,7 +371,12 @@ foreach ($staffMembers as $i => $member) {
                     </div>
                     <div class="w-1 self-stretch rounded-full flex-shrink-0" style="background: {{ $staffColor }};"></div>
                     <div class="min-w-0">
-                        <p class="font-medium text-gray-900 text-sm truncate">{{ $appointment->customer->name }}</p>
+                        <p class="font-medium text-gray-900 text-sm truncate">
+                            @if($appointment->group_id)
+                                <span class="text-indigo-600">👥</span>
+                            @endif
+                            {{ $appointment->customer->name }}
+                        </p>
                         <p class="text-xs text-gray-500 truncate">{{ $appointment->service->name }} · {{ $appointment->staff->name }}</p>
                     </div>
                 </div>
