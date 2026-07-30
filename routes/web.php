@@ -299,6 +299,9 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
         Route::put('/ayarlar/sube', [SettingsController::class, 'updateBranch'])->name('panel.settings.branch');
         Route::put('/ayarlar/sifre', [SettingsController::class, 'updatePassword'])->name('panel.settings.password');
 
+        Route::get('/bildirim-ayarlari', [\App\Http\Controllers\Panel\NotificationSettingsController::class, 'index'])->name('panel.notification-settings.index');
+        Route::post('/bildirim-ayarlari', [\App\Http\Controllers\Panel\NotificationSettingsController::class, 'update'])->name('panel.notification-settings.update');
+
     });
 
 });

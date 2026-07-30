@@ -42,16 +42,28 @@ class SendReviewRequest
             ]);
 
             $link = url("/{$tenant->slug}/yorum/{$token}");
-            $message = "Sayin {$appointment->customer_name}, {$appointment->service_name} hizmetimizi aldiginiz icin tesekkur ederiz! Deneyiminizi paylasir misiniz? {$link}";
 
             $notificationService = app(NotificationService::class);
+
+            // Özel şablon varsa kullan
+            $setting = $notificationService->getSetting($event->tenantId, 'review_request');
+            $defaultTemplate = "Sayin {musteri_adi}, {hizmet_adi} hizmetimizi aldiginiz icin tesekkur ederiz! Deneyiminizi paylasir misiniz? {link}";
+            $template = ($setting && $setting->template) ? $setting->template : $defaultTemplate;
+            $message = NotificationService::fillTemplate($template, [
+                'musteri_adi' => $appointment->customer_name,
+                'hizmet_adi'  => $appointment->service_name,
+                'salon_adi'   => $tenant->company_name,
+                'link'        => $link,
+            ]);
+
             $notificationService->notify(
                 $event->tenantId,
                 $appointment->customer_phone,
                 $message,
                 'review_request',
                 $event->customerId,
-                'auto'
+                'auto',
+                'review_request'
             );
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Review request gonderilemedi: ' . $e->getMessage());

@@ -231,7 +231,8 @@
                 {!! sidebarLink('panel.invoices.index', 'Faturalar', '◈', 'panel.invoices*', $slug) !!}
                 {!! sidebarLink('panel.subscription.index', 'Abonelik', '◈', 'panel.subscription*', $slug) !!}
                 @endif
-                @if($isManager) {!! sidebarLink('panel.settings.index', 'Ayarlar', '⚙', 'panel.settings*', $slug) !!} @endif
+                @if($isManager) {!! sidebarLink('panel.notification-settings.index', 'Bildirim Ayarları', '🔔', 'panel.notification-settings*', $slug) !!} @endif
+            @if($isManager) {!! sidebarLink('panel.settings.index', 'Ayarlar', '⚙', 'panel.settings*', $slug) !!} @endif
             </div>
         </nav>
 

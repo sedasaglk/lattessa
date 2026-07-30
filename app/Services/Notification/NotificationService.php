@@ -14,7 +14,30 @@ class NotificationService
     ) {}
 
     /**
+     * Bildirim ayarlarını getir (cache ile)
+     */
+    public function getSetting(int $tenantId, string $event): ?object
+    {
+        return DB::table('notification_settings')
+            ->where('tenant_id', $tenantId)
+            ->where('event', $event)
+            ->first();
+    }
+
+    /**
+     * Event için şablon değişkenlerini doldur
+     */
+    public static function fillTemplate(string $template, array $vars): string
+    {
+        foreach ($vars as $key => $value) {
+            $template = str_replace('{' . $key . '}', $value, $template);
+        }
+        return $template;
+    }
+
+    /**
      * Mesaji oncelikle WhatsApp uzerinden, baglanti yoksa SMS uzerinden gonderir.
+     * $event verilirse notification_settings tablosundan kanal ve enabled kontrolü yapılır.
      */
     public function notify(
         int $tenantId,
@@ -22,8 +45,26 @@ class NotificationService
         string $message,
         string $type = 'general',
         ?int $customerId = null,
-        string $channel = 'auto' // auto, whatsapp, sms
+        string $channel = 'auto', // auto, whatsapp, sms
+        ?string $event = null
     ): array {
+        // Bildirim ayarı kontrolü
+        if ($event) {
+            $setting = $this->getSetting($tenantId, $event);
+            if ($setting) {
+                if (!$setting->enabled) {
+                    return ['success' => false, 'channel' => 'disabled'];
+                }
+                if ($setting->channel !== 'auto') {
+                    $channel = $setting->channel;
+                }
+            }
+        }
+
+        if ($channel === 'none') {
+            return ['success' => false, 'channel' => 'none'];
+        }
+
         $sentViaWhatsApp = false;
 
         if (in_array($channel, ['auto', 'whatsapp'])) {
