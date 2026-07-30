@@ -29,7 +29,7 @@ class AppointmentController extends Controller
     public function index(TenantContext $ctx, string $tenant_slug): View
     {
         $tenant = $ctx->get();
-        $view = request('view', 'calendar');
+        $view = request('view', 'grid');
         $date = request('date', today()->format('Y-m-d'));
 
         if ($view === 'list') {

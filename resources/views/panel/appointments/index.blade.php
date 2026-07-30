@@ -10,6 +10,10 @@
            class="px-3 py-2 text-sm rounded-lg border {{ $view === 'list' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
             Liste
         </a>
+        <a href="?view=grid&date={{ $date }}"
+           class="px-3 py-2 text-sm rounded-lg border {{ $view === 'grid' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+            Tablo
+        </a>
         <a href="?view=calendar"
            class="px-3 py-2 text-sm rounded-lg border {{ $view === 'calendar' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50' }}">
             Takvim
@@ -21,7 +25,233 @@
     </div>
 </div>
 
-@if($view === 'calendar')
+@if($view === 'grid')
+@php
+$gridDate = \Carbon\Carbon::parse($date);
+$gridPrev = $gridDate->copy()->subDay()->format('Y-m-d');
+$gridNext = $gridDate->copy()->addDay()->format('Y-m-d');
+$gridStaffColors = ['#FACC15','#6366F1','#10B981','#EC4899','#3B82F6','#8B5CF6','#EF4444','#F97316','#14B8A6','#84CC16'];
+$gridBranchCtx = app(\App\Services\BranchContext::class);
+$gridBranchCtx->setFromUser();
+$gridStaffQuery = \Illuminate\Support\Facades\DB::table('users')
+    ->where('tenant_id', $tenant->id)
+    ->whereNull('deleted_at')
+    ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel', 'sekreter'])
+    ->orderBy('name');
+if ($gridBranchCtx->getBranchId()) {
+    $gridStaffQuery->where('branch_id', $gridBranchCtx->getBranchId());
+}
+$gridStaff = $gridStaffQuery->get(['id', 'name']);
+$gridTurkishDays = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+$gridDayName = $gridTurkishDays[$gridDate->dayOfWeek];
+@endphp
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    {{-- Date nav --}}
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <a href="?view=grid&date={{ $gridPrev }}" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 text-lg">‹</a>
+        <span class="font-semibold text-gray-900 text-sm">{{ $gridDate->format('d') }} {{ ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][$gridDate->month-1] }} {{ $gridDate->year }} {{ $gridDayName }}</span>
+        <a href="?view=grid&date={{ $gridNext }}" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 text-lg">›</a>
+    </div>
+
+    {{-- Grid --}}
+    <div class="overflow-x-auto">
+        <div style="min-width: {{ 60 + count((array)$gridStaff) * 120 }}px;">
+            {{-- Header row: staff names --}}
+            <div class="flex border-b border-gray-200">
+                <div style="width:52px;min-width:52px;" class="flex-shrink-0 border-r border-gray-100"></div>
+                @foreach($gridStaff as $gi => $gm)
+                @php $gc = $gridStaffColors[$gi % count($gridStaffColors)]; @endphp
+                <div class="flex-1 text-center py-2 font-bold text-xs border-r border-gray-100 last:border-r-0"
+                     style="background:{{ $gc }}; color:{{ in_array($gc,['#FACC15','#84CC16']) ? '#000' : '#fff' }}; min-width:110px;">
+                    {{ $gm->name }}
+                </div>
+                @endforeach
+            </div>
+
+            {{-- Time rows --}}
+            <div class="relative" id="gridBody">
+                @php $startHour = 8; $endHour = 22; @endphp
+                @for($h = $startHour; $h < $endHour; $h++)
+                    @foreach([0, 30] as $m)
+                    <div class="flex border-b border-gray-100" style="height:44px;">
+                        <div style="width:52px;min-width:52px;" class="flex-shrink-0 border-r border-gray-100 flex items-start justify-end pr-2 pt-1">
+                            @if($m === 0)
+                            <span class="text-xs text-gray-400 font-medium">{{ sprintf('%02d:%02d', $h, $m) }}</span>
+                            @endif
+                        </div>
+                        @foreach($gridStaff as $gm)
+                        <div class="flex-1 border-r border-gray-100 last:border-r-0 relative grid-cell"
+                             data-time="{{ sprintf('%02d:%02d', $h, $m) }}"
+                             data-staff="{{ $gm->id }}"
+                             style="min-width:110px; cursor:pointer;"
+                             onclick="newAppt('{{ $gridDate->format('Y-m-d') }}T{{ sprintf('%02d:%02d', $h, $m) }}')">
+                        </div>
+                        @endforeach
+                    </div>
+                    @endforeach
+                @endfor
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Appointment Detail Modal --}}
+<div id="gridModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <div id="gridModalDot" class="w-3 h-3 rounded-full"></div>
+                <h3 class="font-semibold text-gray-900">Randevu Detay</h3>
+            </div>
+            <button onclick="closeGridModal()" class="text-gray-400 hover:text-gray-900 text-lg">✕</button>
+        </div>
+        <div id="gridModalContent" class="space-y-1 text-sm"></div>
+        <div class="mt-4 flex gap-2">
+            <a id="gridModalLink" href="#" class="flex-1 text-center bg-gray-900 text-white py-2.5 rounded-xl text-sm font-medium">Detaya Git</a>
+            <button onclick="closeGridModal()" class="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm">Kapat</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var tenantSlug = '{{ $tenant->slug }}';
+var gridDate = '{{ $date }}';
+var SLOT_H = 44;
+var START_HOUR = 8;
+var staffColors = {
+    @foreach($gridStaff as $gi => $gm)
+    {{ $gm->id }}: '{{ $gridStaffColors[$gi % count($gridStaffColors)] }}',
+    @endforeach
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadGridEvents();
+    // Scroll to 9:00
+    var offset = (9 - START_HOUR) * 2 * SLOT_H;
+    document.querySelector('.overflow-x-auto').scrollTop = offset;
+});
+
+function loadGridEvents() {
+    var start = gridDate + 'T00:00:00';
+    var end = gridDate + 'T23:59:59';
+    fetch('/' + tenantSlug + '/randevular/events?start=' + start + '&end=' + end)
+        .then(r => r.json())
+        .then(events => renderGridEvents(events))
+        .catch(e => console.error(e));
+}
+
+function renderGridEvents(events) {
+    document.querySelectorAll('.appt-block').forEach(el => el.remove());
+
+    events.forEach(function(ev) {
+        var staffId = ev.extendedProps ? ev.extendedProps.staff_id : null;
+        if (!staffId) return;
+
+        var col = document.querySelector('.grid-cell[data-staff="' + staffId + '"]');
+        if (!col) return;
+
+        var startStr = ev.start.slice(11, 16);
+        var endStr = ev.end ? ev.end.slice(11, 16) : '';
+        var startMin = timeToMin(startStr) - START_HOUR * 60;
+        var endMin = endStr ? (timeToMin(endStr) - START_HOUR * 60) : startMin + 30;
+        var duration = endMin - startMin;
+
+        var topPx = (startMin / 30) * SLOT_H;
+        var heightPx = Math.max((duration / 30) * SLOT_H - 2, 20);
+
+        var color = staffColors[staffId] || ev.color || '#6366F1';
+        var textColor = (color === '#FACC15' || color === '#84CC16') ? '#000' : '#fff';
+
+        var block = document.createElement('div');
+        block.className = 'appt-block';
+        block.style.cssText = 'position:absolute; left:2px; right:2px; top:' + topPx + 'px; height:' + heightPx + 'px; background:' + color + '; border-radius:6px; padding:2px 4px; cursor:pointer; overflow:hidden; z-index:10;';
+        block.innerHTML =
+            '<div style="font-size:9px;font-weight:700;color:' + textColor + ';line-height:1.2;">' + startStr + (endStr ? ' - ' + endStr : '') + '</div>' +
+            '<div style="font-size:11px;font-weight:700;color:' + textColor + ';line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (ev.title || '') + '</div>' +
+            (ev.extendedProps && ev.extendedProps.service ? '<div style="font-size:9px;color:' + textColor + ';opacity:0.85;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ev.extendedProps.service + '</div>' : '');
+
+        // Parent cell is not relative, need to find the column container
+        var parentRow = col.parentElement;
+        // Use gridBody container for absolute positioning
+        var gridBody = document.getElementById('gridBody');
+        var colIndex = Array.from(col.parentElement.children).indexOf(col) - 1; // -1 for time col
+
+        // Wrap approach: make col relative
+        col.style.position = 'relative';
+        // Find the right staff column across all rows
+        var allCells = document.querySelectorAll('.grid-cell[data-staff="' + staffId + '"]');
+        // Place in first cell of this staff, use absolute pos relative to gridBody-column
+        // Better: create a column overlay div
+        var overlayId = 'overlay-' + staffId;
+        var overlay = document.getElementById(overlayId);
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = overlayId;
+            overlay.style.cssText = 'position:absolute;top:0;bottom:0;pointer-events:none;z-index:5;';
+            // Calculate left position
+            var firstCell = document.querySelector('.grid-cell[data-staff="' + staffId + '"]');
+            var bodyRect = gridBody.getBoundingClientRect();
+            var cellRect = firstCell.getBoundingClientRect();
+            overlay.style.left = (cellRect.left - bodyRect.left) + 'px';
+            overlay.style.width = cellRect.width + 'px';
+            gridBody.style.position = 'relative';
+            gridBody.appendChild(overlay);
+        }
+        overlay.style.pointerEvents = 'none';
+        block.style.position = 'absolute';
+        block.style.left = '2px';
+        block.style.right = '2px';
+        block.style.top = topPx + 'px';
+        block.style.height = heightPx + 'px';
+        block.style.pointerEvents = 'all';
+        block.onclick = function(e) {
+            e.stopPropagation();
+            showGridModal(ev, color);
+        };
+        overlay.appendChild(block);
+    });
+}
+
+function timeToMin(t) {
+    var parts = t.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+function newAppt(dateTimeStr) {
+    window.location.href = '/' + tenantSlug + '/randevular/yeni?date=' + dateTimeStr;
+}
+
+function showGridModal(ev, color) {
+    var props = ev.extendedProps || {};
+    var statusMap = {'pending':'Bekliyor','confirmed':'Onaylı','completed':'Tamamlandı','cancelled':'İptal','no_show':'Gelmedi'};
+    var startStr = ev.start ? ev.start.slice(11,16) : '';
+    var endStr = ev.end ? ev.end.slice(11,16) : '';
+    document.getElementById('gridModalDot').style.background = color;
+    document.getElementById('gridModalContent').innerHTML =
+        '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Müşteri</span><span class="font-medium">' + (ev.title||'') + '</span></div>' +
+        '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Hizmet</span><span class="font-medium">' + (props.service||'-') + '</span></div>' +
+        '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Personel</span><span class="font-medium" style="color:' + color + '">' + (props.staff||'-') + '</span></div>' +
+        '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Saat</span><span class="font-medium">' + startStr + (endStr?' - '+endStr:'') + '</span></div>' +
+        '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Durum</span><span class="font-medium">' + (statusMap[props.status]||props.status||'-') + '</span></div>' +
+        '<div class="flex justify-between py-2"><span class="text-gray-500">Ücret</span><span class="font-medium">' + (props.price ? parseFloat(props.price).toLocaleString('tr-TR') + ' TL' : '-') + '</span></div>';
+    document.getElementById('gridModalLink').href = ev.url || '#';
+    document.getElementById('gridModal').classList.remove('hidden');
+}
+
+function closeGridModal() {
+    document.getElementById('gridModal').classList.add('hidden');
+}
+document.getElementById('gridModal').addEventListener('click', function(e) {
+    if (e.target === this) closeGridModal();
+});
+</script>
+<style>
+.appt-block { transition: opacity 0.1s; }
+.appt-block:hover { opacity: 0.88; }
+</style>
+
+@elseif($view === 'calendar')
 
 @php
 $staffColors = ['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EF4444','#14B8A6','#F97316','#84CC16'];
