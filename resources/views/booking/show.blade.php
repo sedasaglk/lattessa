@@ -129,25 +129,25 @@
     </div>
     @endif
 
-    {{-- Adim Göstergesi: Hizmet → Tarih → Şube → Personel → Saat → Bilgi --}}
+    {{-- Adim Göstergesi: Hizmet → Şube → Personel → Tarih → Saat → Bilgi --}}
     <div class="step-indicator" id="stepIndicator">
         <div class="step active" id="stepEl1">
             <div class="step-circle">1</div>
             <span class="step-label">Hizmet</span>
         </div>
+        @if($branches->count() > 1)
         <div class="step" id="stepEl2">
             <div class="step-circle">2</div>
-            <span class="step-label">Tarih</span>
-        </div>
-        @if($branches->count() > 1)
-        <div class="step" id="stepEl3">
-            <div class="step-circle">3</div>
             <span class="step-label">Şube</span>
         </div>
         @endif
+        <div class="step" id="stepEl3">
+            <div class="step-circle">{{ $branches->count() > 1 ? '3' : '2' }}</div>
+            <span class="step-label">Personel</span>
+        </div>
         <div class="step" id="stepEl4">
             <div class="step-circle">{{ $branches->count() > 1 ? '4' : '3' }}</div>
-            <span class="step-label">Personel</span>
+            <span class="step-label">Tarih</span>
         </div>
         <div class="step" id="stepEl5">
             <div class="step-circle">{{ $branches->count() > 1 ? '5' : '4' }}</div>
@@ -195,8 +195,47 @@
             </div>
         </div>
 
-        {{-- ADIM 2: TARİH --}}
+        {{-- ADIM 2: ŞUBE (sadece birden fazla şube varsa) --}}
+        @if($branches->count() > 1)
         <div id="step2" style="display:none;" class="fade-in">
+            <div class="section-card">
+                <p class="section-title">Şube seçin</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    @foreach($branches as $branch)
+                    <div class="service-card branch-card" data-id="{{ $branch->id }}" data-name="{{ addslashes($branch->name) }}"
+                         onclick="selectBranch({{ $branch->id }}, '{{ addslashes($branch->name) }}', this)">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:#6366F1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;">
+                                {{ strtoupper(substr($branch->name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <p style="font-weight:600;font-size:14px;color:#111;margin:0;">{{ $branch->name }}</p>
+                                @if($branch->address)<p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">📍 {{ $branch->address }}</p>@endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            <button type="button" onclick="goStep(1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+                ← Geri
+            </button>
+        </div>
+        @endif
+
+        {{-- ADIM 3: PERSONEL --}}
+        <div id="step3" style="display:none;" class="fade-in">
+            <div class="section-card">
+                <p class="section-title">Personel seçin</p>
+                <div id="staffList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
+            <button type="button" onclick="goStep(hasBranches ? 2 : 1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+                ← Geri
+            </button>
+        </div>
+
+        {{-- ADIM 4: TARİH --}}
+        <div id="step4" style="display:none;" class="fade-in">
             <div class="section-card">
                 <p class="section-title">Tarih seçin</p>
 
@@ -220,46 +259,7 @@
 
                 <input type="hidden" id="datePickerInput">
             </div>
-            <button type="button" onclick="goStep(1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
-                ← Geri
-            </button>
-        </div>
-
-        {{-- ADIM 3: ŞUBE (sadece birden fazla şube varsa) --}}
-        @if($branches->count() > 1)
-        <div id="step3" style="display:none;" class="fade-in">
-            <div class="section-card">
-                <p class="section-title">Şube seçin</p>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                    @foreach($branches as $branch)
-                    <div class="service-card branch-card" data-id="{{ $branch->id }}" data-name="{{ addslashes($branch->name) }}"
-                         onclick="selectBranch({{ $branch->id }}, '{{ addslashes($branch->name) }}', this)">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <div style="width:36px;height:36px;border-radius:8px;background:#6366F1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;">
-                                {{ strtoupper(substr($branch->name, 0, 1)) }}
-                            </div>
-                            <div>
-                                <p style="font-weight:600;font-size:14px;color:#111;margin:0;">{{ $branch->name }}</p>
-                                @if($branch->address)<p style="font-size:12px;color:#9CA3AF;margin:2px 0 0;">📍 {{ $branch->address }}</p>@endif
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-            <button type="button" onclick="goStep(2)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
-                ← Geri
-            </button>
-        </div>
-        @endif
-
-        {{-- ADIM 4: PERSONEL --}}
-        <div id="step4" style="display:none;" class="fade-in">
-            <div class="section-card">
-                <p class="section-title">Personel seçin</p>
-                <div id="staffList" style="display:flex;flex-direction:column;gap:8px;"></div>
-            </div>
-            <button type="button" onclick="goStep(hasBranches ? 3 : 2)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
+            <button type="button" onclick="goStep(3)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
                 ← Geri
             </button>
         </div>
@@ -327,7 +327,7 @@ let sel = {
 };
 let currentStep = 1;
 
-// Adım göstergesi: 1=Hizmet, 2=Tarih, 3=Şube(opt), 4=Personel, 5=Saat, 6=Bilgi
+// Adım göstergesi: 1=Hizmet, 2=Şube(opt), 3=Personel, 4=Tarih, 5=Saat, 6=Bilgi
 function updateStepIndicator(active) {
     [1,2,3,4,5,6].forEach(i => {
         const el = document.getElementById('stepEl' + i);
@@ -349,7 +349,7 @@ function showStep(n) {
     currentStep = n;
     updateStepIndicator(n);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (n === 2) initCalendar();
+    if (n === 4) initCalendar();
 }
 
 function goStep(n) { showStep(n); }
@@ -359,7 +359,7 @@ function selectService(id, name, duration, price) {
     document.getElementById('serviceIdInput').value = id;
     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
     event.currentTarget.classList.add('selected');
-    setTimeout(() => showStep(2), 200);
+    setTimeout(() => hasBranches ? showStep(2) : loadStaff(), 200);
 }
 
 // ── Takvim ──────────────────────────────────────────────────────────────
@@ -453,14 +453,8 @@ function selectDate(date) {
     document.getElementById('dateInput').value = date;
     document.getElementById('datePickerInput').value = date;
     renderCalendar(); // seçili günü highlight et
-    // Kısa gecikme ile adım ilerle (render tamamlansın)
-    setTimeout(function() {
-        if (hasBranches) {
-            showStep(3);
-        } else {
-            loadStaff();
-        }
-    }, 250);
+    // Personel zaten seçili, direkt slotları yükle
+    setTimeout(function() { loadSlots(); }, 300);
 }
 
 function selectBranch(id, name, el) {
@@ -473,15 +467,15 @@ function selectBranch(id, name, el) {
 
 function loadStaff() {
     document.getElementById('staffList').innerHTML = '<p style="color:#9CA3AF;font-size:13px;">Yükleniyor...</p>';
-    showStep(4);
+    showStep(3);
 
-    fetch(`/${tenantSlug}/randevu/personel?service_id=${sel.serviceId}&branch_id=${sel.branchId || ''}&date=${sel.date || ''}`)
+    fetch(`/${tenantSlug}/randevu/personel?service_id=${sel.serviceId}&branch_id=${sel.branchId || ''}`)
         .then(r => r.json())
         .then(staff => {
             const list = document.getElementById('staffList');
             list.innerHTML = '';
             if (!staff || staff.length === 0) {
-                list.innerHTML = '<p style="color:#9CA3AF;font-size:14px;">Bu tarihte uygun personel bulunamadı. Farklı bir tarih deneyin.</p>';
+                list.innerHTML = '<p style="color:#9CA3AF;font-size:14px;">Uygun personel bulunamadı.</p>';
                 return;
             }
             staff.forEach(m => {
@@ -499,12 +493,15 @@ function selectStaff(id, name, el) {
     document.getElementById('staffIdInput').value = id;
     document.querySelectorAll('.staff-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
+    // Takvimi göster
+    showStep(4);
+}
 
-    // Saat yükle
+function loadSlots() {
     document.getElementById('slotsList').innerHTML = '<p style="color:#9CA3AF;font-size:13px;">Uygun saatler yükleniyor...</p>';
-    setTimeout(() => showStep(5), 200);
+    showStep(5);
 
-    fetch(`/${tenantSlug}/randevu/saatler?staff_id=${id}&service_id=${sel.serviceId}&date=${sel.date}`)
+    fetch(`/${tenantSlug}/randevu/saatler?staff_id=${sel.staffId}&service_id=${sel.serviceId}&date=${sel.date}`)
         .then(r => r.json())
         .then(data => {
             const list = document.getElementById('slotsList');
