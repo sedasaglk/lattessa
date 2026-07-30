@@ -436,6 +436,7 @@ class AppointmentController extends Controller
         $appointment->update(['status' => $newStatus]);
 
         if ($newStatus === 'completed' && $oldStatus !== 'completed') {
+            try {
             $paymentMethod = $request->input('payment_method', 'cash');
             $createdBy     = auth()->id();
             $servicePrice  = (float) $appointment->price;
@@ -540,6 +541,10 @@ class AppointmentController extends Controller
                 tenantId: $appointment->tenant_id,
                 price: $servicePrice
             ));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('updateStatus completed error: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+                return back()->withErrors(['error' => 'Hata: ' . $e->getMessage()]);
+            }
         }
 
         return back()->with('success', 'Randevu tamamlandı.');
