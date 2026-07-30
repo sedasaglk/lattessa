@@ -9,6 +9,7 @@ class RecordAppointmentIncome
 {
     public function handle(AppointmentCompleted $event): void
     {
+        try {
         // Randevu bilgilerini al
         $appointment = DB::table('appointments')
             ->where('id', $event->appointmentId)
@@ -48,5 +49,8 @@ class RecordAppointmentIncome
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('RecordAppointmentIncome hatasi: ' . $e->getMessage());
+        }
     }
 }
