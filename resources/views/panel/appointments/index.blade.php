@@ -44,6 +44,11 @@ if ($gridBranchCtx->getBranchId()) {
 $gridStaff = $gridStaffQuery->get(['id', 'name']);
 $gridTurkishDays = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 $gridDayName = $gridTurkishDays[$gridDate->dayOfWeek];
+$gridStartHour = 8;
+$gridEndHour = 22;
+$gridTotalSlots = ($gridEndHour - $gridStartHour) * 2;
+$gridSlotH = 44;
+$gridTotalH = $gridTotalSlots * $gridSlotH;
 @endphp
 
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -55,42 +60,53 @@ $gridDayName = $gridTurkishDays[$gridDate->dayOfWeek];
     </div>
 
     {{-- Grid --}}
-    <div class="overflow-x-auto">
-        <div style="min-width: {{ 60 + count((array)$gridStaff) * 120 }}px;">
-            {{-- Header row: staff names --}}
-            <div class="flex border-b border-gray-200">
-                <div style="width:52px;min-width:52px;" class="flex-shrink-0 border-r border-gray-100"></div>
+    <div style="overflow-x:auto; overflow-y:auto; max-height:75vh;">
+        <div style="display:flex; flex-direction:column; min-width:{{ 52 + count((array)$gridStaff) * 90 }}px;">
+
+            {{-- Sticky header: staff names --}}
+            <div style="display:flex; position:sticky; top:0; z-index:20; background:#fff; border-bottom:2px solid #e5e7eb;">
+                <div style="width:52px; min-width:52px; flex-shrink:0;"></div>
                 @foreach($gridStaff as $gi => $gm)
-                @php $gc = $gridStaffColors[$gi % count($gridStaffColors)]; @endphp
-                <div class="flex-1 text-center py-2 font-bold text-xs border-r border-gray-100 last:border-r-0"
-                     style="background:{{ $gc }}; color:{{ in_array($gc,['#FACC15','#84CC16']) ? '#000' : '#fff' }}; min-width:110px;">
+                @php $gc = $gridStaffColors[$gi % count($gridStaffColors)]; $gtc = in_array($gc,['#FACC15','#84CC16']) ? '#000' : '#fff'; @endphp
+                <div style="flex:1; min-width:90px; text-align:center; padding:8px 4px; font-weight:700; font-size:11px; background:{{ $gc }}; color:{{ $gtc }}; border-right:1px solid rgba(0,0,0,0.08);">
                     {{ $gm->name }}
                 </div>
                 @endforeach
             </div>
 
-            {{-- Time rows --}}
-            <div class="relative" id="gridBody">
-                @php $startHour = 8; $endHour = 22; @endphp
-                @for($h = $startHour; $h < $endHour; $h++)
-                    @foreach([0, 30] as $m)
-                    <div class="flex border-b border-gray-100" style="height:44px;">
-                        <div style="width:52px;min-width:52px;" class="flex-shrink-0 border-r border-gray-100 flex items-start justify-end pr-2 pt-1">
-                            @if($m === 0)
-                            <span class="text-xs text-gray-400 font-medium">{{ sprintf('%02d:%02d', $h, $m) }}</span>
+            {{-- Body: time col + staff columns side by side --}}
+            <div style="display:flex; position:relative;">
+
+                {{-- Time column --}}
+                <div style="width:52px; min-width:52px; flex-shrink:0; position:sticky; left:0; z-index:10; background:#fff; border-right:1px solid #e5e7eb;">
+                    @for($h = $gridStartHour; $h < $gridEndHour; $h++)
+                        @foreach([0,30] as $m)
+                        <div style="height:{{ $gridSlotH }}px; display:flex; align-items:flex-start; justify-content:flex-end; padding:3px 6px 0 0; border-bottom:1px solid {{ $m===0 ? '#e5e7eb' : '#f3f4f6' }};">
+                            @if($m===0)
+                            <span style="font-size:11px; color:#9ca3af; font-weight:500;">{{ sprintf('%02d:%02d',$h,$m) }}</span>
                             @endif
                         </div>
-                        @foreach($gridStaff as $gm)
-                        <div class="flex-1 border-r border-gray-100 last:border-r-0 relative grid-cell"
-                             data-time="{{ sprintf('%02d:%02d', $h, $m) }}"
-                             data-staff="{{ $gm->id }}"
-                             style="min-width:110px; cursor:pointer;"
-                             onclick="newAppt('{{ $gridDate->format('Y-m-d') }}T{{ sprintf('%02d:%02d', $h, $m) }}')">
+                        @endforeach
+                    @endfor
+                </div>
+
+                {{-- Staff columns --}}
+                @foreach($gridStaff as $gi => $gm)
+                @php $gc = $gridStaffColors[$gi % count($gridStaffColors)]; $gtc = in_array($gc,['#FACC15','#84CC16']) ? '#000' : '#fff'; @endphp
+                <div class="staff-col-wrap" data-staff-id="{{ $gm->id }}"
+                     style="flex:1; min-width:90px; position:relative; border-right:1px solid #e5e7eb;">
+                    {{-- Background rows --}}
+                    @for($h = $gridStartHour; $h < $gridEndHour; $h++)
+                        @foreach([0,30] as $m)
+                        <div style="height:{{ $gridSlotH }}px; border-bottom:1px solid {{ $m===0 ? '#e5e7eb' : '#f3f4f6' }}; cursor:pointer; box-sizing:border-box;"
+                             onclick="newAppt('{{ $gridDate->format('Y-m-d') }}T{{ sprintf('%02d:%02d',$h,$m) }}')">
                         </div>
                         @endforeach
-                    </div>
-                    @endforeach
-                @endfor
+                    @endfor
+                    {{-- Appointments rendered here by JS --}}
+                </div>
+                @endforeach
+
             </div>
         </div>
     </div>
@@ -117,8 +133,8 @@ $gridDayName = $gridTurkishDays[$gridDate->dayOfWeek];
 <script>
 var tenantSlug = '{{ $tenant->slug }}';
 var gridDate = '{{ $date }}';
-var SLOT_H = 44;
-var START_HOUR = 8;
+var SLOT_H = {{ $gridSlotH }};
+var START_HOUR = {{ $gridStartHour }};
 var staffColors = {
     @foreach($gridStaff as $gi => $gm)
     {{ $gm->id }}: '{{ $gridStaffColors[$gi % count($gridStaffColors)] }}',
@@ -128,90 +144,49 @@ var staffColors = {
 document.addEventListener('DOMContentLoaded', function() {
     loadGridEvents();
     // Scroll to 9:00
-    var offset = (9 - START_HOUR) * 2 * SLOT_H;
-    document.querySelector('.overflow-x-auto').scrollTop = offset;
+    var scrollEl = document.querySelector('[style*="overflow-x:auto"]');
+    if (scrollEl) scrollEl.scrollTop = (9 - START_HOUR) * 2 * SLOT_H;
 });
 
 function loadGridEvents() {
-    var start = gridDate + 'T00:00:00';
-    var end = gridDate + 'T23:59:59';
-    fetch('/' + tenantSlug + '/randevular/events?start=' + start + '&end=' + end)
+    fetch('/' + tenantSlug + '/randevular/events?start=' + gridDate + 'T00:00:00&end=' + gridDate + 'T23:59:59')
         .then(r => r.json())
-        .then(events => renderGridEvents(events))
-        .catch(e => console.error(e));
+        .then(renderGridEvents)
+        .catch(console.error);
 }
 
 function renderGridEvents(events) {
     document.querySelectorAll('.appt-block').forEach(el => el.remove());
-
     events.forEach(function(ev) {
-        var staffId = ev.extendedProps ? ev.extendedProps.staff_id : null;
+        var staffId = ev.extendedProps && ev.extendedProps.staff_id;
         if (!staffId) return;
-
-        var col = document.querySelector('.grid-cell[data-staff="' + staffId + '"]');
+        var col = document.querySelector('.staff-col-wrap[data-staff-id="' + staffId + '"]');
         if (!col) return;
 
-        var startStr = ev.start.slice(11, 16);
-        var endStr = ev.end ? ev.end.slice(11, 16) : '';
-        var startMin = timeToMin(startStr) - START_HOUR * 60;
-        var endMin = endStr ? (timeToMin(endStr) - START_HOUR * 60) : startMin + 30;
-        var duration = endMin - startMin;
-
-        var topPx = (startMin / 30) * SLOT_H;
-        var heightPx = Math.max((duration / 30) * SLOT_H - 2, 20);
+        var startStr = ev.start.slice(11,16);
+        var endStr = ev.end ? ev.end.slice(11,16) : '';
+        var startMin = timeToMin(startStr) - START_HOUR*60;
+        var endMin = endStr ? (timeToMin(endStr) - START_HOUR*60) : startMin+30;
+        var topPx = (startMin/30)*SLOT_H;
+        var heightPx = Math.max(((endMin-startMin)/30)*SLOT_H - 2, 22);
 
         var color = staffColors[staffId] || ev.color || '#6366F1';
-        var textColor = (color === '#FACC15' || color === '#84CC16') ? '#000' : '#fff';
+        var tc = (color==='#FACC15'||color==='#84CC16') ? '#000' : '#fff';
 
-        var block = document.createElement('div');
-        block.className = 'appt-block';
-        block.style.cssText = 'position:absolute; left:2px; right:2px; top:' + topPx + 'px; height:' + heightPx + 'px; background:' + color + '; border-radius:6px; padding:2px 4px; cursor:pointer; overflow:hidden; z-index:10;';
-        block.innerHTML =
-            '<div style="font-size:9px;font-weight:700;color:' + textColor + ';line-height:1.2;">' + startStr + (endStr ? ' - ' + endStr : '') + '</div>' +
-            '<div style="font-size:11px;font-weight:700;color:' + textColor + ';line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (ev.title || '') + '</div>' +
-            (ev.extendedProps && ev.extendedProps.service ? '<div style="font-size:9px;color:' + textColor + ';opacity:0.85;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ev.extendedProps.service + '</div>' : '');
-
-        // Parent cell is not relative, need to find the column container
-        var parentRow = col.parentElement;
-        // Use gridBody container for absolute positioning
-        var gridBody = document.getElementById('gridBody');
-        var colIndex = Array.from(col.parentElement.children).indexOf(col) - 1; // -1 for time col
-
-        // Wrap approach: make col relative
-        col.style.position = 'relative';
-        // Find the right staff column across all rows
-        var allCells = document.querySelectorAll('.grid-cell[data-staff="' + staffId + '"]');
-        // Place in first cell of this staff, use absolute pos relative to gridBody-column
-        // Better: create a column overlay div
-        var overlayId = 'overlay-' + staffId;
-        var overlay = document.getElementById(overlayId);
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = overlayId;
-            overlay.style.cssText = 'position:absolute;top:0;bottom:0;pointer-events:none;z-index:5;';
-            // Calculate left position
-            var firstCell = document.querySelector('.grid-cell[data-staff="' + staffId + '"]');
-            var bodyRect = gridBody.getBoundingClientRect();
-            var cellRect = firstCell.getBoundingClientRect();
-            overlay.style.left = (cellRect.left - bodyRect.left) + 'px';
-            overlay.style.width = cellRect.width + 'px';
-            gridBody.style.position = 'relative';
-            gridBody.appendChild(overlay);
-        }
-        overlay.style.pointerEvents = 'none';
-        block.style.position = 'absolute';
-        block.style.left = '2px';
-        block.style.right = '2px';
-        block.style.top = topPx + 'px';
-        block.style.height = heightPx + 'px';
-        block.style.pointerEvents = 'all';
-        block.onclick = function(e) {
-            e.stopPropagation();
-            showGridModal(ev, color);
-        };
-        overlay.appendChild(block);
+        var b = document.createElement('div');
+        b.className = 'appt-block';
+        b.style.cssText = 'position:absolute;left:2px;right:2px;top:'+topPx+'px;height:'+heightPx+'px;background:'+color+';border-radius:6px;padding:2px 4px;cursor:pointer;overflow:hidden;z-index:10;';
+        b.innerHTML =
+            '<div style="font-size:9px;font-weight:700;color:'+tc+';line-height:1.2;">'+startStr+(endStr?' - '+endStr:'')+'</div>'+
+            '<div style="font-size:11px;font-weight:700;color:'+tc+';line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(ev.title||'')+'</div>'+
+            (ev.extendedProps&&ev.extendedProps.service?'<div style="font-size:9px;color:'+tc+';opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+ev.extendedProps.service+'</div>':'');
+        b.onclick = function(e){ e.stopPropagation(); showGridModal(ev,color); };
+        col.appendChild(b);
     });
 }
+
+function timeToMin(t){ var p=t.split(':'); return parseInt(p[0])*60+parseInt(p[1]); }
+function newAppt(dt){ window.location.href='/'+tenantSlug+'/randevular/yeni?date='+dt; }
 
 function timeToMin(t) {
     var parts = t.split(':');
