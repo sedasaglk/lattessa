@@ -23,11 +23,19 @@
     <form method="POST" action="{{ route('panel.appointments.store', ['tenant_slug' => $tenant->slug]) }}" class="space-y-4">
         @csrf
 
+        @if($userBranchId)
+        {{-- Şubesi belli olan personel: gizli input --}}
+        <input type="hidden" name="branch_id" value="{{ old('branch_id', $userBranchId) }}">
+        <div class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+            🏢 {{ $branches->firstWhere('id', $userBranchId)?->name ?? 'Şube' }}
+        </div>
+        @else
+        {{-- Firma sahibi: şube seçebilir --}}
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Sube</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Şube</label>
             <select name="branch_id" required
                     class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
-                <option value="">Sube secin</option>
+                <option value="">Şube seçin</option>
                 @foreach($branches as $branch)
                     <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
                         {{ $branch->name }}
@@ -35,6 +43,7 @@
                 @endforeach
             </select>
         </div>
+        @endif
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
@@ -62,11 +71,12 @@
             </select>
         </div>
 
+        @if($authUser->role === 'firma_sahibi')
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Personel</label>
             <select name="staff_id" required
                     class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
-                <option value="">Personel secin</option>
+                <option value="">Personel seçin</option>
                 @foreach($staff as $member)
                     <option value="{{ $member->id }}" {{ old('staff_id') == $member->id ? 'selected' : '' }}>
                         {{ $member->name }}
@@ -74,6 +84,13 @@
                 @endforeach
             </select>
         </div>
+        @else
+        {{-- Diğer personel: sadece kendisi --}}
+        <input type="hidden" name="staff_id" value="{{ $authUser->id }}">
+        <div class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+            👤 {{ $authUser->name }}
+        </div>
+        @endif
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tarih ve Saat</label>

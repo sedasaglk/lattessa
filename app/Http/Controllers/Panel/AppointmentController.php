@@ -155,17 +155,28 @@ class AppointmentController extends Controller
     public function create(TenantContext $ctx, string $tenant_slug): View
     {
         $tenant = $ctx->get();
+        $authUser = auth()->user();
+
         $customers = Customer::where('tenant_id', $tenant->id)->orderBy('name')->get();
         $services = Service::where('tenant_id', $tenant->id)->where('status', 'active')->orderBy('name')->get();
-        $staff = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
-            ->where('tenant_id', $tenant->id)
-            ->orderBy('name')
-            ->get();
         $branches = Branch::where('tenant_id', $tenant->id)->where('status', 'active')->get();
         $defaultDate = request('date', now()->format('Y-m-d\TH:i'));
 
+        // Firma sahibi tüm personeli görebilir; diğerleri sadece kendileri adına randevu girer
+        if ($authUser->role === 'firma_sahibi') {
+            $staff = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
+                ->where('tenant_id', $tenant->id)
+                ->orderBy('name')
+                ->get();
+        } else {
+            $staff = User::where('id', $authUser->id)->get();
+        }
+
+        // Kullanıcının şubesi (firma_sahibi için null olabilir, o zaman tüm şubeler gösterilir)
+        $userBranchId = $authUser->branch_id;
+
         return view('panel.appointments.create', compact(
-            'tenant', 'customers', 'services', 'staff', 'branches', 'defaultDate'
+            'tenant', 'customers', 'services', 'staff', 'branches', 'defaultDate', 'userBranchId', 'authUser'
         ));
     }
 
