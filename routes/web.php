@@ -73,6 +73,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('/firmalar', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'index'])->name('tenants.index');
         Route::get('/firmalar/{id}', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'show'])->name('tenants.show');
         Route::patch('/firmalar/{id}/durum', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'updateStatus'])->name('tenants.status');
+        Route::post('/firmalar/{id}/paket-ata', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'assignPackage'])->name('tenants.assign-package');
 
         Route::get('/paketler', [\App\Http\Controllers\SuperAdmin\PackageController::class, 'index'])->name('packages.index');
         Route::get('/paketler/{id}/duzenle', [\App\Http\Controllers\SuperAdmin\PackageController::class, 'edit'])->name('packages.edit');

@@ -87,29 +87,73 @@
         </div>
     </div>
 
-    {{-- Durum Yonetimi --}}
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 class="font-semibold text-gray-900 mb-4">Durum Yonet</h2>
-        <form method="POST" action="{{ route('super-admin.tenants.status', $tenant->id) }}" class="space-y-3">
-            @csrf
-            @method('PATCH')
-            <select name="status" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
-                <option value="trial" {{ $tenant->status === 'trial' ? 'selected' : '' }}>Deneme</option>
-                <option value="active" {{ $tenant->status === 'active' ? 'selected' : '' }}>Aktif</option>
-                <option value="suspended" {{ $tenant->status === 'suspended' ? 'selected' : '' }}>Askiya Al</option>
-                <option value="cancelled" {{ $tenant->status === 'cancelled' ? 'selected' : '' }}>Iptal Et</option>
-            </select>
-            <button type="submit"
-                    class="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
-                Durumu Guncelle
-            </button>
-        </form>
+    {{-- Durum + Paket Yonetimi --}}
+    <div class="space-y-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="font-semibold text-gray-900 mb-4">Durum Yonet</h2>
+            <form method="POST" action="{{ route('super-admin.tenants.status', $tenant->id) }}" class="space-y-3">
+                @csrf
+                @method('PATCH')
+                <select name="status" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                    <option value="trial" {{ $tenant->status === 'trial' ? 'selected' : '' }}>Deneme</option>
+                    <option value="active" {{ $tenant->status === 'active' ? 'selected' : '' }}>Aktif</option>
+                    <option value="suspended" {{ $tenant->status === 'suspended' ? 'selected' : '' }}>Askiya Al</option>
+                    <option value="cancelled" {{ $tenant->status === 'cancelled' ? 'selected' : '' }}>Iptal Et</option>
+                </select>
+                <button type="submit" class="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                    Durumu Guncelle
+                </button>
+            </form>
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <a href="/{{ $tenant->slug }}/giris" target="_blank"
+                   class="block w-full text-center border border-gray-200 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50 transition">
+                    Firma Paneline Git
+                </a>
+            </div>
+        </div>
 
-        <div class="mt-4 pt-4 border-t border-gray-100">
-            <a href="/{{ $tenant->slug }}/giris" target="_blank"
-               class="block w-full text-center border border-gray-200 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50 transition">
-                Firma Paneline Git
-            </a>
+        {{-- Paket Ata --}}
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="font-semibold text-gray-900 mb-4">Paket Ata</h2>
+            @if(session('success'))
+                <div class="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">{{ session('success') }}</div>
+            @endif
+            <form method="POST" action="{{ route('super-admin.tenants.assign-package', $tenant->id) }}" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Paket</label>
+                    <select name="package_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                        @foreach($packages as $pkg)
+                            <option value="{{ $pkg->id }}" {{ $subscription && $subscription->package_id == $pkg->id ? 'selected' : '' }}>
+                                {{ $pkg->name }} — {{ number_format($pkg->price_monthly, 0, ',', '.') }} TL/ay
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Abonelik Durumu</label>
+                    <select name="status" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                        <option value="active">Aktif</option>
+                        <option value="trial">Deneme</option>
+                        <option value="past_due">Gecikmiş</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Başlangıç</label>
+                        <input type="date" name="starts_at" value="{{ now()->format('Y-m-d') }}"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Bitiş</label>
+                        <input type="date" name="ends_at" value="{{ now()->addYear()->format('Y-m-d') }}"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+                    Paketi Ata
+                </button>
+            </form>
         </div>
     </div>
 

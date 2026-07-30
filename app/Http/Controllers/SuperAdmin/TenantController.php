@@ -43,13 +43,15 @@ class TenantController extends Controller
             ->orderByDesc('subscriptions.created_at')
             ->first();
 
+        $packages = DB::table('packages')->where('is_active', 1)->orderBy('sort_order')->get();
+
         $stats = [
             'total_appointments' => DB::table('appointments')->where('tenant_id', $id)->whereNull('deleted_at')->count(),
             'total_customers' => DB::table('customers')->where('tenant_id', $id)->whereNull('deleted_at')->count(),
             'total_staff' => DB::table('users')->where('tenant_id', $id)->whereNull('deleted_at')->count(),
         ];
 
-        return view('super-admin.tenants.show', compact('tenant', 'subscription', 'stats'));
+        return view('super-admin.tenants.show', compact('tenant', 'subscription', 'packages', 'stats'));
     }
 
     public function updateStatus(Request $request, string $id): RedirectResponse
@@ -64,5 +66,43 @@ class TenantController extends Controller
         ]);
 
         return back()->with('success', 'Firma durumu guncellendi.');
+    }
+
+    public function assignPackage(Request $request, string $id): RedirectResponse
+    {
+        $request->validate([
+            'package_id'  => ['required', 'integer'],
+            'status'      => ['required', 'in:trial,active,past_due'],
+            'starts_at'   => ['required', 'date'],
+            'ends_at'     => ['required', 'date', 'after:starts_at'],
+        ]);
+
+        $tenant = DB::table('tenants')->where('id', $id)->first();
+        if (!$tenant) abort(404);
+
+        // Mevcut aktif abonelikleri iptal et
+        DB::table('subscriptions')
+            ->where('tenant_id', $id)
+            ->whereIn('status', ['trial', 'active', 'past_due'])
+            ->update(['status' => 'cancelled', 'updated_at' => now()]);
+
+        // Yeni abonelik oluştur
+        DB::table('subscriptions')->insert([
+            'tenant_id'    => $id,
+            'package_id'   => $request->package_id,
+            'status'       => $request->status,
+            'starts_at'    => $request->starts_at,
+            'ends_at'      => $request->ends_at,
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
+
+        // Tenant durumunu da güncelle
+        DB::table('tenants')->where('id', $id)->update([
+            'status'     => $request->status === 'trial' ? 'trial' : 'active',
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Paket atandi.');
     }
 }
