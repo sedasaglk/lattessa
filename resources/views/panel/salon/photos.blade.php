@@ -24,7 +24,7 @@
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         @foreach($photos as $photo)
         <div class="relative group rounded-xl overflow-hidden border border-gray-200">
-            <img src="{{ Storage::url($photo->path) }}" class="w-full h-48 object-cover">
+            <img src="{{ '/' . $photo->path }}" class="w-full h-48 object-cover">
             <form method="POST" action="{{ route('panel.salon.photos.destroy', [$tenant->slug, $photo->id]) }}" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
                 @csrf @method('DELETE')
                 <button type="submit" onclick="return confirm('Sil?')" class="bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs hover:bg-red-600">✕</button>

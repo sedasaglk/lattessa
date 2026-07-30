@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class SalonPhotoController extends Controller
 {
@@ -28,7 +27,11 @@ class SalonPhotoController extends Controller
         $maxOrder = DB::table('salon_photos')->where('tenant_id', $tenant->id)->max('order') ?? 0;
 
         foreach ($request->file('photos') as $file) {
-            $path = $file->store("tenants/{$tenant->id}/salon", 'public');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $dir = public_path("uploads/salon/{$tenant->id}");
+            if (!is_dir($dir)) mkdir($dir, 0755, true);
+            $file->move($dir, $filename);
+            $path = "uploads/salon/{$tenant->id}/{$filename}";
             DB::table('salon_photos')->insert([
                 'tenant_id' => $tenant->id,
                 'path' => $path,
@@ -47,7 +50,8 @@ class SalonPhotoController extends Controller
         $photo = DB::table('salon_photos')->where('id', $id)->where('tenant_id', $tenant->id)->first();
         if (!$photo) abort(404);
 
-        Storage::disk('public')->delete($photo->path);
+        $fullPath = public_path($photo->path);
+        if (file_exists($fullPath)) unlink($fullPath);
         DB::table('salon_photos')->where('id', $id)->delete();
 
         return back()->with('success', 'Fotoğraf silindi.');

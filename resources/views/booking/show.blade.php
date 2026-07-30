@@ -85,7 +85,7 @@
     <div style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:0;scrollbar-width:none;" id="photoSlider">
         @foreach($photos as $photo)
         <div style="min-width:100%;scroll-snap-align:start;">
-            <img src="{{ Storage::url($photo->path) }}" style="width:100%;height:220px;object-fit:cover;" alt="Salon">
+            <img src="{{ '/' . $photo->path }}" style="width:100%;height:220px;object-fit:cover;" alt="Salon">
         </div>
         @endforeach
     </div>
