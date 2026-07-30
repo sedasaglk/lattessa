@@ -55,6 +55,13 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.2s ease; }
 
+        .cal-day { aspect-ratio:1; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.15s; border:2px solid transparent; }
+        .cal-day:hover:not(.cal-disabled):not(.cal-selected) { border-color:#6366F1; color:#6366F1; background:#EEF2FF; }
+        .cal-day.cal-today:not(.cal-selected) { background:#F3F4F6; color:#111; font-weight:700; }
+        .cal-day.cal-selected { background:#6366F1; color:#fff; border-color:#6366F1; font-weight:700; }
+        .cal-day.cal-disabled { color:#D1D5DB; cursor:not-allowed; }
+        .cal-day.cal-empty { cursor:default; }
+
         .avatar { width: 38px; height: 38px; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0; }
     </style>
 </head>
@@ -192,8 +199,26 @@
         <div id="step2" style="display:none;" class="fade-in">
             <div class="section-card">
                 <p class="section-title">Tarih seçin</p>
-                <input type="date" id="datePickerInput" min="{{ date('Y-m-d') }}" onchange="selectDate(this.value)"
-                       style="font-size:16px;">
+
+                {{-- Modern Takvim --}}
+                <div id="calendarWidget" style="user-select:none;">
+                    <!-- Nav -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <button type="button" onclick="calPrev()" style="width:36px;height:36px;border-radius:50%;border:1px solid #E5E7EB;background:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#374151;">‹</button>
+                        <span id="calMonthLabel" style="font-size:15px;font-weight:600;color:#111;"></span>
+                        <button type="button" onclick="calNext()" style="width:36px;height:36px;border-radius:50%;border:1px solid #E5E7EB;background:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#374151;">›</button>
+                    </div>
+                    <!-- Gün başlıkları -->
+                    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;">
+                        @foreach(['Pt','Sa','Ça','Pe','Cu','Ct','Pz'] as $d)
+                        <div style="text-align:center;font-size:11px;font-weight:600;color:#9CA3AF;padding:4px 0;">{{ $d }}</div>
+                        @endforeach
+                    </div>
+                    <!-- Günler -->
+                    <div id="calDays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+                </div>
+
+                <input type="hidden" id="datePickerInput">
             </div>
             <button type="button" onclick="goStep(1)" style="width:100%;padding:12px;background:transparent;border:2px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:500;color:#374151;cursor:pointer;margin-top:4px;">
                 ← Geri
@@ -324,6 +349,7 @@ function showStep(n) {
     currentStep = n;
     updateStepIndicator(n);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (n === 2) initCalendar();
 }
 
 function goStep(n) { showStep(n); }
@@ -336,10 +362,97 @@ function selectService(id, name, duration, price) {
     setTimeout(() => showStep(2), 200);
 }
 
+// ── Takvim ──────────────────────────────────────────────────────────────
+var calYear, calMonth;
+var today = new Date(); today.setHours(0,0,0,0);
+
+var MONTH_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+function initCalendar() {
+    var d = new Date();
+    calYear = d.getFullYear();
+    calMonth = d.getMonth();
+    renderCalendar();
+}
+
+function renderCalendar() {
+    document.getElementById('calMonthLabel').textContent = MONTH_TR[calMonth] + ' ' + calYear;
+    var grid = document.getElementById('calDays');
+    grid.innerHTML = '';
+
+    var first = new Date(calYear, calMonth, 1);
+    var lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+    // Pazartesi=0 başlangıç: getDay() 0=Pazar→6, 1=Pzt→0, ...
+    var startDow = (first.getDay() + 6) % 7;
+
+    // Boş hücreler
+    for (var i = 0; i < startDow; i++) {
+        var empty = document.createElement('div');
+        empty.className = 'cal-day cal-empty';
+        grid.appendChild(empty);
+    }
+
+    var selDate = document.getElementById('datePickerInput').value;
+    var todayStr = formatDate(today);
+
+    for (var d2 = 1; d2 <= lastDay; d2++) {
+        var dt = new Date(calYear, calMonth, d2);
+        dt.setHours(0,0,0,0);
+        var dtStr = formatDate(dt);
+        var isPast = dt < today;
+        var isToday = dtStr === todayStr;
+        var isSel = dtStr === selDate;
+
+        var cell = document.createElement('div');
+        cell.className = 'cal-day' + (isPast ? ' cal-disabled' : '') + (isToday ? ' cal-today' : '') + (isSel ? ' cal-selected' : '');
+        cell.textContent = d2;
+
+        if (!isPast) {
+            (function(s) {
+                cell.onclick = function() { selectDate(s); };
+            })(dtStr);
+        }
+        grid.appendChild(cell);
+    }
+}
+
+function formatDate(d) {
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var day = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear() + '-' + m + '-' + day;
+}
+
+function calPrev() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    // Geçmiş aya gitmeyi engelle
+    var now = new Date();
+    if (calYear < now.getFullYear() || (calYear === now.getFullYear() && calMonth < now.getMonth())) {
+        calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
+        return;
+    }
+    renderCalendar();
+}
+
+function calNext() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    // Max 3 ay ileriye
+    var maxDate = new Date(); maxDate.setMonth(maxDate.getMonth() + 3);
+    if (new Date(calYear, calMonth, 1) > maxDate) {
+        calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+        return;
+    }
+    renderCalendar();
+}
+// ────────────────────────────────────────────────────────────────────────
+
 function selectDate(date) {
     if (!date) return;
     sel.date = date;
     document.getElementById('dateInput').value = date;
+    document.getElementById('datePickerInput').value = date;
+    renderCalendar(); // seçili günü highlight et
     // Şube seçimi gerekiyorsa oraya git, yoksa personel yükle
     if (hasBranches) {
         showStep(3);
