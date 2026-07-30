@@ -165,9 +165,14 @@ class StaffController extends Controller
 
         $days = ['Pazar', 'Pazartesi', 'Sali', 'Carsamba', 'Persembe', 'Cuma', 'Cumartesi'];
 
+        $branches = DB::table('branches')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->get();
+
         return view('panel.staff.show', compact(
             'tenant', 'member', 'monthlyStats', 'schedules',
-            'leaves', 'commission', 'monthlyCommission', 'days'
+            'leaves', 'commission', 'monthlyCommission', 'days', 'branches'
         ));
     }
 
@@ -264,6 +269,7 @@ class StaffController extends Controller
             $isWorking = $request->boolean("days.{$day}.is_working");
             $startTime = $request->input("days.{$day}.start_time", '09:00');
             $endTime = $request->input("days.{$day}.end_time", '18:00');
+            $branchId = $request->input("days.{$day}.branch_id") ?: null;
 
             $existing = DB::table('staff_schedules')
                 ->where('tenant_id', $tenant->id)
@@ -278,6 +284,7 @@ class StaffController extends Controller
                         'is_working' => $isWorking,
                         'start_time' => $startTime,
                         'end_time' => $endTime,
+                        'branch_id' => $branchId ?? $existing->branch_id,
                         'updated_at' => now(),
                     ]);
             } else {
@@ -288,6 +295,7 @@ class StaffController extends Controller
                     'is_working' => $isWorking,
                     'start_time' => $startTime,
                     'end_time' => $endTime,
+                    'branch_id' => $branchId ?? 0,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

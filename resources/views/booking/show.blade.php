@@ -344,7 +344,7 @@ function selectService(id, name, duration, price) {
     document.getElementById('staffList').innerHTML = '<p style="color:#9CA3AF;font-size:13px;">Yükleniyor...</p>';
     showStep(2);
 
-    fetch(`/${tenantSlug}/randevu/personel?service_id=${id}&branch_id=${sel.branchId || ''}`)
+    fetch(`/${tenantSlug}/randevu/personel?service_id=${id}&branch_id=${sel.branchId || ''}&date=${sel.date || ''}`)
         .then(r => r.json())
         .then(staff => {
             const list = document.getElementById('staffList');

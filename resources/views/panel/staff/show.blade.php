@@ -46,8 +46,8 @@
             @csrf
             @foreach([1=>'Pazartesi', 2=>'Sali', 3=>'Carsamba', 4=>'Persembe', 5=>'Cuma', 6=>'Cumartesi', 0=>'Pazar'] as $dayNum => $dayName)
             @php $schedule = $schedules[$dayNum] ?? null; @endphp
-            <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                <label class="flex items-center gap-2 w-28">
+            <div class="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <label class="flex items-center gap-2 w-28 flex-shrink-0">
                     <input type="checkbox" name="days[{{ $dayNum }}][is_working]" value="1"
                            {{ ($schedule && $schedule->is_working) ? 'checked' : '' }}
                            class="rounded border-gray-300">
@@ -60,6 +60,19 @@
                 <input type="time" name="days[{{ $dayNum }}][end_time]"
                        value="{{ $schedule->end_time ?? '18:00' }}"
                        class="px-2 py-1 border border-gray-200 rounded text-sm focus:ring-1 focus:ring-gray-900 outline-none">
+                @if(count($branches) > 1)
+                <select name="days[{{ $dayNum }}][branch_id]"
+                        class="px-2 py-1 border border-gray-200 rounded text-sm focus:ring-1 focus:ring-gray-900 outline-none bg-white">
+                    <option value="">Şube seçin</option>
+                    @foreach($branches as $br)
+                    <option value="{{ $br->id }}" {{ ($schedule && $schedule->branch_id == $br->id) ? 'selected' : '' }}>
+                        {{ $br->name }}
+                    </option>
+                    @endforeach
+                </select>
+                @else
+                <input type="hidden" name="days[{{ $dayNum }}][branch_id]" value="{{ $branches->first()->id ?? '' }}">
+                @endif
             </div>
             @endforeach
             <button type="submit" class="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition mt-2">

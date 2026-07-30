@@ -58,7 +58,8 @@ class OnlineBookingController extends Controller
 
         $branchId = $request->input('branch_id');
 
-        $staff = DB::table('users')
+        // Tüm uygun personeli al
+        $allStaff = DB::table('users')
             ->where('tenant_id', $tenant->id)
             ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel'])
             ->whereNull('deleted_at')
@@ -67,8 +68,33 @@ class OnlineBookingController extends Controller
                     $q->where('branch_id', $branchId)->orWhere('role', 'firma_sahibi');
                 }
             })
-            ->select('id', 'name')
+            ->select('id', 'name', 'role')
             ->get();
+
+        // Eğer tarih seçildiyse staff_schedules ile filtrele
+        $date = $request->input('date');
+        if ($date && $branchId) {
+            $dayOfWeek = \Carbon\Carbon::parse($date)->dayOfWeek;
+            $staffIds = $allStaff->pluck('id');
+
+            // O gün için schedule kayıtları
+            $schedules = DB::table('staff_schedules')
+                ->whereIn('user_id', $staffIds)
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_working', true)
+                ->get()
+                ->keyBy('user_id');
+
+            $staff = $allStaff->filter(function($member) use ($schedules, $branchId, $dayOfWeek) {
+                $schedule = $schedules[$member->id] ?? null;
+                if (!$schedule) return false; // O gün çalışmıyor
+                // Schedule'da branch_id varsa kontrol et
+                if ($schedule->branch_id && $schedule->branch_id != $branchId) return false;
+                return true;
+            })->values();
+        } else {
+            $staff = $allStaff;
+        }
 
         return response()->json($staff);
     }
