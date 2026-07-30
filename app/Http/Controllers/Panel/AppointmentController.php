@@ -157,7 +157,9 @@ class AppointmentController extends Controller
         $services = Service::where('tenant_id', $tenant->id)->where('status', 'active')->orderBy('name')->get();
         $staff = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
             ->where('tenant_id', $tenant->id)
-            ->where('status', 'active')
+            ->where(function($q) {
+                $q->where('status', 'active')->orWhere('role', 'firma_sahibi');
+            })
             ->orderBy('name')
             ->get();
         $branches = Branch::where('tenant_id', $tenant->id)->where('status', 'active')->get();

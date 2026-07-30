@@ -37,16 +37,18 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Musteri</label>
-            <select name="customer_id" required
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
-                <option value="">Musteri secin</option>
-                @foreach($customers as $customer)
-                    <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
-                        {{ $customer->name }} ({{ $customer->phone }})
-                    </option>
-                @endforeach
-            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
+            <div class="relative" id="customerSearchWrap">
+                <input type="text" id="customerSearch" autocomplete="off"
+                       placeholder="İsim veya son 4 hane telefon..."
+                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
+                       oninput="searchCustomer(this.value)" onfocus="searchCustomer(this.value)">
+                <input type="hidden" name="customer_id" id="customer_id_input" required value="{{ old('customer_id') }}">
+                <div id="customerDropdown"
+                     class="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg hidden"
+                     style="max-height:220px; overflow-y:auto; top:100%; margin-top:2px;">
+                </div>
+            </div>
         </div>
 
         <div>
@@ -139,5 +141,60 @@ function toggleRecurring() {
     const opts = document.getElementById('recurringOptions');
     opts.classList.toggle('hidden', !cb.checked);
 }
+
+// Müşteri arama
+var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone]));
+
+function searchCustomer(q) {
+    var dd = document.getElementById('customerDropdown');
+    q = q.trim();
+    var results;
+    if (q.length === 0) {
+        results = allCustomers.slice(0, 50);
+    } else if (/^\d{3,4}$/.test(q)) {
+        // son 4 hane telefon araması
+        results = allCustomers.filter(function(c){ return c.phone && c.phone.toString().slice(-4).includes(q.slice(-4)); });
+    } else {
+        var ql = q.toLowerCase();
+        results = allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
+    }
+    if (results.length === 0) {
+        dd.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Müşteri bulunamadı</div>';
+    } else {
+        dd.innerHTML = results.slice(0, 80).map(function(c){
+            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+            return '<div class="px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0" onclick="selectCustomer('+c.id+',\''+escHtml(c.name)+'\',\''+c.phone+'\')">' +
+                '<span class="font-medium text-gray-900">'+escHtml(c.name)+'</span> ' +
+                '<span class="text-gray-400 text-xs">···'+last4+'</span>' +
+                '</div>';
+        }).join('');
+    }
+    dd.classList.remove('hidden');
+}
+
+function selectCustomer(id, name, phone) {
+    document.getElementById('customer_id_input').value = id;
+    var last4 = phone ? phone.toString().slice(-4) : '';
+    document.getElementById('customerSearch').value = name + ' (···' + last4 + ')';
+    document.getElementById('customerDropdown').classList.add('hidden');
+}
+
+function escHtml(s) { return s.replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
+
+// Dışarı tıklayınca kapat
+document.addEventListener('click', function(e) {
+    if (!document.getElementById('customerSearchWrap').contains(e.target)) {
+        document.getElementById('customerDropdown').classList.add('hidden');
+    }
+});
+
+// old('customer_id') varsa ismi göster
+window.addEventListener('DOMContentLoaded', function(){
+    var oldId = {{ old('customer_id', 'null') }};
+    if (oldId) {
+        var c = allCustomers.find(function(x){ return x.id == oldId; });
+        if (c) selectCustomer(c.id, c.name, c.phone);
+    }
+});
 </script>
 @endsection
