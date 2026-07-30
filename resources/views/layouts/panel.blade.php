@@ -132,7 +132,9 @@
                 ->pluck('permission')
                 ->toArray();
             $userHasCustomPerms = count($userCustomPerms) > 0;
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+            $__debugPermError = $e->getMessage();
+        }
     }
     $roleDefaultPerms = \App\Http\Middleware\CheckPermission::$roleDefaults[$role] ?? [];
     $effectivePerms = $isOwner ? [] : ($userHasCustomPerms ? $userCustomPerms : $roleDefaultPerms);
@@ -666,5 +668,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 })();
 </script>
+{{-- DEBUG START --}}
+@if(!$isOwner)
+<!-- DEBUG_PERMS
+  user_id={{ auth()->id() }}
+  tenant_id={{ $tenant->id ?? 'NULL' }}
+  role={{ $role }}
+  hasCustom={{ $userHasCustomPerms ? 'true' : 'false' }}
+  customPerms={{ implode(',', $userCustomPerms) ?: 'EMPTY' }}
+  effectivePerms={{ implode(',', $effectivePerms) ?: 'EMPTY' }}
+  error={{ isset($__debugPermError) ? $__debugPermError : 'none' }}
+-->
+@endif
+{{-- DEBUG END --}}
 </body>
 </html>
