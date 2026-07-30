@@ -39,7 +39,9 @@ $gridStaffQuery = \Illuminate\Support\Facades\DB::table('users')
     ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel', 'sekreter'])
     ->orderBy('name');
 if ($gridBranchCtx->getBranchId()) {
-    $gridStaffQuery->where('branch_id', $gridBranchCtx->getBranchId());
+    $gridStaffQuery->where(function($q) use ($gridBranchCtx) {
+        $q->where('branch_id', $gridBranchCtx->getBranchId())->orWhere('role', 'firma_sahibi');
+    });
 }
 $gridStaff = $gridStaffQuery->get(['id', 'name']);
 $gridTurkishDays = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
@@ -246,7 +248,9 @@ $staffQuery2 = \Illuminate\Support\Facades\DB::table('users')
     ->whereIn('role', ['firma_sahibi', 'sube_muduru', 'personel', 'sekreter'])
     ->orderBy('name');
 if ($branchCtxBlade->getBranchId()) {
-    $staffQuery2->where('branch_id', $branchCtxBlade->getBranchId());
+    $staffQuery2->where(function($q) use ($branchCtxBlade) {
+        $q->where('branch_id', $branchCtxBlade->getBranchId())->orWhere('role', 'firma_sahibi');
+    });
 }
 $staffMembers = $staffQuery2->get(['id', 'name']);
 $staffColorMap = [];

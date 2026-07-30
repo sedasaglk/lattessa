@@ -54,7 +54,9 @@ class AppointmentController extends Controller
             ->where('status', 'active')
             ->orderBy('name');
         if ($branchCtx->getBranchId()) {
-            $staffQuery->where('branch_id', $branchCtx->getBranchId());
+            $staffQuery->where(function($q) use ($branchCtx) {
+                $q->where('branch_id', $branchCtx->getBranchId())->orWhere('role', 'firma_sahibi');
+            });
         }
         $staffMembers = $staffQuery->get();
         $staffColorMap = [];
