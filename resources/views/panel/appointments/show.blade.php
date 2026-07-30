@@ -3,15 +3,13 @@
 @section('title', 'Randevu Detay')
 
 @section('content')
-<div class="mb-6 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-        <a href="{{ route('panel.appointments.index', ['tenant_slug' => $tenant->slug]) }}"
-           class="text-gray-400 hover:text-gray-900">← Geri</a>
-        <h1 class="text-2xl font-semibold text-gray-900">Randevu #{{ $appointment->id }}</h1>
-    </div>
+<div class="mb-4 flex items-center gap-3">
+    <a href="{{ route('panel.appointments.index', ['tenant_slug' => $tenant->slug]) }}"
+       class="text-gray-400 hover:text-gray-900 flex-shrink-0">← Geri</a>
+    <h1 class="text-lg font-semibold text-gray-900 flex-1 min-w-0 truncate">Randevu #{{ $appointment->id }}</h1>
     @if(!in_array($appointment->status, ['completed', 'cancelled']))
     <a href="{{ route('panel.appointments.edit', ['tenant_slug' => $tenant->slug, 'id' => $appointment->id]) }}"
-       class="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+       class="flex-shrink-0 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-800 transition">
         Düzenle
     </a>
     @endif

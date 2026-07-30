@@ -3,10 +3,10 @@
 @section('title', 'Randevu Düzenle')
 
 @section('content')
-<div class="mb-6 flex items-center gap-3">
+<div class="mb-4 flex items-center gap-3">
     <a href="{{ route('panel.appointments.show', ['tenant_slug' => $tenant->slug, 'id' => $appointment->id]) }}"
-       class="text-gray-400 hover:text-gray-900">← Geri</a>
-    <h1 class="text-2xl font-semibold text-gray-900">Randevu #{{ $appointment->id }} — Düzenle</h1>
+       class="text-gray-400 hover:text-gray-900 flex-shrink-0">← Geri</a>
+    <h1 class="text-lg font-semibold text-gray-900">Randevu #{{ $appointment->id }} — Düzenle</h1>
 </div>
 
 <div class="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl">
