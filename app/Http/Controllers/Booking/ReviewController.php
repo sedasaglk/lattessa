@@ -55,6 +55,7 @@ class ReviewController extends Controller
         DB::table('reviews')->where('token', $token)->update([
             'rating' => $request->rating,
             'comment' => $request->comment,
+            'is_published' => true,
             'updated_at' => now(),
         ]);
 
