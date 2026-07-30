@@ -60,7 +60,7 @@ $gridTotalH = $gridTotalSlots * $gridSlotH;
     </div>
 
     {{-- Grid --}}
-    <div style="overflow-x:auto; overflow-y:auto; max-height:75vh;">
+    <div class="grid-scroll-container" style="overflow-x:auto; overflow-y:auto; max-height:75vh;">
         <div style="display:flex; flex-direction:column; min-width:{{ 52 + count((array)$gridStaff) * 90 }}px;">
 
             {{-- Sticky header: staff names --}}
@@ -144,9 +144,17 @@ var staffColors = {
 document.addEventListener('DOMContentLoaded', function() {
     loadGridEvents();
     // Scroll to 9:00
-    var scrollEl = document.querySelector('[style*="overflow-x:auto"]');
+    var scrollEl = getVisibleEl('.grid-scroll-container');
     if (scrollEl) scrollEl.scrollTop = (9 - START_HOUR) * 2 * SLOT_H;
 });
+
+function getVisibleEl(selector) {
+    var els = document.querySelectorAll(selector);
+    for (var i = 0; i < els.length; i++) {
+        if (els[i].offsetParent !== null) return els[i];
+    }
+    return els[0] || null;
+}
 
 function loadGridEvents() {
     fetch('/' + tenantSlug + '/randevular/events?start=' + gridDate + 'T00:00:00&end=' + gridDate + 'T23:59:59')
@@ -160,7 +168,7 @@ function renderGridEvents(events) {
     events.forEach(function(ev) {
         var staffId = ev.extendedProps && ev.extendedProps.staff_id;
         if (!staffId) return;
-        var col = document.querySelector('.staff-col-wrap[data-staff-id="' + staffId + '"]');
+        var col = getVisibleEl('.staff-col-wrap[data-staff-id="' + staffId + '"]');
         if (!col) return;
 
         var startStr = ev.start.slice(11,16);
