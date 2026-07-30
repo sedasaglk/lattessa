@@ -301,6 +301,8 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
             Route::get('/ayarlar', [SettingsController::class, 'index'])->name('panel.settings.index');
             Route::put('/ayarlar/isletme', [SettingsController::class, 'updateBusiness'])->name('panel.settings.business');
             Route::put('/ayarlar/sube', [SettingsController::class, 'updateBranch'])->name('panel.settings.branch');
+            Route::post('/ayarlar/kapali-gun', [SettingsController::class, 'storeClosedDay'])->name('panel.settings.closed-day.store');
+            Route::delete('/ayarlar/kapali-gun/{id}', [SettingsController::class, 'destroyClosedDay'])->name('panel.settings.closed-day.destroy');
         });
 
         Route::middleware('permission:notification_settings')->group(function () {

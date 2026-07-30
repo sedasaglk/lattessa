@@ -139,6 +139,17 @@ class OnlineBookingController extends Controller
             return response()->json(['slots' => [], 'message' => 'Bu gun personel izinli.']);
         }
 
+        // Salon kapalı mı?
+        $isClosed = DB::table('closed_days')
+            ->where('tenant_id', $tenant->id)
+            ->where('start_date', '<=', $date->format('Y-m-d'))
+            ->where('end_date', '>=', $date->format('Y-m-d'))
+            ->exists();
+
+        if ($isClosed) {
+            return response()->json(['slots' => [], 'message' => 'Bu gun salon kapalidir.']);
+        }
+
         $workStart = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->start_time);
         $workEnd = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->end_time);
         $duration = $service->duration_minutes;

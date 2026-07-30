@@ -25,7 +25,13 @@ class SettingsController extends Controller
             ? json_decode($branch->working_hours, true)
             : $this->defaultWorkingHours();
 
-        return view('panel.settings.index', compact('tenant', 'branch', 'workingHours'));
+        $closedDays = DB::table('closed_days')
+            ->where('tenant_id', $tenant->id)
+            ->where('end_date', '>=', today()->format('Y-m-d'))
+            ->orderBy('start_date')
+            ->get();
+
+        return view('panel.settings.index', compact('tenant', 'branch', 'workingHours', 'closedDays'));
     }
 
     public function updateBusiness(Request $request, TenantContext $ctx, string $tenant_slug): RedirectResponse
@@ -135,5 +141,44 @@ class SettingsController extends Controller
         }
 
         return $hours;
+    }
+
+    public function storeClosedDay(Request $request, TenantContext $ctx, string $tenant_slug): RedirectResponse
+    {
+        $tenant = $ctx->get();
+
+        $validated = $request->validate([
+            'title'      => ['required', 'string', 'max:100'],
+            'start_date' => ['required', 'date'],
+            'end_date'   => ['required', 'date', 'gte:start_date'],
+        ], [
+            'title.required'      => 'Başlık giriniz.',
+            'start_date.required' => 'Başlangıç tarihi seçiniz.',
+            'end_date.required'   => 'Bitiş tarihi seçiniz.',
+            'end_date.gte'        => 'Bitiş tarihi başlangıçtan önce olamaz.',
+        ]);
+
+        DB::table('closed_days')->insert([
+            'tenant_id'  => $tenant->id,
+            'title'      => $validated['title'],
+            'start_date' => $validated['start_date'],
+            'end_date'   => $validated['end_date'],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Kapalı gün eklendi.');
+    }
+
+    public function destroyClosedDay(TenantContext $ctx, string $tenant_slug, int $id): RedirectResponse
+    {
+        $tenant = $ctx->get();
+
+        DB::table('closed_days')
+            ->where('id', $id)
+            ->where('tenant_id', $tenant->id)
+            ->delete();
+
+        return back()->with('success', 'Kapalı gün silindi.');
     }
 }

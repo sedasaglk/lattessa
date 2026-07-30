@@ -217,5 +217,68 @@
         </div>
     </div>
 
+    {{-- Kapalı Günler --}}
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 class="font-semibold text-gray-900 mb-1">Kapalı Günler</h2>
+        <p class="text-xs text-gray-400 mb-4">Resmi tatil veya toplu kapanış günlerinde online randevu alınamaz.</p>
+
+        {{-- Ekleme Formu --}}
+        <form method="POST" action="{{ route('panel.settings.closed-day.store', ['tenant_slug' => $tenant->slug]) }}"
+              class="flex flex-wrap gap-3 items-end mb-5">
+            @csrf
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Başlık</label>
+                <input type="text" name="title" placeholder="örn: Kurban Bayramı" value="{{ old('title') }}"
+                       class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none w-44">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Başlangıç</label>
+                <input type="date" name="start_date" value="{{ old('start_date') }}"
+                       min="{{ today()->format('Y-m-d') }}"
+                       class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Bitiş</label>
+                <input type="date" name="end_date" value="{{ old('end_date') }}"
+                       min="{{ today()->format('Y-m-d') }}"
+                       class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition">
+                + Ekle
+            </button>
+        </form>
+
+        {{-- Liste --}}
+        @if(isset($closedDays) && $closedDays->isNotEmpty())
+        <div class="space-y-2">
+            @foreach($closedDays as $cd)
+            <div class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg">
+                <div>
+                    <p class="text-sm font-medium text-gray-900">{{ $cd->title }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        @if($cd->start_date === $cd->end_date)
+                            {{ \Carbon\Carbon::parse($cd->start_date)->format('d.m.Y') }}
+                        @else
+                            {{ \Carbon\Carbon::parse($cd->start_date)->format('d.m.Y') }}
+                            – {{ \Carbon\Carbon::parse($cd->end_date)->format('d.m.Y') }}
+                        @endif
+                    </p>
+                </div>
+                <form method="POST"
+                      action="{{ route('panel.settings.closed-day.destroy', ['tenant_slug' => $tenant->slug, 'id' => $cd->id]) }}"
+                      onsubmit="return confirm('Kapalı günü silmek istediğinize emin misiniz?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-xs text-red-400 hover:text-red-600">Sil</button>
+                </form>
+            </div>
+            @endforeach
+        </div>
+        @else
+        <p class="text-sm text-gray-400 text-center py-4">Henüz kapalı gün tanımlanmadı.</p>
+        @endif
+    </div>
+
 </div>
 @endsection
