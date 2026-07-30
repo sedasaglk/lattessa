@@ -51,7 +51,7 @@ class AppointmentController extends Controller
         $branchCtx->setFromUser();
         $staffQuery = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
             ->where('tenant_id', $tenant->id)
-            ->where('status', 'active')
+            ->where(function($q) { $q->where('status', 'active')->orWhere('role', 'firma_sahibi'); })
             ->orderBy('name');
         if ($branchCtx->getBranchId()) {
             $staffQuery->where(function($q) use ($branchCtx) {
