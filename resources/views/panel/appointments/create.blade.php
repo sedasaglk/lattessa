@@ -38,15 +38,13 @@
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <div class="relative" id="customerSearchWrap">
-                <input type="text" id="customerSearch" autocomplete="off"
+            <div class="relative cust-search-wrap">
+                <input type="text" autocomplete="off"
                        placeholder="İsim veya son 4 hane telefon..."
-                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
-                       oninput="searchCustomer(this.value)" onfocus="searchCustomer(this.value)">
-                <input type="hidden" name="customer_id" id="customer_id_input" required value="{{ old('customer_id') }}">
-                <div id="customerDropdown"
-                     class="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg hidden"
-                     style="max-height:220px; overflow-y:auto; top:100%; margin-top:2px;">
+                       class="cust-search-input w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
+                <input type="hidden" name="customer_id" class="cust-id-input" required value="{{ old('customer_id') }}">
+                <div class="cust-dropdown absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl hidden"
+                     style="max-height:220px; overflow-y:auto; top:calc(100% + 2px); left:0;">
                 </div>
             </div>
         </div>
@@ -142,59 +140,66 @@ function toggleRecurring() {
     opts.classList.toggle('hidden', !cb.checked);
 }
 
-// Müşteri arama
+// Müşteri arama - her wrap bağımsız çalışır (double-render fix)
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone]));
 
-function searchCustomer(q) {
-    var dd = document.getElementById('customerDropdown');
-    q = q.trim();
-    var results;
-    if (q.length === 0) {
-        results = allCustomers.slice(0, 50);
-    } else if (/^\d{3,4}$/.test(q)) {
-        // son 4 hane telefon araması
-        results = allCustomers.filter(function(c){ return c.phone && c.phone.toString().slice(-4).includes(q.slice(-4)); });
-    } else {
-        var ql = q.toLowerCase();
-        results = allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
+function escHtml(s) { return String(s).replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
+
+function initCustomerSearch(wrap) {
+    var input = wrap.querySelector('.cust-search-input');
+    var dd = wrap.querySelector('.cust-dropdown');
+    var hidden = wrap.querySelector('.cust-id-input');
+
+    function doSearch(q) {
+        q = (q || '').trim();
+        var results;
+        if (q.length === 0) {
+            results = allCustomers.slice(0, 50);
+        } else if (/^\d{3,4}$/.test(q)) {
+            results = allCustomers.filter(function(c){ return c.phone && c.phone.toString().slice(-4) === q.slice(-4); });
+        } else {
+            var ql = q.toLowerCase();
+            results = allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
+        }
+        if (results.length === 0) {
+            dd.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#9ca3af;">Müşteri bulunamadı</div>';
+        } else {
+            dd.innerHTML = results.slice(0, 80).map(function(c){
+                var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+                return '<div style="padding:10px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #f3f4f6;" class="cust-item" data-id="'+c.id+'" data-name="'+escHtml(c.name)+'" data-phone="'+escHtml(c.phone||'')+'">' +
+                    '<span style="font-weight:600;color:#111;">'+escHtml(c.name)+'</span> ' +
+                    '<span style="color:#9ca3af;font-size:11px;">···'+last4+'</span>' +
+                    '</div>';
+            }).join('');
+            dd.querySelectorAll('.cust-item').forEach(function(item){
+                item.addEventListener('mousedown', function(e){
+                    e.preventDefault();
+                    hidden.value = item.dataset.id;
+                    var last4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
+                    input.value = item.dataset.name + ' (···' + last4 + ')';
+                    dd.classList.add('hidden');
+                });
+            });
+        }
+        dd.classList.remove('hidden');
     }
-    if (results.length === 0) {
-        dd.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Müşteri bulunamadı</div>';
-    } else {
-        dd.innerHTML = results.slice(0, 80).map(function(c){
-            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div class="px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0" onclick="selectCustomer('+c.id+',\''+escHtml(c.name)+'\',\''+c.phone+'\')">' +
-                '<span class="font-medium text-gray-900">'+escHtml(c.name)+'</span> ' +
-                '<span class="text-gray-400 text-xs">···'+last4+'</span>' +
-                '</div>';
-        }).join('');
-    }
-    dd.classList.remove('hidden');
-}
 
-function selectCustomer(id, name, phone) {
-    document.getElementById('customer_id_input').value = id;
-    var last4 = phone ? phone.toString().slice(-4) : '';
-    document.getElementById('customerSearch').value = name + ' (···' + last4 + ')';
-    document.getElementById('customerDropdown').classList.add('hidden');
-}
+    input.addEventListener('input', function(){ doSearch(this.value); });
+    input.addEventListener('focus', function(){ doSearch(this.value); });
+    input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 150); });
 
-function escHtml(s) { return s.replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
-
-// Dışarı tıklayınca kapat
-document.addEventListener('click', function(e) {
-    if (!document.getElementById('customerSearchWrap').contains(e.target)) {
-        document.getElementById('customerDropdown').classList.add('hidden');
-    }
-});
-
-// old('customer_id') varsa ismi göster
-window.addEventListener('DOMContentLoaded', function(){
+    // old() ile seçili müşteri
     var oldId = {{ old('customer_id', 'null') }};
     if (oldId) {
         var c = allCustomers.find(function(x){ return x.id == oldId; });
-        if (c) selectCustomer(c.id, c.name, c.phone);
+        if (c) { hidden.value = c.id; var l4 = c.phone?c.phone.slice(-4):''; input.value = c.name+' (···'+l4+')'; }
     }
+}
+
+window.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.cust-search-wrap').forEach(function(wrap){
+        if (wrap.offsetParent !== null) initCustomerSearch(wrap);
+    });
 });
 </script>
 @endsection

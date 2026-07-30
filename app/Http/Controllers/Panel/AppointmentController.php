@@ -157,9 +157,6 @@ class AppointmentController extends Controller
         $services = Service::where('tenant_id', $tenant->id)->where('status', 'active')->orderBy('name')->get();
         $staff = User::whereIn('role', ['personel', 'firma_sahibi', 'sube_muduru'])
             ->where('tenant_id', $tenant->id)
-            ->where(function($q) {
-                $q->where('status', 'active')->orWhere('role', 'firma_sahibi');
-            })
             ->orderBy('name')
             ->get();
         $branches = Branch::where('tenant_id', $tenant->id)->where('status', 'active')->get();
@@ -179,7 +176,7 @@ class AppointmentController extends Controller
             'customer_id' => ['required'],
             'staff_id' => ['required'],
             'service_id' => ['required'],
-            'start_time' => ['required', 'date'],
+            'start_time' => ['required', 'date', 'after:now'],
             'notes' => ['nullable', 'string', 'max:500'],
             'is_recurring' => ['nullable', 'boolean'],
             'recurrence_rule' => ['nullable', 'in:daily,weekly,biweekly,monthly'],
@@ -190,6 +187,7 @@ class AppointmentController extends Controller
             'staff_id.required' => 'Personel secmelisiniz.',
             'service_id.required' => 'Hizmet secmelisiniz.',
             'start_time.required' => 'Tarih ve saat secmelisiniz.',
+            'start_time.after' => 'Gecmis bir tarih secemezsiniz.',
         ]);
 
         try {
