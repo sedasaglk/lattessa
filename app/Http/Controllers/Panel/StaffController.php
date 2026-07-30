@@ -170,9 +170,40 @@ class StaffController extends Controller
             ->where('status', 'active')
             ->get();
 
+        // Yetki sistemi
+        $permissionDefs = [
+            'sales'                => ['label' => 'Satışlar', 'icon' => '🛍️', 'group' => 'Finans'],
+            'cash'                 => ['label' => 'Kasa', 'icon' => '💳', 'group' => 'Finans'],
+            'packages'             => ['label' => 'Hizmet Paketleri', 'icon' => '📦', 'group' => 'Müşteri'],
+            'loyalty'              => ['label' => 'Sadakat Programı', 'icon' => '⭐', 'group' => 'Müşteri'],
+            'crm'                  => ['label' => 'CRM', 'icon' => '🎯', 'group' => 'Müşteri'],
+            'waiting'              => ['label' => 'Bekleme Listesi', 'icon' => '⏳', 'group' => 'Müşteri'],
+            'marketing'            => ['label' => 'Pazarlama', 'icon' => '📢', 'group' => 'Pazarlama'],
+            'services'             => ['label' => 'Hizmetler & Fotoğraflar', 'icon' => '✂️', 'group' => 'Yönetim'],
+            'reviews'              => ['label' => 'Yorumlar', 'icon' => '★', 'group' => 'Yönetim'],
+            'staff'                => ['label' => 'Personel Yönetimi', 'icon' => '👤', 'group' => 'Yönetim'],
+            'payroll'              => ['label' => 'Bordro', 'icon' => '💰', 'group' => 'Yönetim'],
+            'inventory'            => ['label' => 'Stok', 'icon' => '📊', 'group' => 'Yönetim'],
+            'reports'              => ['label' => 'Raporlar', 'icon' => '📈', 'group' => 'Yönetim'],
+            'whatsapp'             => ['label' => 'WhatsApp Bağlantı', 'icon' => '💬', 'group' => 'Yönetim'],
+            'settings'             => ['label' => 'Ayarlar', 'icon' => '⚙️', 'group' => 'Yönetim'],
+            'notification_settings'=> ['label' => 'Bildirim Ayarları', 'icon' => '🔔', 'group' => 'Yönetim'],
+        ];
+
+        // Mevcut özel yetkiler (null = özel yetki yok, rol varsayılanı kullanılıyor)
+        $customPermissions = DB::table('user_permissions')
+            ->where('user_id', $id)
+            ->where('tenant_id', $tenant->id)
+            ->pluck('permission')
+            ->toArray();
+
+        $hasCustomPermissions = count($customPermissions) > 0;
+        $roleDefaults = \App\Http\Middleware\CheckPermission::$roleDefaults[$member->role] ?? [];
+
         return view('panel.staff.show', compact(
             'tenant', 'member', 'monthlyStats', 'schedules',
-            'leaves', 'commission', 'monthlyCommission', 'days', 'branches'
+            'leaves', 'commission', 'monthlyCommission', 'days', 'branches',
+            'permissionDefs', 'customPermissions', 'hasCustomPermissions', 'roleDefaults'
         ));
     }
 
@@ -358,6 +389,37 @@ class StaffController extends Controller
         $tenant = $ctx->get();
         DB::table('users')->where('id', $id)->where('tenant_id', $tenant->id)->update(['deleted_at' => now()]);
         return redirect()->route('panel.staff.index', ['tenant_slug' => $tenant->slug])->with('success', 'Personel silindi.');
+    }
+
+    public function updatePermissions(\Illuminate\Http\Request $request, TenantContext $ctx, string $tenant_slug, string $id): RedirectResponse
+    {
+        // Yalnızca firma_sahibi erişebilir
+        if (auth()->user()->role !== 'firma_sahibi') abort(403);
+
+        $tenant = $ctx->get();
+        $staff = DB::table('users')->where('id', $id)->where('tenant_id', $tenant->id)->first();
+        if (!$staff) abort(404);
+
+        $granted = $request->input('permissions', []);
+
+        // Önce mevcut yetkileri sil
+        DB::table('user_permissions')
+            ->where('user_id', $id)
+            ->where('tenant_id', $tenant->id)
+            ->delete();
+
+        // Yeni yetkileri ekle
+        foreach ($granted as $perm) {
+            DB::table('user_permissions')->insert([
+                'tenant_id'  => $tenant->id,
+                'user_id'    => $id,
+                'permission' => $perm,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return back()->with('success', 'Yetki ayarları kaydedildi.');
     }
 
     protected function createDefaultSchedule(int $tenantId, int $userId): void

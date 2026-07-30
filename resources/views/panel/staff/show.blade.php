@@ -154,4 +154,65 @@
     </div>
 
 </div>
+
+{{-- Yetki Ayarları (yalnızca firma sahibi görebilir, firma sahibine gösterilmez) --}}
+@if(auth()->user()->role === 'firma_sahibi' && $member->role !== 'firma_sahibi')
+<div class="mt-4 bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h2 class="font-semibold text-gray-900">🔐 Erişim Yetkileri</h2>
+            <p class="text-xs text-gray-400 mt-0.5">
+                @if($hasCustomPermissions)
+                    Özel yetkiler aktif — aşağıdaki seçimler geçerli.
+                @else
+                    Şu an <strong>{{ match($member->role) { 'sube_muduru' => 'Şube Müdürü', 'sekreter' => 'Sekreter', 'personel' => 'Personel', default => $member->role } }}</strong> rol varsayılanları geçerli. Değiştirmek için düzenleyin.
+                @endif
+            </p>
+        </div>
+        @if($hasCustomPermissions)
+        <form method="POST" action="{{ route('panel.staff.permissions', ['tenant_slug' => $tenant->slug, 'id' => $member->id]) }}">
+            @csrf
+            {{-- Boş gönder → özel yetkiler silinir, rol varsayılanına döner --}}
+            <button type="submit" onclick="return confirm('Özel yetkiler silinerek rol varsayılanına dönülsün mü?')"
+                    class="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 px-3 py-1.5 rounded-lg">
+                Varsayılana Dön
+            </button>
+        </form>
+        @endif
+    </div>
+
+    <form method="POST" action="{{ route('panel.staff.permissions', ['tenant_slug' => $tenant->slug, 'id' => $member->id]) }}">
+        @csrf
+        @php
+            $activePerms = $hasCustomPermissions ? $customPermissions : $roleDefaults;
+            $groups = collect($permissionDefs)->groupBy(fn($d) => $d['group']);
+        @endphp
+
+        @foreach($groups as $groupName => $items)
+        <div class="mb-4">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{{ $groupName }}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                @foreach($items as $key => $def)
+                <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer transition">
+                    <input type="checkbox" name="permissions[]" value="{{ $key }}"
+                           {{ in_array($key, $activePerms) ? 'checked' : '' }}
+                           class="w-4 h-4 rounded accent-gray-900">
+                    <span class="text-lg leading-none">{{ $def['icon'] }}</span>
+                    <span class="text-sm text-gray-700">{{ $def['label'] }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+        @endforeach
+
+        <div class="mt-4 flex gap-2">
+            <button type="submit" class="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                Kaydet
+            </button>
+            <p class="text-xs text-gray-400 self-center">Kaydettiğinizde özel yetkiler aktive olur.</p>
+        </div>
+    </form>
+</div>
+@endif
+
 @endsection

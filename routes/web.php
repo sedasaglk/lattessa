@@ -181,33 +181,41 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
 
         Route::put('/ayarlar/sifre', [SettingsController::class, 'updatePassword'])->name('panel.settings.password');
 
-        // ── firma_sahibi + sube_muduru + sekreter ────────────────────────────
-        Route::middleware('role:firma_sahibi,sube_muduru,sekreter')->group(function () {
+        // ── Özel/Rol yetki kontrolü ───────────────────────────────────────────
+        Route::middleware('permission:sales')->group(function () {
             Route::get('/satislar', [SaleController::class, 'index'])->name('panel.sales.index');
             Route::get('/satislar/yeni', [SaleController::class, 'create'])->name('panel.sales.create');
             Route::post('/satislar', [SaleController::class, 'store'])->name('panel.sales.store');
             Route::get('/satislar/{id}', [SaleController::class, 'show'])->name('panel.sales.show');
             Route::post('/satislar/{id}/iade', [SaleController::class, 'refund'])->name('panel.sales.refund');
+        });
 
+        Route::middleware('permission:cash')->group(function () {
             Route::get('/kasa', [CashController::class, 'index'])->name('panel.cash.index');
             Route::post('/kasa', [CashController::class, 'store'])->name('panel.cash.store');
             Route::delete('/kasa/{id}', [CashController::class, 'destroy'])->name('panel.cash.destroy');
             Route::post('/kasa/kategori', [CashController::class, 'storeCategory'])->name('panel.cash.category.store');
+        });
 
+        Route::middleware('permission:packages')->group(function () {
             Route::get('/paketler', [ServicePackageController::class, 'index'])->name('panel.packages.index');
             Route::post('/paketler', [ServicePackageController::class, 'store'])->name('panel.packages.store');
             Route::delete('/paketler/{id}', [ServicePackageController::class, 'destroy'])->name('panel.packages.destroy');
             Route::get('/paketler/musteri/{customer_id}', [ServicePackageController::class, 'customerPackages'])->name('panel.packages.customer');
             Route::post('/paketler/musteri/{customer_id}/tani', [ServicePackageController::class, 'sellToCustomer'])->name('panel.packages.sell');
             Route::post('/paketler/kullanim/{customer_package_id}', [ServicePackageController::class, 'useSession'])->name('panel.packages.use');
+        });
 
+        Route::middleware('permission:loyalty')->group(function () {
             Route::get('/sadakat', [LoyaltyController::class, 'index'])->name('panel.loyalty.index');
             Route::post('/sadakat/seviyeler', [LoyaltyController::class, 'storeTier'])->name('panel.loyalty.tiers.store');
             Route::delete('/sadakat/seviyeler/{id}', [LoyaltyController::class, 'destroyTier'])->name('panel.loyalty.tiers.destroy');
             Route::get('/sadakat/musteri/{customer_id}', [LoyaltyController::class, 'customerPoints'])->name('panel.loyalty.customer');
             Route::post('/sadakat/musteri/{customer_id}/ekle', [LoyaltyController::class, 'addPoints'])->name('panel.loyalty.add');
             Route::post('/sadakat/musteri/{customer_id}/kullan', [LoyaltyController::class, 'redeemPoints'])->name('panel.loyalty.redeem');
+        });
 
+        Route::middleware('permission:inventory')->group(function () {
             Route::get('/stok', [InventoryController::class, 'index'])->name('panel.inventory.index');
             Route::get('/stok/kategoriler', [InventoryController::class, 'categories'])->name('panel.inventory.categories');
             Route::post('/stok/kategoriler', [InventoryController::class, 'storeCategory'])->name('panel.inventory.categories.store');
@@ -222,14 +230,18 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
             Route::put('/stok/urun/{id}', [InventoryController::class, 'update'])->name('panel.inventory.update');
             Route::post('/stok/urun/{id}/stok', [InventoryController::class, 'addStock'])->name('panel.inventory.stock');
             Route::delete('/stok/urun/{id}', [InventoryController::class, 'destroy'])->name('panel.inventory.destroy');
+        });
 
+        Route::middleware('permission:crm')->group(function () {
             Route::get('/crm', [CrmController::class, 'index'])->name('panel.crm.index');
             Route::get('/crm/musteriler', [CrmController::class, 'customers'])->name('panel.crm.customers');
             Route::post('/crm/etiket', [CrmController::class, 'storeTag'])->name('panel.crm.tags.store');
             Route::delete('/crm/etiket/{id}', [CrmController::class, 'destroyTag'])->name('panel.crm.tags.destroy');
             Route::post('/crm/musteri/{customer_id}/etiket', [CrmController::class, 'updateCustomerTags'])->name('panel.crm.customer.tags');
             Route::post('/crm/musteri/{customer_id}/not', [CrmController::class, 'addNote'])->name('panel.crm.customer.note');
+        });
 
+        Route::middleware('permission:marketing')->group(function () {
             Route::get('/pazarlama', [MarketingController::class, 'index'])->name('panel.marketing.index');
             Route::get('/pazarlama/kampanya/yeni', [MarketingController::class, 'createCampaign'])->name('panel.marketing.campaign.create');
             Route::post('/pazarlama/kampanya', [MarketingController::class, 'storeCampaign'])->name('panel.marketing.campaign.store');
@@ -240,24 +252,26 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
             Route::delete('/pazarlama/kupon/{id}', [MarketingController::class, 'destroyCoupon'])->name('panel.marketing.coupon.destroy');
         });
 
-        // ── firma_sahibi + sube_muduru ────────────────────────────────────────
-        Route::middleware('role:firma_sahibi,sube_muduru')->group(function () {
+        Route::middleware('permission:reviews')->group(function () {
             Route::get('/yorumlar', [\App\Http\Controllers\Panel\ReviewController::class, 'index'])->name('panel.reviews.index');
             Route::patch('/yorumlar/{id}/yayinla', [\App\Http\Controllers\Panel\ReviewController::class, 'publish'])->name('panel.reviews.publish');
             Route::patch('/yorumlar/{id}/gizle', [\App\Http\Controllers\Panel\ReviewController::class, 'hide'])->name('panel.reviews.hide');
             Route::delete('/yorumlar/{id}', [\App\Http\Controllers\Panel\ReviewController::class, 'destroy'])->name('panel.reviews.destroy');
+        });
 
+        Route::middleware('permission:services')->group(function () {
             Route::get('/hizmetler', [ServiceController::class, 'index'])->name('panel.services.index');
             Route::get('/hizmetler/yeni', [ServiceController::class, 'create'])->name('panel.services.create');
             Route::post('/hizmetler', [ServiceController::class, 'store'])->name('panel.services.store');
             Route::get('/hizmetler/{id}/duzenle', [ServiceController::class, 'edit'])->name('panel.services.edit');
             Route::put('/hizmetler/{id}', [ServiceController::class, 'update'])->name('panel.services.update');
             Route::delete('/hizmetler/{id}', [ServiceController::class, 'destroy'])->name('panel.services.destroy');
-
             Route::get('/salon/fotograflar', [\App\Http\Controllers\Panel\SalonPhotoController::class, 'index'])->name('panel.salon.photos');
             Route::post('/salon/fotograflar', [\App\Http\Controllers\Panel\SalonPhotoController::class, 'store'])->name('panel.salon.photos.store');
             Route::delete('/salon/fotograflar/{id}', [\App\Http\Controllers\Panel\SalonPhotoController::class, 'destroy'])->name('panel.salon.photos.destroy');
+        });
 
+        Route::middleware('permission:staff')->group(function () {
             Route::get('/personel', [StaffController::class, 'index'])->name('panel.staff.index');
             Route::get('/personel/yeni', [StaffController::class, 'create'])->name('panel.staff.create');
             Route::post('/personel', [StaffController::class, 'store'])->name('panel.staff.store');
@@ -268,22 +282,33 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
             Route::post('/personel/{id}/izin', [StaffController::class, 'storeLeave'])->name('panel.staff.leave.store');
             Route::delete('/personel/{id}/izin/{leave_id}', [StaffController::class, 'destroyLeave'])->name('panel.staff.leave.destroy');
             Route::delete('/personel/{id}', [StaffController::class, 'destroy'])->name('panel.staff.destroy');
+            Route::post('/personel/{id}/yetkiler', [StaffController::class, 'updatePermissions'])->name('panel.staff.permissions');
+        });
 
+        Route::middleware('permission:payroll')->group(function () {
             Route::get('/bordro', [PayrollController::class, 'index'])->name('panel.payroll.index');
             Route::get('/bordro/personel/{user_id}', [PayrollController::class, 'show'])->name('panel.payroll.show');
             Route::post('/bordro/hesapla', [PayrollController::class, 'generate'])->name('panel.payroll.generate');
             Route::put('/bordro/{id}', [PayrollController::class, 'update'])->name('panel.payroll.update');
             Route::post('/bordro/{id}/odendi', [PayrollController::class, 'markPaid'])->name('panel.payroll.paid');
+        });
 
+        Route::middleware('permission:reports')->group(function () {
             Route::get('/raporlar', [ReportController::class, 'index'])->name('panel.reports.index');
+        });
 
+        Route::middleware('permission:settings')->group(function () {
             Route::get('/ayarlar', [SettingsController::class, 'index'])->name('panel.settings.index');
             Route::put('/ayarlar/isletme', [SettingsController::class, 'updateBusiness'])->name('panel.settings.business');
             Route::put('/ayarlar/sube', [SettingsController::class, 'updateBranch'])->name('panel.settings.branch');
+        });
 
+        Route::middleware('permission:notification_settings')->group(function () {
             Route::get('/bildirim-ayarlari', [\App\Http\Controllers\Panel\NotificationSettingsController::class, 'index'])->name('panel.notification-settings.index');
             Route::post('/bildirim-ayarlari', [\App\Http\Controllers\Panel\NotificationSettingsController::class, 'update'])->name('panel.notification-settings.update');
+        });
 
+        Route::middleware('permission:whatsapp')->group(function () {
             Route::get('/whatsapp-baglanti', [WhatsAppConnectionController::class, 'index'])->name('panel.whatsapp.index');
             Route::post('/whatsapp-baglanti/giris/telefon', [WhatsAppConnectionController::class, 'startPhoneLogin'])->name('panel.whatsapp.login.phone');
             Route::post('/whatsapp-baglanti/giris/qr', [WhatsAppConnectionController::class, 'startQrLogin'])->name('panel.whatsapp.login.qr');

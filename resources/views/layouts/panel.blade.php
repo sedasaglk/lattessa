@@ -121,6 +121,26 @@
     $isSecretary = in_array($role, ['firma_sahibi', 'sube_muduru', 'sekreter']);
     $slug = $tenant->slug;
 
+    // Kullanıcı yetkileri ($can helper)
+    $userCustomPerms = [];
+    $userHasCustomPerms = false;
+    if (!$isOwner) {
+        try {
+            $userCustomPerms = \Illuminate\Support\Facades\DB::table('user_permissions')
+                ->where('user_id', auth()->id())
+                ->where('tenant_id', $tenant->id)
+                ->pluck('permission')
+                ->toArray();
+            $userHasCustomPerms = count($userCustomPerms) > 0;
+        } catch (\Exception $e) {}
+    }
+    $roleDefaultPerms = \App\Http\Middleware\CheckPermission::$roleDefaults[$role] ?? [];
+    $effectivePerms = $isOwner ? [] : ($userHasCustomPerms ? $userCustomPerms : $roleDefaultPerms);
+    // $can('permission') → true/false
+    $can = function(string $perm) use ($isOwner, $effectivePerms): bool {
+        return $isOwner || in_array($perm, $effectivePerms);
+    };
+
     // Branch context
     $branchCtx = app(\App\Services\BranchContext::class);
     $branchCtx->setFromUser();
@@ -200,30 +220,30 @@
 
             {!! sidebarLink('panel.dashboard', 'Dashboard', '▦', 'panel.dashboard', $slug) !!}
             {!! sidebarLink('panel.appointments.index', 'Randevular', '◷', 'panel.appointments*', $slug) !!}
-            @if($isSecretary) {!! sidebarLink('panel.waiting.index', 'Bekleme Listesi', '◈', 'panel.waiting*', $slug) !!} @endif
+            @if($can('waiting')) {!! sidebarLink('panel.waiting.index', 'Bekleme Listesi', '◈', 'panel.waiting*', $slug) !!} @endif
             {!! sidebarLink('panel.customers.index', 'Müşteriler', '◉', 'panel.customers*', $slug) !!}
-            @if($isSecretary) {!! sidebarLink('panel.crm.index', 'CRM', '◎', 'panel.crm*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.services.index', 'Hizmetler', '✦', 'panel.services*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.salon.photos', 'Salon Fotoğrafları', '🖼', 'panel.salon*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.reviews.index', 'Yorumlar', '★', 'panel.reviews*', $slug) !!} @endif
-            @if($isSecretary) {!! sidebarLink('panel.packages.index', 'Paketler', '⊞', 'panel.packages*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.staff.index', 'Personel', '◈', 'panel.staff*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.payroll.index', 'Bordro', '◑', 'panel.payroll*', $slug) !!}
-            @elseif($role === 'personel')
+            @if($can('crm')) {!! sidebarLink('panel.crm.index', 'CRM', '◎', 'panel.crm*', $slug) !!} @endif
+            @if($can('services')) {!! sidebarLink('panel.services.index', 'Hizmetler', '✦', 'panel.services*', $slug) !!} @endif
+            @if($can('services')) {!! sidebarLink('panel.salon.photos', 'Salon Fotoğrafları', '🖼', 'panel.salon*', $slug) !!} @endif
+            @if($can('reviews')) {!! sidebarLink('panel.reviews.index', 'Yorumlar', '★', 'panel.reviews*', $slug) !!} @endif
+            @if($can('packages')) {!! sidebarLink('panel.packages.index', 'Paketler', '⊞', 'panel.packages*', $slug) !!} @endif
+            @if($can('staff')) {!! sidebarLink('panel.staff.index', 'Personel', '◈', 'panel.staff*', $slug) !!} @endif
+            @if($can('payroll')) {!! sidebarLink('panel.payroll.index', 'Bordro', '◑', 'panel.payroll*', $slug) !!}
+            @elseif($role === 'personel' && !$can('payroll'))
             @php $payrollUrl = route('panel.payroll.show', ['tenant_slug' => $slug, 'user_id' => auth()->id()]); $payrollActive = request()->routeIs('panel.payroll*'); @endphp
             <a href="{{ $payrollUrl }}" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm {{ $payrollActive ? 'active' : '' }}">
                 <span class="text-base opacity-70">◑</span>
                 <span class="{{ $payrollActive ? 'text-white font-medium' : 'font-normal' }}" style="{{ $payrollActive ? '' : 'color:#9CA3AF;' }}">Bordrolarım</span>
             </a>
             @endif
-            @if($isSecretary) {!! sidebarLink('panel.sales.index', 'Satışlar', '◈', 'panel.sales*', $slug) !!} @endif
-            @if($isSecretary) {!! sidebarLink('panel.inventory.index', 'Stok', '⊟', 'panel.inventory*', $slug) !!} @endif
-            @if($isSecretary) {!! sidebarLink('panel.cash.index', 'Kasa', '◆', 'panel.cash*', $slug) !!} @endif
-            @if($isSecretary) {!! sidebarLink('panel.loyalty.index', 'Sadakat', '★', 'panel.loyalty*', $slug) !!} @endif
-            @if($isSecretary) {!! sidebarLink('panel.marketing.index', 'Pazarlama', '◈', 'panel.marketing*', $slug) !!} @endif
+            @if($can('sales')) {!! sidebarLink('panel.sales.index', 'Satışlar', '◈', 'panel.sales*', $slug) !!} @endif
+            @if($can('inventory')) {!! sidebarLink('panel.inventory.index', 'Stok', '⊟', 'panel.inventory*', $slug) !!} @endif
+            @if($can('cash')) {!! sidebarLink('panel.cash.index', 'Kasa', '◆', 'panel.cash*', $slug) !!} @endif
+            @if($can('loyalty')) {!! sidebarLink('panel.loyalty.index', 'Sadakat', '★', 'panel.loyalty*', $slug) !!} @endif
+            @if($can('marketing')) {!! sidebarLink('panel.marketing.index', 'Pazarlama', '◈', 'panel.marketing*', $slug) !!} @endif
             @if($isOwner) {!! sidebarLink('panel.branches.index', 'Şubeler', '⊕', 'panel.branches*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.reports.index', 'Raporlar', '◈', 'panel.reports*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.whatsapp.index', 'WhatsApp', '◈', 'panel.whatsapp*', $slug) !!} @endif
+            @if($can('reports')) {!! sidebarLink('panel.reports.index', 'Raporlar', '◈', 'panel.reports*', $slug) !!} @endif
+            @if($can('whatsapp')) {!! sidebarLink('panel.whatsapp.index', 'WhatsApp', '◈', 'panel.whatsapp*', $slug) !!} @endif
 
             <div class="pt-2 mt-2 border-t border-white/10 space-y-0.5">
                 {!! sidebarLink('panel.support.index', 'Destek', '?', 'panel.support*', $slug) !!}
@@ -395,29 +415,29 @@
             $menuItems = [
                 ['route' => 'panel.dashboard', 'label' => 'Dashboard', 'icon' => '🏠', 'match' => 'panel.dashboard', 'show' => true],
                 ['route' => 'panel.appointments.index', 'label' => 'Randevular', 'icon' => '📅', 'match' => 'panel.appointments*', 'show' => true],
-                ['route' => 'panel.waiting.index', 'label' => 'Bekleme Listesi', 'icon' => '⏳', 'match' => 'panel.waiting*', 'show' => $isSecretary],
+                ['route' => 'panel.waiting.index', 'label' => 'Bekleme Listesi', 'icon' => '⏳', 'match' => 'panel.waiting*', 'show' => $can('waiting')],
                 ['route' => 'panel.customers.index', 'label' => 'Müşteriler', 'icon' => '👥', 'match' => 'panel.customers*', 'show' => true],
-                ['route' => 'panel.crm.index', 'label' => 'CRM', 'icon' => '🎯', 'match' => 'panel.crm*', 'show' => $isSecretary],
-                ['route' => 'panel.services.index', 'label' => 'Hizmetler', 'icon' => '✂️', 'match' => 'panel.services*', 'show' => $isManager],
-                ['route' => 'panel.salon.photos', 'label' => 'Salon Fotoğrafları', 'icon' => '🖼', 'match' => 'panel.salon*', 'show' => $isManager],
-                ['route' => 'panel.reviews.index', 'label' => 'Yorumlar', 'icon' => '★', 'match' => 'panel.reviews*', 'show' => $isManager],
-                ['route' => 'panel.packages.index', 'label' => 'Paketler', 'icon' => '📦', 'match' => 'panel.packages*', 'show' => $isSecretary],
-                ['route' => 'panel.staff.index', 'label' => 'Personel', 'icon' => '👤', 'match' => 'panel.staff*', 'show' => $isManager],
-                ['route' => 'panel.payroll.index', 'label' => 'Bordro', 'icon' => '💰', 'match' => 'panel.payroll*', 'show' => $isManager],
+                ['route' => 'panel.crm.index', 'label' => 'CRM', 'icon' => '🎯', 'match' => 'panel.crm*', 'show' => $can('crm')],
+                ['route' => 'panel.services.index', 'label' => 'Hizmetler', 'icon' => '✂️', 'match' => 'panel.services*', 'show' => $can('services')],
+                ['route' => 'panel.salon.photos', 'label' => 'Salon Fotoğrafları', 'icon' => '🖼', 'match' => 'panel.salon*', 'show' => $can('services')],
+                ['route' => 'panel.reviews.index', 'label' => 'Yorumlar', 'icon' => '★', 'match' => 'panel.reviews*', 'show' => $can('reviews')],
+                ['route' => 'panel.packages.index', 'label' => 'Paketler', 'icon' => '📦', 'match' => 'panel.packages*', 'show' => $can('packages')],
+                ['route' => 'panel.staff.index', 'label' => 'Personel', 'icon' => '👤', 'match' => 'panel.staff*', 'show' => $can('staff')],
+                ['route' => 'panel.payroll.index', 'label' => 'Bordro', 'icon' => '💰', 'match' => 'panel.payroll*', 'show' => $can('payroll')],
 
-                ['route' => 'panel.sales.index', 'label' => 'Satışlar', 'icon' => '🛍️', 'match' => 'panel.sales*', 'show' => $isSecretary],
-                ['route' => 'panel.inventory.index', 'label' => 'Stok', 'icon' => '📊', 'match' => 'panel.inventory*', 'show' => $isSecretary],
-                ['route' => 'panel.cash.index', 'label' => 'Kasa', 'icon' => '💳', 'match' => 'panel.cash*', 'show' => $isSecretary],
-                ['route' => 'panel.loyalty.index', 'label' => 'Sadakat', 'icon' => '⭐', 'match' => 'panel.loyalty*', 'show' => $isSecretary],
-                ['route' => 'panel.marketing.index', 'label' => 'Pazarlama', 'icon' => '📢', 'match' => 'panel.marketing*', 'show' => $isSecretary],
+                ['route' => 'panel.sales.index', 'label' => 'Satışlar', 'icon' => '🛍️', 'match' => 'panel.sales*', 'show' => $can('sales')],
+                ['route' => 'panel.inventory.index', 'label' => 'Stok', 'icon' => '📊', 'match' => 'panel.inventory*', 'show' => $can('inventory')],
+                ['route' => 'panel.cash.index', 'label' => 'Kasa', 'icon' => '💳', 'match' => 'panel.cash*', 'show' => $can('cash')],
+                ['route' => 'panel.loyalty.index', 'label' => 'Sadakat', 'icon' => '⭐', 'match' => 'panel.loyalty*', 'show' => $can('loyalty')],
+                ['route' => 'panel.marketing.index', 'label' => 'Pazarlama', 'icon' => '📢', 'match' => 'panel.marketing*', 'show' => $can('marketing')],
                 ['route' => 'panel.branches.index', 'label' => 'Şubeler', 'icon' => '🏪', 'match' => 'panel.branches*', 'show' => $isOwner],
-                ['route' => 'panel.reports.index', 'label' => 'Raporlar', 'icon' => '📈', 'match' => 'panel.reports*', 'show' => $isManager],
-                ['route' => 'panel.whatsapp.index', 'label' => 'WhatsApp', 'icon' => '💬', 'match' => 'panel.whatsapp*', 'show' => $isManager],
+                ['route' => 'panel.reports.index', 'label' => 'Raporlar', 'icon' => '📈', 'match' => 'panel.reports*', 'show' => $can('reports')],
+                ['route' => 'panel.whatsapp.index', 'label' => 'WhatsApp', 'icon' => '💬', 'match' => 'panel.whatsapp*', 'show' => $can('whatsapp')],
                 ['route' => 'panel.support.index', 'label' => 'Destek', 'icon' => '🎧', 'match' => 'panel.support*', 'show' => true],
                 ['route' => 'panel.invoices.index', 'label' => 'Faturalar', 'icon' => '🧾', 'match' => 'panel.invoices*', 'show' => $isOwner],
                 ['route' => 'panel.subscription.index', 'label' => 'Abonelik', 'icon' => '💎', 'match' => 'panel.subscription*', 'show' => $isOwner && !(request()->userAgent() && str_contains(request()->userAgent(), 'LattessaApp'))],
-                ['route' => 'panel.notification-settings.index', 'label' => 'Bildirim Ayarları', 'icon' => '🔔', 'match' => 'panel.notification-settings*', 'show' => $isManager],
-                ['route' => 'panel.settings.index', 'label' => 'Ayarlar', 'icon' => '⚙️', 'match' => 'panel.settings*', 'show' => $isManager],
+                ['route' => 'panel.notification-settings.index', 'label' => 'Bildirim Ayarları', 'icon' => '🔔', 'match' => 'panel.notification-settings*', 'show' => $can('notification_settings')],
+                ['route' => 'panel.settings.index', 'label' => 'Ayarlar', 'icon' => '⚙️', 'match' => 'panel.settings*', 'show' => $can('settings')],
             ];
             @endphp
 
