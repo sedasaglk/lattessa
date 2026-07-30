@@ -400,7 +400,10 @@ class StaffController extends Controller
         $staff = DB::table('users')->where('id', $id)->where('tenant_id', $tenant->id)->first();
         if (!$staff) abort(404);
 
-        $granted = $request->input('permissions', []);
+        $granted = array_filter(
+            (array) $request->input('permissions', []),
+            fn($p) => is_string($p) && strlen($p) > 1  // numeric "0","1" gibi yanlış değerleri reddet
+        );
 
         // Önce mevcut yetkileri sil
         DB::table('user_permissions')
@@ -408,15 +411,19 @@ class StaffController extends Controller
             ->where('tenant_id', $tenant->id)
             ->delete();
 
-        // Yeni yetkileri ekle
-        foreach ($granted as $perm) {
-            DB::table('user_permissions')->insert([
-                'tenant_id'  => $tenant->id,
-                'user_id'    => $id,
-                'permission' => $perm,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        // Yeni yetkileri ekle (unique ihlalini önlemek için insertOrIgnore)
+        if (!empty($granted)) {
+            $rows = [];
+            foreach (array_unique($granted) as $perm) {
+                $rows[] = [
+                    'tenant_id'  => $tenant->id,
+                    'user_id'    => (int) $id,
+                    'permission' => $perm,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            DB::table('user_permissions')->insertOrIgnore($rows);
         }
 
         return back()->with('success', 'Yetki ayarları kaydedildi.');

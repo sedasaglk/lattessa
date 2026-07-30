@@ -185,7 +185,11 @@
         @csrf
         @php
             $activePerms = $hasCustomPermissions ? $customPermissions : $roleDefaults;
-            $groups = collect($permissionDefs)->groupBy(fn($d) => $d['group']);
+            // groupBy numeric index sorununu önlemek için manuel gruplama (key korunur)
+            $groups = [];
+            foreach ($permissionDefs as $permKey => $permDef) {
+                $groups[$permDef['group']][$permKey] = $permDef;
+            }
         @endphp
 
         @foreach($groups as $groupName => $items)
