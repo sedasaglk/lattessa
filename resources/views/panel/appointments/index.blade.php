@@ -4,6 +4,10 @@
 @section('content')
 
 <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
+    {{-- DEBUG --}}
+    <div style="background:yellow;padding:8px;font-size:12px;">
+        Branch ID: {{ $debugBranchId ?? 'NULL' }} | Session: {{ session('active_branch_id') ?? 'NULL' }}
+    </div>
     <h1 class="text-xl font-semibold text-gray-900">Randevular</h1>
     <div class="flex items-center gap-2">
         <a href="?view=list&date={{ $date }}"

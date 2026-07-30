@@ -63,8 +63,9 @@ class AppointmentController extends Controller
             $staffColorMap[$member->id] = $staffColors[$i % count($staffColors)];
         }
 
+        $debugBranchId = $branchCtx->getBranchId();
         return view('panel.appointments.index', compact(
-            'tenant', 'appointments', 'date', 'branches', 'view', 'staffMembers', 'staffColorMap'
+            'tenant', 'appointments', 'date', 'branches', 'view', 'staffMembers', 'staffColorMap', 'debugBranchId'
         ));
     }
 
