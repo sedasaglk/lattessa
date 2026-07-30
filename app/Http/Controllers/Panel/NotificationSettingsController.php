@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Artisan;
 
 class NotificationSettingsController extends Controller
 {
@@ -48,16 +50,25 @@ class NotificationSettingsController extends Controller
         ];
     }
 
-    public function index(TenantContext $ctx, string $tenant_slug): View
+    public function index(TenantContext $ctx, string $tenant_slug): View|\Illuminate\Http\RedirectResponse
     {
         $tenant = $ctx->get();
         $definitions = self::eventDefinitions();
 
-        // Mevcut ayarları çek
-        $saved = DB::table('notification_settings')
-            ->where('tenant_id', $tenant->id)
-            ->get()
-            ->keyBy('event');
+        // Tablo yoksa migrate edilmesi gerekiyor
+        try {
+            $saved = DB::table('notification_settings')
+                ->where('tenant_id', $tenant->id)
+                ->get()
+                ->keyBy('event');
+        } catch (\Exception $e) {
+            // Tablo henüz oluşturulmamış — migration çalıştırılmalı
+            return view('panel.notification-settings.index', [
+                'tenant' => $tenant,
+                'settings' => [],
+                'migrationNeeded' => true,
+            ]);
+        }
 
         // Her event için mevcut ayarı veya default'u birleştir
         $settings = [];
@@ -74,12 +85,18 @@ class NotificationSettingsController extends Controller
             ];
         }
 
-        return view('panel.notification-settings.index', compact('tenant', 'settings'));
+        return view('panel.notification-settings.index', array_merge(compact('tenant', 'settings'), ['migrationNeeded' => false]));
     }
 
     public function update(Request $request, TenantContext $ctx, string $tenant_slug): RedirectResponse
     {
         $tenant = $ctx->get();
+
+        // Tablo yoksa migrate et
+        if (!Schema::hasTable('notification_settings')) {
+            \Artisan::call('migrate', ['--force' => true]);
+        }
+
         $definitions = self::eventDefinitions();
 
         foreach ($definitions as $event => $def) {

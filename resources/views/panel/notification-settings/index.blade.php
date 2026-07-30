@@ -7,6 +7,15 @@
     <p class="text-sm text-gray-500 mt-1">Hangi olaylarda SMS/WhatsApp gönderilsin, mesaj şablonlarını özelleştirin.</p>
 </div>
 
+@if(!empty($migrationNeeded))
+<div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+    <p class="font-medium mb-1">⚠️ Veritabanı tablosu henüz oluşturulmadı.</p>
+    <p>cPanel → "Cron Jobs" bölümünden aşağıdaki komutu bir kez çalıştırın:</p>
+    <code class="block mt-2 bg-amber-100 px-3 py-2 rounded font-mono text-xs">php {{ base_path('artisan') }} migrate --force</code>
+    <p class="mt-2">Ardından sayfayı yenileyin.</p>
+</div>
+@else
+
 @if(session('success'))
 <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{{ session('success') }}</div>
 @endif
@@ -104,4 +113,5 @@ function insertVar(event, varName) {
     ta.focus();
 }
 </script>
+@endif
 @endsection

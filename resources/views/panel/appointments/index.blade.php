@@ -115,18 +115,18 @@ $gridTotalH = $gridTotalSlots * $gridSlotH;
 </div>
 
 {{-- Appointment Detail Modal --}}
-<div id="gridModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+<div class="grid-modal fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-                <div id="gridModalDot" class="w-3 h-3 rounded-full"></div>
+                <div class="grid-modal-dot w-3 h-3 rounded-full"></div>
                 <h3 class="font-semibold text-gray-900">Randevu Detay</h3>
             </div>
             <button onclick="closeGridModal()" class="text-gray-400 hover:text-gray-900 text-lg">✕</button>
         </div>
-        <div id="gridModalContent" class="space-y-1 text-sm"></div>
+        <div class="grid-modal-content space-y-1 text-sm"></div>
         <div class="mt-4 flex gap-2">
-            <a id="gridModalLink" href="#" class="flex-1 text-center bg-gray-900 text-white py-2.5 rounded-xl text-sm font-medium">Detaya Git</a>
+            <a class="grid-modal-link" href="#" class="flex-1 text-center bg-gray-900 text-white py-2.5 rounded-xl text-sm font-medium">Detaya Git</a>
             <button onclick="closeGridModal()" class="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm">Kapat</button>
         </div>
     </div>
@@ -207,28 +207,33 @@ function newAppt(dateTimeStr) {
     window.location.href = '/' + tenantSlug + '/randevular/yeni?date=' + dateTimeStr;
 }
 
+function getModal() { return getVisibleEl('.grid-modal'); }
+
 function showGridModal(ev, color) {
+    var modal = getModal();
+    if (!modal) return;
     var props = ev.extendedProps || {};
     var statusMap = {'pending':'Bekliyor','confirmed':'Onaylı','completed':'Tamamlandı','cancelled':'İptal','no_show':'Gelmedi'};
     var startStr = ev.start ? ev.start.slice(11,16) : '';
     var endStr = ev.end ? ev.end.slice(11,16) : '';
-    document.getElementById('gridModalDot').style.background = color;
-    document.getElementById('gridModalContent').innerHTML =
+    modal.querySelector('.grid-modal-dot').style.background = color;
+    modal.querySelector('.grid-modal-content').innerHTML =
         '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Müşteri</span><span class="font-medium">' + (ev.title||'') + '</span></div>' +
         '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Hizmet</span><span class="font-medium">' + (props.service||'-') + '</span></div>' +
         '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Personel</span><span class="font-medium" style="color:' + color + '">' + (props.staff||'-') + '</span></div>' +
         '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Saat</span><span class="font-medium">' + startStr + (endStr?' - '+endStr:'') + '</span></div>' +
         '<div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">Durum</span><span class="font-medium">' + (statusMap[props.status]||props.status||'-') + '</span></div>' +
         '<div class="flex justify-between py-2"><span class="text-gray-500">Ücret</span><span class="font-medium">' + (props.price ? parseFloat(props.price).toLocaleString('tr-TR') + ' TL' : '-') + '</span></div>';
-    document.getElementById('gridModalLink').href = ev.url || '#';
-    document.getElementById('gridModal').classList.remove('hidden');
+    var link = modal.querySelector('.grid-modal-link');
+    if (link) { link.href = ev.url || '#'; link.className = 'grid-modal-link flex-1 text-center bg-gray-900 text-white py-2.5 rounded-xl text-sm font-medium'; }
+    modal.classList.remove('hidden');
 }
 
 function closeGridModal() {
-    document.getElementById('gridModal').classList.add('hidden');
+    document.querySelectorAll('.grid-modal').forEach(function(m){ m.classList.add('hidden'); });
 }
-document.getElementById('gridModal').addEventListener('click', function(e) {
-    if (e.target === this) closeGridModal();
+document.querySelectorAll('.grid-modal').forEach(function(m) {
+    m.addEventListener('click', function(e) { if (e.target === this) closeGridModal(); });
 });
 </script>
 <style>
