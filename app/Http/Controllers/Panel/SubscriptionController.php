@@ -48,19 +48,23 @@ class SubscriptionController extends Controller
                 ->where('tenant_id', $tenant->id)
                 ->whereNull('deleted_at')
                 ->count(),
-            'sms_used' => DB::table('sms_logs')
-                ->where('tenant_id', $tenant->id)
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
-                ->where('status', 'sent')
-                ->count(),
+            'sms_used' => \Illuminate\Support\Facades\Schema::hasTable('sms_logs')
+                ? DB::table('sms_logs')
+                    ->where('tenant_id', $tenant->id)
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->where('status', 'sent')
+                    ->count()
+                : 0,
         ];
 
-        $invoices = DB::table('invoices')
-            ->where('tenant_id', $tenant->id)
-            ->orderByDesc('created_at')
-            ->limit(5)
-            ->get();
+        $invoices = \Illuminate\Support\Facades\Schema::hasTable('invoices')
+            ? DB::table('invoices')
+                ->where('tenant_id', $tenant->id)
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get()
+            : collect();
 
         $daysLeft = 0;
         if ($tenant->status === 'trial' && $tenant->trial_ends_at) {
