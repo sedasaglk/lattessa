@@ -9,8 +9,9 @@ use Illuminate\View\View;
 
 class SubscriptionController extends Controller
 {
-    public function index(TenantContext $ctx, string $tenant_slug): View
+    public function index(TenantContext $ctx, string $tenant_slug)
     {
+        try {
         $tenant = $ctx->get();
 
         $subscription = DB::table('subscriptions')
@@ -71,8 +72,17 @@ class SubscriptionController extends Controller
             $daysLeft = max(0, (int) ceil(now()->diffInHours($tenant->trial_ends_at, false) / 24));
         }
 
-        return view('panel.subscription.index', compact(
-            'tenant', 'subscription', 'packages', 'usage', 'invoices', 'daysLeft'
-        ));
+        try {
+            return view('panel.subscription.index', compact(
+                'tenant', 'subscription', 'packages', 'usage', 'invoices', 'daysLeft'
+            ));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('SubscriptionController view error: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+            return response('View error: ' . $e->getMessage(), 500);
+        }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('SubscriptionController index error: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+            return response('Error: ' . $e->getMessage(), 500);
+        }
     }
 }
