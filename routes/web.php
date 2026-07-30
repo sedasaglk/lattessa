@@ -306,3 +306,11 @@ Route::post('/webhooks/lemonsqueezy', [\App\Http\Controllers\Webhooks\LemonSquee
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::middleware('auth')->post('/api/push-token', [\App\Http\Controllers\Api\PushTokenController::class, 'store'])->name('api.push.token');
+
+// Salon fotograf servisi
+Route::get('/uploads/salon/{tenant}/{filename}', function($tenant, $filename) {
+    $path = public_path("uploads/salon/{$tenant}/{$filename}");
+    if (!file_exists($path)) abort(404);
+    $mime = mime_content_type($path);
+    return response()->file($path, ['Content-Type' => $mime]);
+})->where('filename', '.*');
