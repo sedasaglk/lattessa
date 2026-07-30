@@ -203,9 +203,9 @@
             @if($isSecretary) {!! sidebarLink('panel.waiting.index', 'Bekleme Listesi', '◈', 'panel.waiting*', $slug) !!} @endif
             {!! sidebarLink('panel.customers.index', 'Müşteriler', '◉', 'panel.customers*', $slug) !!}
             @if($isSecretary) {!! sidebarLink('panel.crm.index', 'CRM', '◎', 'panel.crm*', $slug) !!} @endif
-            {!! sidebarLink('panel.services.index', 'Hizmetler', '✦', 'panel.services*', $slug) !!}
-            {!! sidebarLink('panel.salon.photos', 'Salon Fotoğrafları', '🖼', 'panel.salon*', $slug) !!}
-            {!! sidebarLink('panel.reviews.index', 'Yorumlar', '★', 'panel.reviews*', $slug) !!}
+            @if($isManager) {!! sidebarLink('panel.services.index', 'Hizmetler', '✦', 'panel.services*', $slug) !!} @endif
+            @if($isManager) {!! sidebarLink('panel.salon.photos', 'Salon Fotoğrafları', '🖼', 'panel.salon*', $slug) !!} @endif
+            @if($isManager) {!! sidebarLink('panel.reviews.index', 'Yorumlar', '★', 'panel.reviews*', $slug) !!} @endif
             @if($isSecretary) {!! sidebarLink('panel.packages.index', 'Paketler', '⊞', 'panel.packages*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.staff.index', 'Personel', '◈', 'panel.staff*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.payroll.index', 'Bordro', '◑', 'panel.payroll*', $slug) !!}
@@ -216,12 +216,12 @@
                 <span class="{{ $payrollActive ? 'text-white font-medium' : 'font-normal' }}" style="{{ $payrollActive ? '' : 'color:#9CA3AF;' }}">Bordrolarım</span>
             </a>
             @endif
-            {!! sidebarLink('panel.sales.index', 'Satışlar', '◈', 'panel.sales*', $slug) !!}
+            @if($isSecretary) {!! sidebarLink('panel.sales.index', 'Satışlar', '◈', 'panel.sales*', $slug) !!} @endif
             @if($isSecretary) {!! sidebarLink('panel.inventory.index', 'Stok', '⊟', 'panel.inventory*', $slug) !!} @endif
             @if($isSecretary) {!! sidebarLink('panel.cash.index', 'Kasa', '◆', 'panel.cash*', $slug) !!} @endif
-            {!! sidebarLink('panel.loyalty.index', 'Sadakat', '★', 'panel.loyalty*', $slug) !!}
-            @if($isManager) {!! sidebarLink('panel.marketing.index', 'Pazarlama', '◈', 'panel.marketing*', $slug) !!} @endif
-            @if($isManager) {!! sidebarLink('panel.branches.index', 'Şubeler', '⊕', 'panel.branches*', $slug) !!} @endif
+            @if($isSecretary) {!! sidebarLink('panel.loyalty.index', 'Sadakat', '★', 'panel.loyalty*', $slug) !!} @endif
+            @if($isSecretary) {!! sidebarLink('panel.marketing.index', 'Pazarlama', '◈', 'panel.marketing*', $slug) !!} @endif
+            @if($isOwner) {!! sidebarLink('panel.branches.index', 'Şubeler', '⊕', 'panel.branches*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.reports.index', 'Raporlar', '◈', 'panel.reports*', $slug) !!} @endif
             @if($isManager) {!! sidebarLink('panel.whatsapp.index', 'WhatsApp', '◈', 'panel.whatsapp*', $slug) !!} @endif
 
@@ -398,24 +398,25 @@
                 ['route' => 'panel.waiting.index', 'label' => 'Bekleme Listesi', 'icon' => '⏳', 'match' => 'panel.waiting*', 'show' => $isSecretary],
                 ['route' => 'panel.customers.index', 'label' => 'Müşteriler', 'icon' => '👥', 'match' => 'panel.customers*', 'show' => true],
                 ['route' => 'panel.crm.index', 'label' => 'CRM', 'icon' => '🎯', 'match' => 'panel.crm*', 'show' => $isSecretary],
-                ['route' => 'panel.services.index', 'label' => 'Hizmetler', 'icon' => '✂️', 'match' => 'panel.services*', 'show' => true],
-                ['route' => 'panel.salon.photos', 'label' => 'Salon Fotoğrafları', 'icon' => '🖼', 'match' => 'panel.salon*', 'show' => true],
-                ['route' => 'panel.reviews.index', 'label' => 'Yorumlar', 'icon' => '★', 'match' => 'panel.reviews*', 'show' => true],
+                ['route' => 'panel.services.index', 'label' => 'Hizmetler', 'icon' => '✂️', 'match' => 'panel.services*', 'show' => $isManager],
+                ['route' => 'panel.salon.photos', 'label' => 'Salon Fotoğrafları', 'icon' => '🖼', 'match' => 'panel.salon*', 'show' => $isManager],
+                ['route' => 'panel.reviews.index', 'label' => 'Yorumlar', 'icon' => '★', 'match' => 'panel.reviews*', 'show' => $isManager],
                 ['route' => 'panel.packages.index', 'label' => 'Paketler', 'icon' => '📦', 'match' => 'panel.packages*', 'show' => $isSecretary],
                 ['route' => 'panel.staff.index', 'label' => 'Personel', 'icon' => '👤', 'match' => 'panel.staff*', 'show' => $isManager],
                 ['route' => 'panel.payroll.index', 'label' => 'Bordro', 'icon' => '💰', 'match' => 'panel.payroll*', 'show' => $isManager],
 
-                ['route' => 'panel.sales.index', 'label' => 'Satışlar', 'icon' => '🛍️', 'match' => 'panel.sales*', 'show' => true],
+                ['route' => 'panel.sales.index', 'label' => 'Satışlar', 'icon' => '🛍️', 'match' => 'panel.sales*', 'show' => $isSecretary],
                 ['route' => 'panel.inventory.index', 'label' => 'Stok', 'icon' => '📊', 'match' => 'panel.inventory*', 'show' => $isSecretary],
                 ['route' => 'panel.cash.index', 'label' => 'Kasa', 'icon' => '💳', 'match' => 'panel.cash*', 'show' => $isSecretary],
-                ['route' => 'panel.loyalty.index', 'label' => 'Sadakat', 'icon' => '⭐', 'match' => 'panel.loyalty*', 'show' => true],
-                ['route' => 'panel.marketing.index', 'label' => 'Pazarlama', 'icon' => '📢', 'match' => 'panel.marketing*', 'show' => $isManager],
-                ['route' => 'panel.branches.index', 'label' => 'Şubeler', 'icon' => '🏪', 'match' => 'panel.branches*', 'show' => $isManager],
+                ['route' => 'panel.loyalty.index', 'label' => 'Sadakat', 'icon' => '⭐', 'match' => 'panel.loyalty*', 'show' => $isSecretary],
+                ['route' => 'panel.marketing.index', 'label' => 'Pazarlama', 'icon' => '📢', 'match' => 'panel.marketing*', 'show' => $isSecretary],
+                ['route' => 'panel.branches.index', 'label' => 'Şubeler', 'icon' => '🏪', 'match' => 'panel.branches*', 'show' => $isOwner],
                 ['route' => 'panel.reports.index', 'label' => 'Raporlar', 'icon' => '📈', 'match' => 'panel.reports*', 'show' => $isManager],
                 ['route' => 'panel.whatsapp.index', 'label' => 'WhatsApp', 'icon' => '💬', 'match' => 'panel.whatsapp*', 'show' => $isManager],
                 ['route' => 'panel.support.index', 'label' => 'Destek', 'icon' => '🎧', 'match' => 'panel.support*', 'show' => true],
                 ['route' => 'panel.invoices.index', 'label' => 'Faturalar', 'icon' => '🧾', 'match' => 'panel.invoices*', 'show' => $isOwner],
                 ['route' => 'panel.subscription.index', 'label' => 'Abonelik', 'icon' => '💎', 'match' => 'panel.subscription*', 'show' => $isOwner && !(request()->userAgent() && str_contains(request()->userAgent(), 'LattessaApp'))],
+                ['route' => 'panel.notification-settings.index', 'label' => 'Bildirim Ayarları', 'icon' => '🔔', 'match' => 'panel.notification-settings*', 'show' => $isManager],
                 ['route' => 'panel.settings.index', 'label' => 'Ayarlar', 'icon' => '⚙️', 'match' => 'panel.settings*', 'show' => $isManager],
             ];
             @endphp
