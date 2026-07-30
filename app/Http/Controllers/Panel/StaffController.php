@@ -277,6 +277,9 @@ class StaffController extends Controller
                 ->where('day_of_week', $day)
                 ->first();
 
+            // existing branch_id 0 ise null yap (eski hatalı kayıt)
+            $existingBranchId = ($existing && $existing->branch_id > 0) ? $existing->branch_id : null;
+
             if ($existing) {
                 DB::table('staff_schedules')
                     ->where('id', $existing->id)
@@ -284,14 +287,10 @@ class StaffController extends Controller
                         'is_working' => $isWorking,
                         'start_time' => $startTime,
                         'end_time' => $endTime,
-                        'branch_id' => $branchId ?? $existing->branch_id,
+                        'branch_id' => $branchId ?? $existingBranchId,
                         'updated_at' => now(),
                     ]);
             } else {
-                // branch_id için fallback: kullanıcının kendi branch_id'si veya ilk aktif şube
-                $fallbackBranchId = $branchId ?? DB::table('users')->where('id', $id)->value('branch_id')
-                    ?? DB::table('branches')->where('tenant_id', $tenant->id)->where('status','active')->value('id');
-
                 DB::table('staff_schedules')->insert([
                     'tenant_id' => $tenant->id,
                     'user_id' => $id,
@@ -299,7 +298,7 @@ class StaffController extends Controller
                     'is_working' => $isWorking,
                     'start_time' => $startTime,
                     'end_time' => $endTime,
-                    'branch_id' => $fallbackBranchId,
+                    'branch_id' => $branchId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
