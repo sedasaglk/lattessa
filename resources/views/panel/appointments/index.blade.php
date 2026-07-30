@@ -207,7 +207,22 @@ function newAppt(dateTimeStr) {
     window.location.href = '/' + tenantSlug + '/randevular/yeni?date=' + dateTimeStr;
 }
 
-function getModal() { return getVisibleEl('.grid-modal'); }
+// fixed elementlerin offsetParent'ı her zaman null — atadan display:none kontrol et
+function isAncestorHidden(el) {
+    var node = el.parentElement;
+    while (node && node !== document.body) {
+        if (window.getComputedStyle(node).display === 'none') return true;
+        node = node.parentElement;
+    }
+    return false;
+}
+function getModal() {
+    var modals = document.querySelectorAll('.grid-modal');
+    for (var i = 0; i < modals.length; i++) {
+        if (!isAncestorHidden(modals[i])) return modals[i];
+    }
+    return modals[0] || null;
+}
 
 function showGridModal(ev, color) {
     var modal = getModal();
