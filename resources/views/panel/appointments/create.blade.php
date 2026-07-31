@@ -272,13 +272,15 @@ function initCustomerSearch(wrap) {
                     '</div>';
             }).join('');
             dd.querySelectorAll('.cust-item').forEach(function(item){
-                item.addEventListener('mousedown', function(e){
+                function selectItem(e) {
                     e.preventDefault();
                     hidden.value = item.dataset.id;
                     var last4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
                     input.value = item.dataset.name + ' (···' + last4 + ')';
                     dd.classList.add('hidden');
-                });
+                }
+                item.addEventListener('mousedown', selectItem);
+                item.addEventListener('touchend', selectItem);
             });
         }
         dd.classList.remove('hidden');
@@ -325,12 +327,14 @@ window.addEventListener('DOMContentLoaded', function(){
                         '</div>';
                 }).join('');
                 dd.querySelectorAll('.cust-item').forEach(function(item){
-                    item.addEventListener('mousedown', function(e){
+                    function selectGroupItem(e) {
                         e.preventDefault();
                         addGroupCustomer(parseInt(item.dataset.id), item.dataset.name, item.dataset.phone);
                         input.value = '';
                         dd.classList.add('hidden');
-                    });
+                    }
+                    item.addEventListener('mousedown', selectGroupItem);
+                    item.addEventListener('touchend', selectGroupItem);
                 });
             }
             dd.classList.remove('hidden');
