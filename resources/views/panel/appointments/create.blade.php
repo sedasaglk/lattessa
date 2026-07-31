@@ -278,17 +278,29 @@ function initCustomerSearch(wrap) {
                     var last4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
                     input.value = item.dataset.name + ' (···' + last4 + ')';
                     dd.classList.add('hidden');
+                    input.blur();
                 }
                 item.addEventListener('mousedown', selectItem);
-                item.addEventListener('touchend', selectItem);
+                item.addEventListener('touchstart', selectItem);
             });
         }
         dd.classList.remove('hidden');
     }
 
-    input.addEventListener('input', function(){ doSearch(this.value); });
-    input.addEventListener('focus', function(){ doSearch(this.value); });
-    input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 150); });
+    function positionDropdown() {
+        var rect = input.getBoundingClientRect();
+        dd.style.position = 'fixed';
+        dd.style.left = rect.left + 'px';
+        dd.style.width = rect.width + 'px';
+        dd.style.top = (rect.bottom + 4) + 'px';
+        dd.style.zIndex = '9999';
+        dd.style.maxHeight = '200px';
+        dd.style.overflowY = 'auto';
+    }
+
+    input.addEventListener('input', function(){ positionDropdown(); doSearch(this.value); });
+    input.addEventListener('focus', function(){ positionDropdown(); doSearch(this.value); });
+    input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 200); });
 
     // old() ile seçili müşteri
     var oldId = {{ old('customer_id', 'null') }};
@@ -332,9 +344,10 @@ window.addEventListener('DOMContentLoaded', function(){
                         addGroupCustomer(parseInt(item.dataset.id), item.dataset.name, item.dataset.phone);
                         input.value = '';
                         dd.classList.add('hidden');
+                        input.blur();
                     }
                     item.addEventListener('mousedown', selectGroupItem);
-                    item.addEventListener('touchend', selectGroupItem);
+                    item.addEventListener('touchstart', selectGroupItem);
                 });
             }
             dd.classList.remove('hidden');
