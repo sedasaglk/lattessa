@@ -242,6 +242,7 @@ function renderGroupCustomers() {
 
 // Müşteri arama - her wrap bağımsız çalışır (double-render fix)
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone]));
+var isTouchDevice = ('ontouchstart' in window);
 
 function escHtml(s) { return String(s).replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
 
@@ -287,15 +288,8 @@ function initCustomerSearch(wrap) {
         dd.classList.remove('hidden');
     }
 
-    // Mobilde klavye input'un altını kapatır, dropdown'ı yukarı aç
-    var isTouchDevice = ('ontouchstart' in window);
-    if (isTouchDevice) {
-        dd.style.bottom = 'calc(100% + 4px)';
-        dd.style.top = 'auto';
-    } else {
-        dd.style.top = 'calc(100% + 2px)';
-        dd.style.bottom = 'auto';
-    }
+    dd.style.top = 'calc(100% + 2px)';
+    dd.style.bottom = 'auto';
 
     input.addEventListener('input', function(){ doSearch(this.value); });
     input.addEventListener('focus', function(){ doSearch(this.value); });
