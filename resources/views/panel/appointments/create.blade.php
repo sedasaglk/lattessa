@@ -58,16 +58,13 @@
         {{-- Tekil Müşteri (grup değilken görünür) --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <div class="relative" id="customerSearchWrap">
-                <input type="text" id="customerSearch" autocomplete="off"
-                       placeholder="İsim veya son 4 hane telefon..."
-                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
-                       oninput="searchCustomer(this.value)" onfocus="searchCustomer(this.value)">
-                <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
-                <div id="customerDropdown"
-                     class="bg-white border border-gray-200 rounded-lg shadow-xl hidden"
-                     style="max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;position:fixed;z-index:9999;left:0;width:100%;">
-                </div>
+            <input type="text" id="customerSearch" autocomplete="off"
+                   placeholder="İsim veya son 4 hane telefon..."
+                   class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
+                   oninput="searchCustomer(this.value)" onfocus="searchCustomer(this.value)">
+            <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
+            <div id="customerResults"
+                 style="display:none;margin-top:4px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;overflow:hidden;">
             </div>
         </div>
 
@@ -82,15 +79,12 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 {{-- Müşteri arama (grup) --}}
-                <div class="relative" id="groupSearchWrap">
-                    <input type="text" id="groupSearch" autocomplete="off"
-                           placeholder="Müşteri ekle..."
-                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                           oninput="searchGroupCustomer(this.value)" onfocus="searchGroupCustomer(this.value)">
-                    <div id="groupDropdown"
-                         class="bg-white border border-gray-200 rounded-lg shadow-xl hidden"
-                         style="max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;position:fixed;z-index:9999;left:0;width:100%;">
-                    </div>
+                <input type="text" id="groupSearch" autocomplete="off"
+                       placeholder="Müşteri ekle..."
+                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                       oninput="searchGroupCustomer(this.value)" onfocus="searchGroupCustomer(this.value)">
+                <div id="groupResults"
+                     style="display:none;margin-top:4px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;overflow:hidden;">
                 </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin. Her müşteri listeye eklenir.</p>
             </div>
@@ -215,8 +209,8 @@ function toggleGroupMode() {
     document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
 
     // customer_id zorunluluğunu değiştir
-    var singleInput = document.querySelector('#singleCustomerSection .cust-id-input');
-    singleInput.required = !isGroup;
+    var singleInput = document.getElementById('customer_id_input');
+    if (singleInput) singleInput.required = !isGroup;
 
     // Tekrarlayan ile birlikte kullanılamaz
     if (isGroup) {
@@ -260,93 +254,54 @@ var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->nam
 
 function escHtml(s) { return String(s).replace(/'/g,"&#39;").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function searchCustomer(q) {
-    var dd = document.getElementById('customerDropdown');
-    var rect = document.getElementById('customerSearch').getBoundingClientRect();
-    dd.style.left  = rect.left + 'px';
-    dd.style.width = rect.width + 'px';
-    dd.style.top   = (rect.bottom + 2) + 'px';
-
+function filterC(q) {
     q = (q || '').trim();
-    var results;
-    if (!q) {
-        results = allCustomers.slice(0, 60);
-    } else if (/^\d+$/.test(q)) {
-        results = allCustomers.filter(function(c){ return c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4) === q.slice(-4)); });
-    } else {
-        var ql = q.toLowerCase();
-        results = allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
-    }
+    if (!q) return allCustomers.slice(0, 60);
+    if (/^\d+$/.test(q)) return allCustomers.filter(function(c){ return c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4) === q.slice(-4)); });
+    var ql = q.toLowerCase();
+    return allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
+}
 
-    if (!results.length) {
-        dd.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Müşteri bulunamadı</div>';
-    } else {
-        dd.innerHTML = results.slice(0, 80).map(function(c){
-            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div class="px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0" style="font-size:14px;" onclick="selectCustomer('+c.id+',\''+escHtml(c.name)+'\',\''+escHtml(c.phone||'')+'\''+')">'
-                + '<span style="font-weight:600;color:#111;">'+escHtml(c.name)+'</span> '
-                + '<span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>'
-                + '</div>';
-        }).join('');
-    }
-    dd.classList.remove('hidden');
+function buildItems(results, onclickFn) {
+    if (!results.length) return '<div style="padding:14px 16px;color:#9ca3af;font-size:13px;">Müşteri bulunamadı</div>';
+    return results.slice(0, 80).map(function(c){
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        return '<div style="padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;cursor:pointer;" onclick="'+onclickFn+'('+c.id+',\''+escHtml(c.name)+'\',\''+escHtml(c.phone||'')+'\')">'
+            + '<strong style="color:#111;">'+escHtml(c.name)+'</strong> '
+            + '<span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>'
+            + '</div>';
+    }).join('');
+}
+
+function searchCustomer(q) {
+    var box = document.getElementById('customerResults');
+    box.innerHTML = buildItems(filterC(q), 'selectCustomer');
+    box.style.display = 'block';
 }
 
 function selectCustomer(id, name, phone) {
     document.getElementById('customer_id_input').value = id;
     var last4 = phone ? phone.toString().slice(-4) : '';
-    document.getElementById('customerSearch').value = name + (last4 ? ' (···' + last4 + ')' : '');
-    document.getElementById('customerDropdown').classList.add('hidden');
+    document.getElementById('customerSearch').value = name + (last4 ? ' (···'+last4+')' : '');
+    document.getElementById('customerResults').style.display = 'none';
 }
 
 function searchGroupCustomer(q) {
-    var dd = document.getElementById('groupDropdown');
-    var inp = document.getElementById('groupSearch');
-    var rect = inp.getBoundingClientRect();
-    dd.style.left  = rect.left + 'px';
-    dd.style.width = rect.width + 'px';
-    dd.style.top   = (rect.bottom + 2) + 'px';
-
-    q = (q || '').trim();
-    var results;
-    if (!q) {
-        results = allCustomers.slice(0, 60);
-    } else if (/^\d+$/.test(q)) {
-        results = allCustomers.filter(function(c){ return c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4) === q.slice(-4)); });
-    } else {
-        var ql = q.toLowerCase();
-        results = allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
-    }
-
-    if (!results.length) {
-        dd.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Müşteri bulunamadı</div>';
-    } else {
-        dd.innerHTML = results.slice(0, 80).map(function(c){
-            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div class="px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0" style="font-size:14px;" onclick="selectGroupCustomer('+c.id+',\''+escHtml(c.name)+'\',\''+escHtml(c.phone||'')+'\''+')">'
-                + '<span style="font-weight:600;color:#111;">'+escHtml(c.name)+'</span> '
-                + '<span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>'
-                + '</div>';
-        }).join('');
-    }
-    dd.classList.remove('hidden');
+    var box = document.getElementById('groupResults');
+    box.innerHTML = buildItems(filterC(q), 'selectGroupCustomer');
+    box.style.display = 'block';
 }
 
 function selectGroupCustomer(id, name, phone) {
     addGroupCustomer(parseInt(id), name, phone);
     document.getElementById('groupSearch').value = '';
-    document.getElementById('groupDropdown').classList.add('hidden');
+    document.getElementById('groupResults').style.display = 'none';
 }
 
 document.addEventListener('click', function(e) {
-    var wrap = document.getElementById('customerSearchWrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('customerDropdown').classList.add('hidden');
-    }
-    var gwrap = document.getElementById('groupSearchWrap');
-    if (gwrap && !gwrap.contains(e.target)) {
-        var gdd = document.getElementById('groupDropdown');
-        if (gdd) gdd.classList.add('hidden');
+    if (!document.getElementById('customerSearch').contains(e.target) &&
+        !document.getElementById('customerResults').contains(e.target)) {
+        document.getElementById('customerResults').style.display = 'none';
     }
 });
 
