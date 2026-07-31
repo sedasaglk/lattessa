@@ -250,50 +250,67 @@ function initCustomerSearch(wrap) {
     var input = wrap.querySelector('.cust-search-input');
     var dd = wrap.querySelector('.cust-dropdown');
     var hidden = wrap.querySelector('.cust-id-input');
+    var keepOpen = false;
+
+    dd.style.top = 'calc(100% + 2px)';
+    dd.style.bottom = 'auto';
+
+    function renderResults(results) {
+        if (results.length === 0) {
+            dd.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#9ca3af;">Müşteri bulunamadı</div>';
+        } else {
+            dd.innerHTML = results.slice(0, 80).map(function(c){
+                var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+                return '<div style="padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid #f3f4f6;" class="cust-item" data-id="'+c.id+'" data-name="'+escHtml(c.name)+'" data-phone="'+escHtml(c.phone||'')+'">' +
+                    '<span style="font-weight:600;color:#111;">'+escHtml(c.name)+'</span> ' +
+                    '<span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>' +
+                    '</div>';
+            }).join('');
+            dd.querySelectorAll('.cust-item').forEach(function(item){
+                function selectItem(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hidden.value = item.dataset.id;
+                    var last4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
+                    input.value = item.dataset.name + ' (···' + last4 + ')';
+                    keepOpen = false;
+                    dd.classList.add('hidden');
+                }
+                item.addEventListener('mousedown', selectItem);
+                item.addEventListener('touchstart', selectItem);
+            });
+        }
+    }
 
     function doSearch(q) {
         q = (q || '').trim();
         var results;
         if (q.length === 0) {
             results = allCustomers.slice(0, 50);
-        } else if (/^\d{3,4}$/.test(q)) {
-            results = allCustomers.filter(function(c){ return c.phone && c.phone.toString().slice(-4) === q.slice(-4); });
+        } else if (/^\d{3,}$/.test(q)) {
+            results = allCustomers.filter(function(c){ return c.phone && c.phone.toString().includes(q); });
         } else {
             var ql = q.toLowerCase();
             results = allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
         }
-        if (results.length === 0) {
-            dd.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#9ca3af;">Müşteri bulunamadı</div>';
-        } else {
-            dd.innerHTML = results.slice(0, 80).map(function(c){
-                var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-                return '<div style="padding:10px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #f3f4f6;" class="cust-item" data-id="'+c.id+'" data-name="'+escHtml(c.name)+'" data-phone="'+escHtml(c.phone||'')+'">' +
-                    '<span style="font-weight:600;color:#111;">'+escHtml(c.name)+'</span> ' +
-                    '<span style="color:#9ca3af;font-size:11px;">···'+last4+'</span>' +
-                    '</div>';
-            }).join('');
-            dd.querySelectorAll('.cust-item').forEach(function(item){
-                function selectItem(e) {
-                    e.preventDefault();
-                    hidden.value = item.dataset.id;
-                    var last4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
-                    input.value = item.dataset.name + ' (···' + last4 + ')';
-                    dd.classList.add('hidden');
-                    input.blur();
-                }
-                item.addEventListener('mousedown', selectItem);
-                item.addEventListener('touchstart', selectItem);
-            });
-        }
+        renderResults(results);
         dd.classList.remove('hidden');
+
+        // Mobilde: sonuçlar varsa klavyeyi kapat, dropdown görünsün
+        if (isTouchDevice && q.length >= 2) {
+            keepOpen = true;
+            input.blur();
+        }
     }
 
-    dd.style.top = 'calc(100% + 2px)';
-    dd.style.bottom = 'auto';
-
     input.addEventListener('input', function(){ doSearch(this.value); });
-    input.addEventListener('focus', function(){ doSearch(this.value); });
-    input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 200); });
+    input.addEventListener('focus', function(){
+        if (hidden.value === '') doSearch(this.value);
+    });
+    input.addEventListener('blur', function(){
+        if (keepOpen) { keepOpen = false; return; }
+        setTimeout(function(){ dd.classList.add('hidden'); }, 200);
+    });
 
     // old() ile seçili müşteri
     var oldId = {{ old('customer_id', 'null') }};
