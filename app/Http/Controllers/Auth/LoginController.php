@@ -32,13 +32,24 @@ class LoginController extends Controller
             'password.required' => 'Sifre alani zorunludur.',
         ]);
 
-        // Rate limiting: IP + email + tenant kombinasyonu
-        $rateLimitKey = 'login|' . $request->ip() . '|' . strtolower($request->input('email')) . '|' . $tenant->id;
+        $ip = $request->ip();
+        $emailKey = 'login.email|' . strtolower($request->input('email')) . '|' . $tenant->id;
+        $ipKey    = 'login.ip|' . $ip;
 
-        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
-            $seconds = RateLimiter::availableIn($rateLimitKey);
+        // 1) IP bazlı global limit: 30 deneme / 15 dakika
+        if (RateLimiter::tooManyAttempts($ipKey, 30)) {
+            $seconds = RateLimiter::availableIn($ipKey);
+            \Illuminate\Support\Facades\Log::warning('Login IP flood', ['ip' => $ip, 'tenant' => $tenant->slug]);
             return back()->withErrors([
-                'email' => "Cok fazla basarisiz deneme. {$seconds} saniye sonra tekrar deneyin.",
+                'email' => "Cok fazla istek. {$seconds} saniye sonra tekrar deneyin.",
+            ])->onlyInput('email');
+        }
+
+        // 2) Email bazlı limit: 5 deneme / 15 dakika (hesap kilidi)
+        if (RateLimiter::tooManyAttempts($emailKey, 5)) {
+            $seconds = RateLimiter::availableIn($emailKey);
+            return back()->withErrors([
+                'email' => "Bu hesap gecici olarak kilitlendi. {$seconds} saniye sonra tekrar deneyin.",
             ])->onlyInput('email');
         }
 
@@ -47,8 +58,19 @@ class LoginController extends Controller
             ->first();
 
         if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
-            // Basarisiz denemeyi kaydet
-            RateLimiter::hit($rateLimitKey, 300); // 5 dakika
+            RateLimiter::hit($ipKey, 900);    // 15 dakika
+            RateLimiter::hit($emailKey, 900); // 15 dakika
+
+            // Basarisiz denemeyi logla
+            \Illuminate\Support\Facades\DB::table('activity_logs')->insert([
+                'tenant_id'  => $tenant->id,
+                'user_id'    => null,
+                'description' => 'Basarisiz giris denemesi: ' . $request->input('email'),
+                'ip_address' => $ip,
+                'user_agent' => $request->userAgent(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             return back()->withErrors([
                 'email' => 'E-posta veya sifre hatali.',
@@ -62,7 +84,8 @@ class LoginController extends Controller
         }
 
         // Basarili giris - rate limit sifirla
-        RateLimiter::clear($rateLimitKey);
+        RateLimiter::clear($emailKey);
+        RateLimiter::clear($ipKey);
 
         Auth::login($user, $request->boolean('remember'));
         $user->update(['last_login_at' => now()]);
@@ -70,10 +93,10 @@ class LoginController extends Controller
 
         // Aktivite logu
         \Illuminate\Support\Facades\DB::table('activity_logs')->insert([
-            'tenant_id' => $tenant->id,
-            'user_id' => $user->id,
+            'tenant_id'  => $tenant->id,
+            'user_id'    => $user->id,
             'description' => $user->name . ' giris yapti',
-            'ip_address' => $request->ip(),
+            'ip_address' => $ip,
             'user_agent' => $request->userAgent(),
             'created_at' => now(),
             'updated_at' => now(),
