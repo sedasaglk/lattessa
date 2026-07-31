@@ -372,7 +372,7 @@ function initDesktopSearch(wrap, onSelect) {
 
 // ── Init ────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function(){
-    var isMobile = window.innerWidth < 768;
+    var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     // Tekil müşteri arama
     var singleWrap = document.querySelector('#singleCustomerSection .cust-search-wrap');
