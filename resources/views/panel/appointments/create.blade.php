@@ -287,40 +287,9 @@ function initCustomerSearch(wrap) {
         dd.classList.remove('hidden');
     }
 
-    function positionDropdown() {
-        var rect = input.getBoundingClientRect();
-        var vvp = window.visualViewport;
-        var vpH = vvp ? vvp.height : window.innerHeight;
-        var vpTop = vvp ? vvp.offsetTop : 0;
-
-        dd.style.position = 'fixed';
-        dd.style.left = rect.left + 'px';
-        dd.style.width = rect.width + 'px';
-        dd.style.zIndex = '9999';
-        dd.style.maxHeight = '180px';
-        dd.style.overflowY = 'auto';
-        dd.style.background = 'white';
-        dd.style.border = '1px solid #e5e7eb';
-        dd.style.borderRadius = '8px';
-        dd.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
-
-        var spaceBelow = vpH - rect.bottom;
-        if (spaceBelow < 200) {
-            // Klavye açık - dropdown'ı input'un üstüne aç
-            dd.style.top = 'auto';
-            dd.style.bottom = (vpH - rect.top + vpTop + 4) + 'px';
-        } else {
-            dd.style.bottom = 'auto';
-            dd.style.top = (rect.bottom + vpTop + 4) + 'px';
-        }
-    }
-
-    input.addEventListener('input', function(){ positionDropdown(); doSearch(this.value); });
-    input.addEventListener('focus', function(){ positionDropdown(); doSearch(this.value); });
+    input.addEventListener('input', function(){ doSearch(this.value); });
+    input.addEventListener('focus', function(){ doSearch(this.value); });
     input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 200); });
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', function(){ if (!dd.classList.contains('hidden')) positionDropdown(); });
-    }
 
     // old() ile seçili müşteri
     var oldId = {{ old('customer_id', 'null') }};
@@ -375,7 +344,7 @@ window.addEventListener('DOMContentLoaded', function(){
 
         input.addEventListener('input', function(){ doGroupSearch(this.value); });
         input.addEventListener('focus', function(){ doGroupSearch(this.value); });
-        input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 150); });
+        input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 200); });
     }
 
     renderGroupCustomers();
