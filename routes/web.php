@@ -182,6 +182,7 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
 
         Route::put('/ayarlar/sifre', [SettingsController::class, 'updatePassword'])->name('panel.settings.password');
 
+
         // ── Özel/Rol yetki kontrolü ───────────────────────────────────────────
         Route::middleware('permission:sales')->group(function () {
             Route::get('/satislar', [SaleController::class, 'index'])->name('panel.sales.index');
