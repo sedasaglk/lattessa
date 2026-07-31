@@ -58,14 +58,12 @@
         {{-- Tekil Müşteri (grup değilken görünür) --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <input type="text" id="customerSearch" autocomplete="off"
+            <input type="text" id="customerSearch" readonly autocomplete="off"
                    placeholder="İsim veya son 4 hane telefon..."
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
-                   oninput="searchCustomer(this.value)" onfocus="searchCustomer(this.value)">
+                   style="cursor:pointer;"
+                   onclick="openCustModal('single')">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
-            <div id="customerResults"
-                 style="display:none;margin-top:4px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;overflow:hidden;">
-            </div>
         </div>
 
         {{-- Grup Müşteri Listesi (grup modunda görünür) --}}
@@ -79,13 +77,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 {{-- Müşteri arama (grup) --}}
-                <input type="text" id="groupSearch" autocomplete="off"
+                <input type="text" id="groupSearch" readonly autocomplete="off"
                        placeholder="Müşteri ekle..."
                        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                       oninput="searchGroupCustomer(this.value)" onfocus="searchGroupCustomer(this.value)">
-                <div id="groupResults"
-                     style="display:none;margin-top:4px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;overflow:hidden;">
-                </div>
+                       style="cursor:pointer;"
+                       onclick="openCustModal('group')">
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin. Her müşteri listeye eklenir.</p>
             </div>
         </div>
@@ -251,65 +247,75 @@ function renderGroupCustomers() {
 
 // ── Müşteri Arama ──────────────────────────────────────────────────────────
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
+var _custModalMode = 'single';
 
-function escHtml(s) { return String(s).replace(/'/g,"&#39;").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function filterC(q) {
-    q = (q || '').trim();
-    if (!q) return allCustomers.slice(0, 60);
-    if (/^\d+$/.test(q)) return allCustomers.filter(function(c){ return c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4) === q.slice(-4)); });
-    var ql = q.toLowerCase();
-    return allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql) || (c.phone && c.phone.toString().includes(q)); });
+    q = (q||'').trim();
+    if (!q) return allCustomers.slice(0,60);
+    if (/^\d+$/.test(q)) return allCustomers.filter(function(c){ return c.phone && (c.phone.toString().includes(q)||c.phone.toString().slice(-4)===q.slice(-4)); });
+    var ql=q.toLowerCase();
+    return allCustomers.filter(function(c){ return c.name.toLowerCase().includes(ql)||(c.phone&&c.phone.toString().includes(q)); });
 }
 
-function buildItems(results, onclickFn) {
-    if (!results.length) return '<div style="padding:14px 16px;color:#9ca3af;font-size:13px;">Müşteri bulunamadı</div>';
-    return results.slice(0, 80).map(function(c){
-        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        return '<div style="padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;cursor:pointer;" onclick="'+onclickFn+'('+c.id+',\''+escHtml(c.name)+'\',\''+escHtml(c.phone||'')+'\')">'
-            + '<strong style="color:#111;">'+escHtml(c.name)+'</strong> '
-            + '<span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>'
-            + '</div>';
-    }).join('');
+function openCustModal(mode) {
+    _custModalMode = mode || 'single';
+    var modal = document.getElementById('custSearchModal');
+    modal.style.display = 'block';
+    var inp = document.getElementById('custModalInput');
+    inp.value = '';
+    renderCustModalResults('');
+    setTimeout(function(){ inp.focus(); }, 100);
 }
 
-function searchCustomer(q) {
-    var box = document.getElementById('customerResults');
-    box.innerHTML = buildItems(filterC(q), 'selectCustomer');
-    box.style.display = 'block';
+function closeCustModal() {
+    document.getElementById('custSearchModal').style.display = 'none';
 }
 
-function selectCustomer(id, name, phone) {
-    document.getElementById('customer_id_input').value = id;
-    var last4 = phone ? phone.toString().slice(-4) : '';
-    document.getElementById('customerSearch').value = name + (last4 ? ' (···'+last4+')' : '');
-    document.getElementById('customerResults').style.display = 'none';
-}
-
-function searchGroupCustomer(q) {
-    var box = document.getElementById('groupResults');
-    box.innerHTML = buildItems(filterC(q), 'selectGroupCustomer');
-    box.style.display = 'block';
-}
-
-function selectGroupCustomer(id, name, phone) {
-    addGroupCustomer(parseInt(id), name, phone);
-    document.getElementById('groupSearch').value = '';
-    document.getElementById('groupResults').style.display = 'none';
-}
-
-document.addEventListener('click', function(e) {
-    if (!document.getElementById('customerSearch').contains(e.target) &&
-        !document.getElementById('customerResults').contains(e.target)) {
-        document.getElementById('customerResults').style.display = 'none';
+function renderCustModalResults(q) {
+    var results = filterC(q);
+    var html = '';
+    if (!results.length) {
+        html = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
+    } else {
+        html = results.slice(0,100).map(function(c){
+            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+            return '<div style="padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.05);" onclick="pickCust('+c.id+',\''+c.name.replace(/'/g,"\\'")+'\',' +'\''+String(c.phone||'').replace(/'/g,"\\'")+'\''+')">'
+                + '<strong style="color:#111;">'+escHtml(c.name)+'</strong> '
+                + '<span style="color:#9ca3af;font-size:13px;">···'+last4+'</span>'
+                + '</div>';
+        }).join('');
     }
+    document.getElementById('custModalResults').innerHTML = html;
+}
+
+function pickCust(id, name, phone) {
+    if (_custModalMode === 'group') {
+        addGroupCustomer(parseInt(id), name, phone);
+        document.getElementById('custModalInput').value = '';
+        renderCustModalResults('');
+    } else {
+        document.getElementById('customer_id_input').value = id;
+        var last4 = phone ? phone.toString().slice(-4) : '';
+        document.getElementById('customerSearch').value = name + (last4 ? ' (···'+last4+')' : '');
+        closeCustModal();
+    }
+}
+
+document.getElementById('custModalInput').addEventListener('input', function(){
+    renderCustModalResults(this.value);
 });
 
 window.addEventListener('DOMContentLoaded', function(){
     var oldId = {{ old('customer_id', 'null') }};
     if (oldId) {
         var c = allCustomers.find(function(x){ return x.id == oldId; });
-        if (c) selectCustomer(c.id, c.name, c.phone || '');
+        if (c) {
+            document.getElementById('customer_id_input').value = c.id;
+            var l4 = c.phone ? c.phone.slice(-4) : '';
+            document.getElementById('customerSearch').value = c.name + (l4 ? ' (···'+l4+')' : '');
+        }
     }
     renderGroupCustomers();
 });
