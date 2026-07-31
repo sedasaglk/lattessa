@@ -267,8 +267,24 @@ function initCustomerSearch(wrap, onSelect) {
 
     var hideTimer = null;
 
+    function positionDropdown() {
+        var rect = input.getBoundingClientRect();
+        var vvHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+        var spaceBelow = vvHeight - rect.bottom;
+        if (spaceBelow >= 120) {
+            dd.style.top    = 'calc(100% + 4px)';
+            dd.style.bottom = 'auto';
+            dd.style.maxHeight = Math.min(240, spaceBelow - 8) + 'px';
+        } else {
+            dd.style.top    = 'auto';
+            dd.style.bottom = 'calc(100% + 4px)';
+            dd.style.maxHeight = Math.min(240, rect.top - 8) + 'px';
+        }
+    }
+
     function show(q) {
         if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+        positionDropdown();
         var results = filter(q);
         if (!results.length) {
             dd.innerHTML = '<div style="padding:14px 16px;color:#9ca3af;font-size:13px;">Müşteri bulunamadı</div>';
@@ -318,6 +334,11 @@ function initCustomerSearch(wrap, onSelect) {
     input.addEventListener('input',  function(){ show(this.value); });
     input.addEventListener('focus',  function(){ show(this.value); });
     input.addEventListener('blur',   function(){ hideTimer = setTimeout(hide, 300); });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function(){
+            if (dd.style.display === 'block') positionDropdown();
+        });
+    }
 
     // Eski değer
     if (hidden) {
