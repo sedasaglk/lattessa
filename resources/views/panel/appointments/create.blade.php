@@ -64,7 +64,7 @@
                        class="cust-search-input w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
                 <input type="hidden" name="customer_id" class="cust-id-input" value="{{ old('customer_id') }}">
                 <div class="cust-dropdown absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl hidden"
-                     style="max-height:220px; overflow-y:auto; top:calc(100% + 2px); left:0;">
+                     style="max-height:220px; overflow-y:auto; left:0;">
                 </div>
             </div>
         </div>
@@ -85,7 +85,7 @@
                            placeholder="Müşteri ekle..."
                            class="cust-search-input w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
                     <div class="cust-dropdown absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl hidden"
-                         style="max-height:220px; overflow-y:auto; top:calc(100% + 2px); left:0;">
+                         style="max-height:220px; overflow-y:auto; left:0;">
                     </div>
                 </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin. Her müşteri listeye eklenir.</p>
@@ -287,6 +287,16 @@ function initCustomerSearch(wrap) {
         dd.classList.remove('hidden');
     }
 
+    // Mobilde klavye input'un altını kapatır, dropdown'ı yukarı aç
+    var isTouchDevice = ('ontouchstart' in window);
+    if (isTouchDevice) {
+        dd.style.bottom = 'calc(100% + 4px)';
+        dd.style.top = 'auto';
+    } else {
+        dd.style.top = 'calc(100% + 2px)';
+        dd.style.bottom = 'auto';
+    }
+
     input.addEventListener('input', function(){ doSearch(this.value); });
     input.addEventListener('focus', function(){ doSearch(this.value); });
     input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.add('hidden'); }, 200); });
@@ -340,6 +350,14 @@ window.addEventListener('DOMContentLoaded', function(){
                 });
             }
             dd.classList.remove('hidden');
+        }
+
+        if (isTouchDevice) {
+            dd.style.bottom = 'calc(100% + 4px)';
+            dd.style.top = 'auto';
+        } else {
+            dd.style.top = 'calc(100% + 2px)';
+            dd.style.bottom = 'auto';
         }
 
         input.addEventListener('input', function(){ doGroupSearch(this.value); });
