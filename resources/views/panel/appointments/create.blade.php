@@ -265,7 +265,10 @@ function initCustomerSearch(wrap, onSelect) {
         });
     }
 
+    var hideTimer = null;
+
     function show(q) {
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
         var results = filter(q);
         if (!results.length) {
             dd.innerHTML = '<div style="padding:14px 16px;color:#9ca3af;font-size:13px;">Müşteri bulunamadı</div>';
@@ -273,26 +276,37 @@ function initCustomerSearch(wrap, onSelect) {
             dd.innerHTML = results.slice(0, 80).map(function(c){
                 var last4 = c.phone ? c.phone.toString().slice(-4) : '';
                 return '<div class="cust-item" data-id="'+c.id+'" data-name="'+escHtml(c.name)+'" data-phone="'+escHtml(c.phone)+'"'
-                    +' style="padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;cursor:pointer;">'
+                    +' style="padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">'
                     +'<span style="font-weight:600;color:#111;">'+escHtml(c.name)+'</span> '
                     +'<span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>'
                     +'</div>';
             }).join('');
             dd.querySelectorAll('.cust-item').forEach(function(item){
-                ['mousedown','touchstart'].forEach(function(ev){
-                    item.addEventListener(ev, function(e){
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (onSelect) {
-                            onSelect(item.dataset.id, item.dataset.name, item.dataset.phone);
-                        } else {
-                            hidden.value  = item.dataset.id;
-                            var l4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
-                            input.value   = item.dataset.name + (l4 ? ' (···'+l4+')' : '');
-                        }
-                        dd.style.display = 'none';
-                        input.blur();
-                    });
+                item.addEventListener('touchend', function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+                    if (onSelect) {
+                        onSelect(item.dataset.id, item.dataset.name, item.dataset.phone);
+                    } else {
+                        hidden.value = item.dataset.id;
+                        var l4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
+                        input.value  = item.dataset.name + (l4 ? ' (···'+l4+')' : '');
+                    }
+                    dd.style.display = 'none';
+                });
+                item.addEventListener('mousedown', function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+                    if (onSelect) {
+                        onSelect(item.dataset.id, item.dataset.name, item.dataset.phone);
+                    } else {
+                        hidden.value = item.dataset.id;
+                        var l4 = item.dataset.phone ? item.dataset.phone.slice(-4) : '';
+                        input.value  = item.dataset.name + (l4 ? ' (···'+l4+')' : '');
+                    }
+                    dd.style.display = 'none';
                 });
             });
         }
@@ -303,8 +317,7 @@ function initCustomerSearch(wrap, onSelect) {
 
     input.addEventListener('input',  function(){ show(this.value); });
     input.addEventListener('focus',  function(){ show(this.value); });
-    input.addEventListener('blur',   function(){ setTimeout(hide, 250); });
-    input.addEventListener('touchend', function(e){ e.preventDefault(); this.focus(); show(this.value); });
+    input.addEventListener('blur',   function(){ hideTimer = setTimeout(hide, 300); });
 
     // Eski değer
     if (hidden) {
