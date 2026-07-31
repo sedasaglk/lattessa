@@ -63,8 +63,8 @@
                        placeholder="İsim veya son 4 hane telefon..."
                        class="cust-search-input w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
                 <input type="hidden" name="customer_id" class="cust-id-input" value="{{ old('customer_id') }}">
-                <div class="cust-dropdown absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl"
-                     style="max-height:240px;overflow-y:auto;top:calc(100% + 4px);left:0;display:none;">
+                <div class="cust-dropdown bg-white border border-gray-200 rounded-lg shadow-xl"
+                     style="overflow-y:auto;display:none;position:fixed;z-index:9999;">
                 </div>
             </div>
         </div>
@@ -84,8 +84,8 @@
                     <input type="text" autocomplete="off"
                            placeholder="Müşteri ekle..."
                            class="cust-search-input w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
-                    <div class="cust-dropdown absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl"
-                         style="max-height:240px;overflow-y:auto;top:calc(100% + 4px);left:0;display:none;">
+                    <div class="cust-dropdown bg-white border border-gray-200 rounded-lg shadow-xl"
+                         style="overflow-y:auto;display:none;position:fixed;z-index:9999;">
                     </div>
                 </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin. Her müşteri listeye eklenir.</p>
@@ -271,14 +271,16 @@ function initCustomerSearch(wrap, onSelect) {
         var rect = input.getBoundingClientRect();
         var vvHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
         var spaceBelow = vvHeight - rect.bottom;
+        dd.style.left  = rect.left + 'px';
+        dd.style.width = rect.width + 'px';
         if (spaceBelow >= 120) {
-            dd.style.top    = 'calc(100% + 4px)';
-            dd.style.bottom = 'auto';
+            dd.style.top       = (rect.bottom + 4) + 'px';
+            dd.style.bottom    = 'auto';
             dd.style.maxHeight = Math.min(240, spaceBelow - 8) + 'px';
         } else {
-            dd.style.top    = 'auto';
-            dd.style.bottom = 'calc(100% + 4px)';
-            dd.style.maxHeight = Math.min(240, rect.top - 8) + 'px';
+            dd.style.top       = 'auto';
+            dd.style.bottom    = (vvHeight - rect.top + 4) + 'px';
+            dd.style.maxHeight = Math.min(240, Math.max(80, rect.top - 8)) + 'px';
         }
     }
 
