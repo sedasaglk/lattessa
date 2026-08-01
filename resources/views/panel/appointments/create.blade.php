@@ -245,7 +245,9 @@ function renderGroupCustomers() {
 // ── Ortak Yardımcılar ──────────────────────────────────────────────────────
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
 var _custModalMode = 'single';
-var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+var isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+    || ('ontouchstart' in window)
+    || (navigator.maxTouchPoints > 0);
 
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -378,6 +380,14 @@ function setupMobileInput(inputId, mode) {
 
 // ── Başlat ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function(){
+    // DEBUG - sonra kaldır
+    var _dbg = document.createElement('div');
+    _dbg.id = 'custDebug';
+    _dbg.style.cssText = 'font-size:11px;color:#888;margin-top:2px;';
+    _dbg.textContent = 'touch:'+isTouchDevice+' hover:'+window.matchMedia('(hover: none)').matches+' coarse:'+window.matchMedia('(pointer: coarse)').matches+' maxTP:'+navigator.maxTouchPoints;
+    var _sec = document.getElementById('singleCustomerSection');
+    if (_sec) _sec.appendChild(_dbg);
+
     if (isTouchDevice) {
         setupMobileInput('customerSearch', 'single');
         setupMobileInput('groupSearch', 'group');
