@@ -62,7 +62,7 @@
                    placeholder="İsim veya son 4 hane telefon..."
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
                    style="cursor:pointer;"
-                   onclick="openCustModal('single')">
+                   onclick="openCustModal('single')" ontouchend="openCustModal('single')">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
@@ -81,7 +81,7 @@
                        placeholder="Müşteri ekle..."
                        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                        style="cursor:pointer;"
-                       onclick="openCustModal('group')">
+                       onclick="openCustModal('group')" ontouchend="openCustModal('group')">
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin. Her müşteri listeye eklenir.</p>
             </div>
         </div>
