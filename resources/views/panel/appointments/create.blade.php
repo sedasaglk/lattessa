@@ -391,11 +391,11 @@ function setupMobileInput(inputId, mode) {
 }
 
 // ── Başlat ─────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', function(){
+function _custInit() {
     // DEBUG - sonra kaldır
     var _dbg = document.getElementById('custInlineDebug');
     if (_dbg) {
-        _dbg.textContent = 'DOMReady | touch:'+isTouchDevice+' hover:'+window.matchMedia('(hover: none)').matches+' coarse:'+window.matchMedia('(pointer: coarse)').matches+' maxTP:'+navigator.maxTouchPoints;
+        _dbg.textContent = 'INIT | touch:'+isTouchDevice+' hover:'+window.matchMedia('(hover: none)').matches+' coarse:'+window.matchMedia('(pointer: coarse)').matches+' maxTP:'+navigator.maxTouchPoints;
         _dbg.style.background = isTouchDevice ? 'green' : 'navy';
     }
 
@@ -417,6 +417,13 @@ window.addEventListener('DOMContentLoaded', function(){
         }
     }
     renderGroupCustomers();
-});
+}
+
+// DOMContentLoaded zaten geçmişse direkt çalıştır (WKWebView sorunu)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _custInit);
+} else {
+    _custInit();
+}
 </script>
 @endsection
