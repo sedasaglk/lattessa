@@ -301,10 +301,59 @@ function pickCustModal(id, name, phone) {
     }
 }
 
-// Script sayfanın altında, DOM hazır - direkt çalıştır
+// Modal'ı body'ye taşı → iOS overflow:auto içinde position:fixed sorunu çözülür
+document.body.appendChild(document.getElementById('custSearchModal'));
+
 document.getElementById('custModalInput').addEventListener('input', function(){
     renderCustModalResults(this.value);
 });
+
+// Desktop dropdown
+var isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+if (isDesktop) {
+    var _csInp = document.getElementById('customerSearch');
+    var _gsInp = document.getElementById('groupSearch');
+
+    // Desktop'ta readonly kaldır, yazılabilir yap
+    [_csInp, _gsInp].forEach(function(el){ if(el){ el.readOnly=false; el.style.cursor=''; el.onclick=null; el.ontouchend=null; } });
+
+    // Dropdown div
+    var _dd = document.createElement('div');
+    _dd.style.cssText = 'display:none;position:fixed;z-index:9999;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.12);max-height:300px;overflow-y:auto;min-width:200px;';
+    document.body.appendChild(_dd);
+    var _ddt = null;
+
+    function _showDd(el, mode) {
+        var results = filterC(el.value);
+        var r = el.getBoundingClientRect();
+        _dd.style.left=r.left+'px'; _dd.style.top=(r.bottom+4)+'px'; _dd.style.width=r.width+'px';
+        _dd.innerHTML = !results.length
+            ? '<div style="padding:12px 16px;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>'
+            : results.slice(0,60).map(function(c){
+                var l4=c.phone?c.phone.toString().slice(-4):'';
+                return '<div style="padding:10px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;cursor:pointer;" '
+                    +'onmousedown="_ddPick(\''+mode+'\','+c.id+',\''+c.name.replace(/'/g,"\\'")+'\',' +'\''+String(c.phone||'').replace(/'/g,"\\'")+'\''+')">'
+                    +'<strong>'+escHtml(c.name)+'</strong> <span style="color:#9ca3af;font-size:12px;">···'+l4+'</span></div>';
+            }).join('');
+        _dd.style.display='block';
+    }
+
+    window._ddPick = function(mode, id, name, phone) {
+        _dd.style.display='none';
+        var l4=phone?phone.toString().slice(-4):'';
+        if(mode==='group'){ addGroupCustomer(parseInt(id),name,phone); if(_gsInp)_gsInp.value=''; }
+        else { document.getElementById('customer_id_input').value=id; if(_csInp)_csInp.value=name+(l4?' (···'+l4+')':''); }
+    };
+
+    function _setupDd(el, mode) {
+        if(!el) return;
+        el.addEventListener('focus', function(){ clearTimeout(_ddt); _showDd(el,mode); });
+        el.addEventListener('input', function(){ clearTimeout(_ddt); if(mode==='single') document.getElementById('customer_id_input').value=''; _showDd(el,mode); });
+        el.addEventListener('blur', function(){ _ddt=setTimeout(function(){ _dd.style.display='none'; },200); });
+    }
+    _setupDd(_csInp,'single');
+    _setupDd(_gsInp,'group');
+}
 
 (function(){
     var oldId = {{ old('customer_id', 'null') }};
