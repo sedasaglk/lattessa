@@ -243,6 +243,18 @@ function renderGroupCustomers() {
 }
 
 // ── Ortak Yardımcılar ──────────────────────────────────────────────────────
+
+// INLINE DEBUG - script parse anında çalışır
+(function(){
+    var el = document.createElement('div');
+    el.id = 'custInlineDebug';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:red;color:#fff;font-size:13px;padding:6px 10px;';
+    el.textContent = 'JS yuklendi';
+    document.body ? document.body.appendChild(el) : document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(el); });
+
+    window.onerror = function(msg, src, line){ el.textContent = 'HATA: '+msg+' ('+line+')'; el.style.background='darkred'; };
+})();
+
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
 var _custModalMode = 'single';
 var isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches
@@ -381,12 +393,11 @@ function setupMobileInput(inputId, mode) {
 // ── Başlat ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function(){
     // DEBUG - sonra kaldır
-    var _dbg = document.createElement('div');
-    _dbg.id = 'custDebug';
-    _dbg.style.cssText = 'font-size:11px;color:#888;margin-top:2px;';
-    _dbg.textContent = 'touch:'+isTouchDevice+' hover:'+window.matchMedia('(hover: none)').matches+' coarse:'+window.matchMedia('(pointer: coarse)').matches+' maxTP:'+navigator.maxTouchPoints;
-    var _sec = document.getElementById('singleCustomerSection');
-    if (_sec) _sec.appendChild(_dbg);
+    var _dbg = document.getElementById('custInlineDebug');
+    if (_dbg) {
+        _dbg.textContent = 'DOMReady | touch:'+isTouchDevice+' hover:'+window.matchMedia('(hover: none)').matches+' coarse:'+window.matchMedia('(pointer: coarse)').matches+' maxTP:'+navigator.maxTouchPoints;
+        _dbg.style.background = isTouchDevice ? 'green' : 'navy';
+    }
 
     if (isTouchDevice) {
         setupMobileInput('customerSearch', 'single');
