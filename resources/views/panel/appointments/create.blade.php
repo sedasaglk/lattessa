@@ -178,15 +178,26 @@
     </form>
 </div>
 
-{{-- Müşteri Arama Modalı (mobil için tam ekran) --}}
-<div id="custSearchModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;">
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;">
-        <button type="button" onclick="closeCustModal()" style="font-size:22px;color:#6b7280;line-height:1;padding:2px 8px;background:none;border:none;cursor:pointer;">✕</button>
-        <input id="custModalInput" type="text" autocomplete="off"
-               placeholder="İsim veya son 4 hane telefon..."
-               style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
+{{-- Müşteri Arama Modalı --}}
+<div id="custSearchModal" style="display:none;position:fixed;inset:0;z-index:99999;">
+    {{-- Arka plan overlay --}}
+    <div onclick="closeCustModal()" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
+    {{-- Bottom sheet --}}
+    <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;max-height:80vh;display:flex;flex-direction:column;">
+        {{-- Handle --}}
+        <div style="display:flex;justify-content:center;padding:10px 0 4px;">
+            <div style="width:40px;height:4px;background:#d1d5db;border-radius:2px;"></div>
+        </div>
+        {{-- Search bar --}}
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px 12px;border-bottom:1px solid #f3f4f6;">
+            <input id="custModalInput" type="text" autocomplete="off"
+                   placeholder="İsim veya son 4 hane telefon..."
+                   style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
+            <button type="button" onclick="closeCustModal()" style="color:#6b7280;background:none;border:none;font-size:20px;padding:4px 6px;cursor:pointer;">✕</button>
+        </div>
+        {{-- Sonuçlar --}}
+        <div id="custModalResults" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;"></div>
     </div>
-    <div id="custModalResults" style="overflow-y:auto;-webkit-overflow-scrolling:touch;height:calc(100% - 65px);"></div>
 </div>
 
 
