@@ -316,10 +316,6 @@ function pickCustModal(id, name, phone) {
     }
 }
 
-document.getElementById('custModalInput').addEventListener('input', function(){
-    renderCustModalResults(this.value);
-});
-
 // ── Desktop: Inline dropdown ───────────────────────────────────────────────
 var _ddHideTimer = null;
 
@@ -391,11 +387,19 @@ function setupMobileInput(inputId, mode) {
 }
 
 // ── Başlat ─────────────────────────────────────────────────────────────────
+var _custInitDone = false;
 function _custInit() {
+    if (_custInitDone) return;
+    _custInitDone = true;
+
+    // custModalInput listener - burada güvenli
+    var _mi = document.getElementById('custModalInput');
+    if (_mi) _mi.addEventListener('input', function(){ renderCustModalResults(this.value); });
+
     // DEBUG - sonra kaldır
     var _dbg = document.getElementById('custInlineDebug');
     if (_dbg) {
-        _dbg.textContent = 'INIT | touch:'+isTouchDevice+' hover:'+window.matchMedia('(hover: none)').matches+' coarse:'+window.matchMedia('(pointer: coarse)').matches+' maxTP:'+navigator.maxTouchPoints;
+        _dbg.textContent = 'INIT OK | touch:'+isTouchDevice+' maxTP:'+navigator.maxTouchPoints;
         _dbg.style.background = isTouchDevice ? 'green' : 'navy';
     }
 
@@ -419,11 +423,8 @@ function _custInit() {
     renderGroupCustomers();
 }
 
-// DOMContentLoaded zaten geçmişse direkt çalıştır (WKWebView sorunu)
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _custInit);
-} else {
-    _custInit();
-}
+// Her iki yöntemle de başlat - hangisi önce gelirse
+document.addEventListener('DOMContentLoaded', _custInit);
+setTimeout(_custInit, 500);
 </script>
 @endsection
