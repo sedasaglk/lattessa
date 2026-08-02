@@ -58,12 +58,12 @@
         {{-- Tekil Müşteri (grup değilken görünür) --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <input type="text" id="customerFilter" autocomplete="off"
+            <input type="text" id="customerDisplay" readonly autocomplete="off"
                    placeholder="İsim veya son 4 hane telefon..."
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
->
+                   style="cursor:pointer;"
+                   onclick="openCustModal('single')" ontouchend="openCustModal('single')">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
-            <div id="customerResults" style="display:none;position:fixed;z-index:99999;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:260px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.15);"></div>
         </div>
 
         {{-- Grup Müşteri Listesi (grup modunda görünür) --}}
@@ -77,11 +77,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 {{-- Müşteri arama (grup) --}}
-                <input type="text" id="groupFilter" autocomplete="off"
-                       placeholder="İsim veya son 4 hane telefon..."
+                <input type="text" id="groupDisplay" readonly autocomplete="off"
+                       placeholder="Müşteri ekle..."
                        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
->
-                <div id="groupResults" style="display:none;position:fixed;z-index:99999;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:260px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.15);"></div>
+                       style="cursor:pointer;"
+                       onclick="openCustModal('group')" ontouchend="openCustModal('group')">
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -178,6 +178,17 @@
     </form>
 </div>
 
+{{-- Müşteri Arama Modalı --}}
+<div id="custModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;">
+        <button type="button" onclick="closeCustModal()" style="font-size:22px;color:#6b7280;padding:2px 8px;background:none;border:none;cursor:pointer;line-height:1;">✕</button>
+        <input id="custModalInput" type="text" autocomplete="off"
+               placeholder="İsim veya son 4 hane telefon..."
+               style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
+        <button type="button" onclick="document.getElementById('custModalInput').blur()" style="padding:8px 10px;background:#f3f4f6;border:none;border-radius:8px;font-size:14px;color:#374151;cursor:pointer;">Tamam</button>
+    </div>
+    <div id="custModalList" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;"></div>
+</div>
 
 <script>
 function toggleRecurring() {
@@ -190,87 +201,85 @@ function toggleRecurring() {
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
+var _custModalMode = 'single';
+var _custResults   = [];
 
-// Müşteri ara: position:fixed dropdown (overflow clipping'i aşar)
-function searchCust(q, mode) {
+function filterCust(q) {
     q = (q || '').trim().toLowerCase();
-    var inputId = mode === 'group' ? 'groupFilter' : 'customerFilter';
-    var inp = document.getElementById(inputId);
-    var container = document.getElementById(mode === 'group' ? 'groupResults' : 'customerResults');
-    if (!container || !inp) return;
-
-    if (!q) { container.style.display = 'none'; return; }
-
-    // Input konumunu al, boşluğa göre yukarı veya aşağı aç (daima top kullan)
-    var rect = inp.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var dropTop = rect.bottom + 4;
-    var dropH   = 260;
-    if (dropTop + dropH > vh) {
-        // Aşağıda yer yok → yukarı aç
-        dropTop = rect.top - dropH - 4;
-    }
-    dropTop = Math.max(4, dropTop);
-    container.style.top       = dropTop + 'px';
-    container.style.bottom    = 'auto';
-    container.style.left      = rect.left + 'px';
-    container.style.width     = rect.width + 'px';
-    container.style.maxHeight = dropH + 'px';
-
-    var results = allCustomers.filter(function(c) {
-        var nameMatch = c.name.toLowerCase().includes(q);
-        var phoneMatch = c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4).includes(q));
-        return nameMatch || phoneMatch;
+    if (!q) return allCustomers.slice(0, 60);
+    return allCustomers.filter(function(c) {
+        return c.name.toLowerCase().includes(q) ||
+               (c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4).includes(q)));
     }).slice(0, 60);
-
-    if (!results.length) {
-        container.innerHTML = '<div style="padding:14px 16px;color:#9ca3af;font-size:14px;text-align:center;">Müşteri bulunamadı</div>';
-        container.style.display = 'block';
-        return;
-    }
-
-    container.innerHTML = '';
-    results.forEach(function(c) {
-        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        var row = document.createElement('div');
-        row.style.cssText = 'padding:13px 16px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);';
-        row.innerHTML = '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
-            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
-        // mousedown: desktop için blur'dan önce seçim
-        row.addEventListener('mousedown', function(e) { e.preventDefault(); pickCust(c, mode); });
-        // touchend: mobil için
-        row.addEventListener('touchend', function(e) { e.preventDefault(); pickCust(c, mode); });
-        container.appendChild(row);
-    });
-    container.style.display = 'block';
 }
 
-function pickCust(c, mode) {
-    if (mode === 'group') {
+function openCustModal(mode) {
+    _custModalMode = mode || 'single';
+    document.getElementById('custModal').style.display = 'flex';
+    document.getElementById('custModalInput').value = '';
+    renderCustList('');
+}
+
+function closeCustModal() {
+    document.getElementById('custModal').style.display = 'none';
+}
+
+function renderCustList(q) {
+    _custResults = filterCust(q);
+    var list = document.getElementById('custModalList');
+    if (!_custResults.length) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
+        return;
+    }
+    list.innerHTML = _custResults.map(function(c, i) {
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        return '<div data-idx="' + i + '" style="padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.1);">'
+            + '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
+            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '')
+            + '</div>';
+    }).join('');
+}
+
+function _pickFromModal(i) {
+    var c = _custResults[i];
+    if (!c) return;
+    if (_custModalMode === 'group') {
         addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
-        document.getElementById('groupFilter').value = '';
-        document.getElementById('groupResults').style.display = 'none';
+        document.getElementById('custModalInput').value = '';
+        renderCustList('');
     } else {
         document.getElementById('customer_id_input').value = c.id;
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        document.getElementById('customerFilter').value = c.name + (last4 ? ' ···' + last4 : '');
-        document.getElementById('customerResults').style.display = 'none';
+        document.getElementById('customerDisplay').value = c.name + (last4 ? ' (···' + last4 + ')' : '');
+        closeCustModal();
     }
 }
 
-// Dropdown divlerini body'ye taşı (overflow/stacking context sorunlarından kaçınmak için)
-document.body.appendChild(document.getElementById('customerResults'));
-var _gr = document.getElementById('groupResults');
-if (_gr) document.body.appendChild(_gr);
+// Modal body'ye taşı (iOS overflow clipping fix)
+document.body.appendChild(document.getElementById('custModal'));
 
-// Event listeners
-document.getElementById('customerFilter').addEventListener('input', function() { searchCust(this.value, 'single'); });
-document.getElementById('customerFilter').addEventListener('blur',  function() { setTimeout(function(){ document.getElementById('customerResults').style.display='none'; }, 200); });
-var gf = document.getElementById('groupFilter');
-if (gf) {
-    gf.addEventListener('input', function() { searchCust(this.value, 'group'); });
-    gf.addEventListener('blur',  function() { setTimeout(function(){ var el=document.getElementById('groupResults'); if(el) el.style.display='none'; }, 200); });
-}
+// Modal arama input
+document.getElementById('custModalInput').addEventListener('input', function() {
+    renderCustList(this.value);
+});
+
+// Seçim: touchstart (iOS klavye dismiss'inden önce çalışır)
+document.getElementById('custModalList').addEventListener('touchstart', function(e) {
+    var row = e.target.closest('[data-idx]');
+    if (row) {
+        e.preventDefault();
+        _pickFromModal(parseInt(row.dataset.idx));
+    }
+}, { passive: false });
+
+// Desktop: mouse click
+document.getElementById('custModalList').addEventListener('mousedown', function(e) {
+    var row = e.target.closest('[data-idx]');
+    if (row) {
+        e.preventDefault();
+        _pickFromModal(parseInt(row.dataset.idx));
+    }
+});
 
 // ---- GRUP RANDEVUSU ----
 var groupCustomers = [];
