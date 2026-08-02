@@ -61,8 +61,7 @@
             <input type="text" id="customerFilter" autocomplete="off"
                    placeholder="İsim veya son 4 hane telefon..."
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
-                   oninput="searchCust(this.value,'single')"
-                   onfocus="searchCust(this.value,'single')">
+                   oninput="searchCust(this.value,'single')">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
             <div id="customerResults" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:4px;max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;"></div>
         </div>
@@ -81,8 +80,7 @@
                 <input type="text" id="groupFilter" autocomplete="off"
                        placeholder="İsim veya son 4 hane telefon..."
                        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                       oninput="searchCust(this.value,'group')"
-                       onfocus="searchCust(this.value,'group')">
+                       oninput="searchCust(this.value,'group')">
                 <div id="groupResults" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;"></div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>

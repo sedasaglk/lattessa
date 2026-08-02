@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lattessa-v3';
+const CACHE_NAME = 'lattessa-v4';
 const urlsToCache = [
     '/',
     '/manifest.json',
