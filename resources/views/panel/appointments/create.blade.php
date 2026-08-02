@@ -275,7 +275,6 @@ function openCustModal(mode) {
     var inp = document.getElementById('custModalInput');
     inp.value = '';
     renderCustModalResults('');
-    setTimeout(function(){ inp.focus(); }, 150);
 }
 
 function closeCustModal() {
