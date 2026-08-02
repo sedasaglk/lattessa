@@ -227,17 +227,32 @@ function closeCustModal() {
 function renderCustList(q) {
     _custResults = filterCust(q);
     var list = document.getElementById('custModalList');
+    list.innerHTML = '';
     if (!_custResults.length) {
-        list.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
+        var empty = document.createElement('div');
+        empty.style.cssText = 'padding:20px;text-align:center;color:#9ca3af;font-size:14px;';
+        empty.textContent = 'Müşteri bulunamadı';
+        list.appendChild(empty);
         return;
     }
-    list.innerHTML = _custResults.map(function(c, i) {
+    _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        return '<div data-idx="' + i + '" style="padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.1);">'
-            + '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
-            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '')
-            + '</div>';
-    }).join('');
+        var row = document.createElement('div');
+        row.style.cssText = 'padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);user-select:none;-webkit-user-select:none;';
+        row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>'
+            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
+        // iOS: touchstart ile klavye kapanmadan önce yakala
+        row.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            _pickFromModal(i);
+        }, { passive: false });
+        // Desktop: mousedown
+        row.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            _pickFromModal(i);
+        });
+        list.appendChild(row);
+    });
 }
 
 function _pickFromModal(i) {
@@ -261,24 +276,6 @@ document.body.appendChild(document.getElementById('custModal'));
 // Modal arama input
 document.getElementById('custModalInput').addEventListener('input', function() {
     renderCustList(this.value);
-});
-
-// Seçim: touchstart (iOS klavye dismiss'inden önce çalışır)
-document.getElementById('custModalList').addEventListener('touchstart', function(e) {
-    var row = e.target.closest('[data-idx]');
-    if (row) {
-        e.preventDefault();
-        _pickFromModal(parseInt(row.dataset.idx));
-    }
-}, { passive: false });
-
-// Desktop: mouse click
-document.getElementById('custModalList').addEventListener('mousedown', function(e) {
-    var row = e.target.closest('[data-idx]');
-    if (row) {
-        e.preventDefault();
-        _pickFromModal(parseInt(row.dataset.idx));
-    }
 });
 
 // ---- GRUP RANDEVUSU ----
