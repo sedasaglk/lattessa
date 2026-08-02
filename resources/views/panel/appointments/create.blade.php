@@ -201,23 +201,21 @@ function searchCust(q, mode) {
 
     if (!q) { container.style.display = 'none'; return; }
 
-    // Input konumunu al, boşluğa göre yukarı veya aşağı aç
+    // Input konumunu al, boşluğa göre yukarı veya aşağı aç (daima top kullan)
     var rect = inp.getBoundingClientRect();
     var vh = window.innerHeight;
-    var spaceBelow = vh - rect.bottom - 4;
-    var maxH = Math.min(260, Math.max(spaceBelow, vh - rect.bottom - 80));
+    var dropTop = rect.bottom + 4;
+    var dropH   = 260;
+    if (dropTop + dropH > vh) {
+        // Aşağıda yer yok → yukarı aç
+        dropTop = rect.top - dropH - 4;
+    }
+    dropTop = Math.max(4, dropTop);
+    container.style.top       = dropTop + 'px';
+    container.style.bottom    = 'auto';
     container.style.left      = rect.left + 'px';
     container.style.width     = rect.width + 'px';
-    container.style.maxHeight = maxH + 'px';
-    if (spaceBelow >= 120) {
-        container.style.top    = (rect.bottom + 4) + 'px';
-        container.style.bottom = 'auto';
-    } else {
-        // Yeterli alan yok — yukarı aç
-        container.style.bottom = (vh - rect.top + 4) + 'px';
-        container.style.top    = 'auto';
-        container.style.maxHeight = Math.min(260, rect.top - 8) + 'px';
-    }
+    container.style.maxHeight = dropH + 'px';
 
     var results = allCustomers.filter(function(c) {
         var nameMatch = c.name.toLowerCase().includes(q);
