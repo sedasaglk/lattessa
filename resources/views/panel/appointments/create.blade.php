@@ -57,7 +57,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <div id="customerDisplay"
                  onclick="openCustModal('single')"
-                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;">
+                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;">
                 İsim veya son 4 hane telefon...
             </div>
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
@@ -75,7 +75,7 @@
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 <div id="groupDisplay"
                      onclick="openCustModal('group')"
-                     style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;">
+                     style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;">
                     Müşteri ekle...
                 </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
@@ -228,18 +228,17 @@ function renderCustList(q) {
     _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         var row = document.createElement('div');
-        row.style.cssText = 'padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.1);';
+        row.style.cssText = 'padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.1);touch-action:manipulation;';
         row.innerHTML = '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
             + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
-        // iOS native WKWebView
-        row.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        // pointerdown: mobil+desktop, 300ms delay yok
+        row.addEventListener('pointerdown', function(e) {
+            e.currentTarget._pdFired = true;
             _pickFromModal(i);
-        }, { passive: false });
-        // Desktop ve Chrome emülasyon
+        });
+        // click: pointerdown çalışmadığında fallback
         row.addEventListener('click', function(e) {
-            e.stopPropagation();
+            if (e.currentTarget._pdFired) { e.currentTarget._pdFired = false; return; }
             _pickFromModal(i);
         });
         list.appendChild(row);
