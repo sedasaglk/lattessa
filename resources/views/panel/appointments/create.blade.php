@@ -241,14 +241,13 @@ function renderCustList(q) {
         row.style.cssText = 'padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);user-select:none;-webkit-user-select:none;';
         row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>'
             + (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
-        // iOS: touchstart ile klavye kapanmadan önce yakala
+        // iOS native: touchstart (klavye kapanmadan önce çalışır)
         row.addEventListener('touchstart', function(e) {
             e.preventDefault();
             _pickFromModal(i);
         }, { passive: false });
-        // Desktop: mousedown
-        row.addEventListener('mousedown', function(e) {
-            e.preventDefault();
+        // Desktop + Chrome emülasyon: click
+        row.addEventListener('click', function() {
             _pickFromModal(i);
         });
         list.appendChild(row);
