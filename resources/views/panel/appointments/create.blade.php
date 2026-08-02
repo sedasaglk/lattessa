@@ -61,9 +61,9 @@
             <input type="text" id="customerFilter" autocomplete="off"
                    placeholder="İsim veya son 4 hane telefon..."
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
-                   oninput="searchCust(this.value,'single')">
+>
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
-            <div id="customerResults" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:4px;max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;"></div>
+            <div id="customerResults" style="display:none;position:fixed;z-index:99999;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:260px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.15);"></div>
         </div>
 
         {{-- Grup Müşteri Listesi (grup modunda görünür) --}}
@@ -80,8 +80,8 @@
                 <input type="text" id="groupFilter" autocomplete="off"
                        placeholder="İsim veya son 4 hane telefon..."
                        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                       oninput="searchCust(this.value,'group')">
-                <div id="groupResults" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;"></div>
+>
+                <div id="groupResults" style="display:none;position:fixed;z-index:99999;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:260px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.15);"></div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -191,15 +191,23 @@ function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
 
-// Müşteri ara ve sonuçları button listesi olarak göster
+// Müşteri ara: position:fixed dropdown (overflow clipping'i aşar)
 function searchCust(q, mode) {
     q = (q || '').trim().toLowerCase();
-    var containerId = mode === 'group' ? 'groupResults' : 'customerResults';
-    var container = document.getElementById(containerId);
-    if (!container) return;
+    var inputId = mode === 'group' ? 'groupFilter' : 'customerFilter';
+    var inp = document.getElementById(inputId);
+    var container = document.getElementById(mode === 'group' ? 'groupResults' : 'customerResults');
+    if (!container || !inp) return;
+
+    if (!q) { container.style.display = 'none'; return; }
+
+    // Input'un ekran konumunu al ve dropdown'u tam altına sabitle
+    var rect = inp.getBoundingClientRect();
+    container.style.top    = (rect.bottom + 2) + 'px';
+    container.style.left   = rect.left + 'px';
+    container.style.width  = rect.width + 'px';
 
     var results = allCustomers.filter(function(c) {
-        if (!q) return true;
         var nameMatch = c.name.toLowerCase().includes(q);
         var phoneMatch = c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4).includes(q));
         return nameMatch || phoneMatch;
@@ -214,16 +222,15 @@ function searchCust(q, mode) {
     container.innerHTML = '';
     results.forEach(function(c) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.style.cssText = 'display:block;width:100%;text-align:left;padding:13px 16px;border:none;border-bottom:1px solid #f3f4f6;background:#fff;font-size:15px;cursor:pointer;font-family:inherit;';
-        btn.innerHTML = '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
+        var row = document.createElement('div');
+        row.style.cssText = 'padding:13px 16px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);';
+        row.innerHTML = '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
             + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            pickCust(c, mode);
-        });
-        container.appendChild(btn);
+        // mousedown: desktop için blur'dan önce seçim
+        row.addEventListener('mousedown', function(e) { e.preventDefault(); pickCust(c, mode); });
+        // touchend: mobil için
+        row.addEventListener('touchend', function(e) { e.preventDefault(); pickCust(c, mode); });
+        container.appendChild(row);
     });
     container.style.display = 'block';
 }
@@ -241,13 +248,14 @@ function pickCust(c, mode) {
     }
 }
 
-// Input dışına tıklanınca listeyi kapat
-document.addEventListener('click', function(e) {
-    var sf = document.getElementById('singleCustomerSection');
-    var gf = document.getElementById('groupSection');
-    if (sf && !sf.contains(e.target)) document.getElementById('customerResults').style.display = 'none';
-    if (gf && !gf.contains(e.target)) { var gr = document.getElementById('groupResults'); if(gr) gr.style.display='none'; }
-});
+// oninput HTML attribute yerine addEventListener (daha güvenilir)
+document.getElementById('customerFilter').addEventListener('input', function() { searchCust(this.value, 'single'); });
+document.getElementById('customerFilter').addEventListener('blur',  function() { setTimeout(function(){ document.getElementById('customerResults').style.display='none'; }, 150); });
+var gf = document.getElementById('groupFilter');
+if (gf) {
+    gf.addEventListener('input', function() { searchCust(this.value, 'group'); });
+    gf.addEventListener('blur',  function() { setTimeout(function(){ document.getElementById('groupResults').style.display='none'; }, 150); });
+}
 
 // ---- GRUP RANDEVUSU ----
 var groupCustomers = [];
