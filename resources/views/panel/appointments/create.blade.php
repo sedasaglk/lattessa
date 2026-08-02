@@ -195,6 +195,27 @@
 </div>
 
 <script>
+// ---- DEBUG PANELİ (test bittikten sonra kaldırılacak) ----
+(function() {
+    var dbgDiv = document.createElement('div');
+    dbgDiv.id = 'dbgPanel';
+    dbgDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.88);color:#0f0;font-size:11px;padding:6px 8px;max-height:180px;overflow-y:auto;z-index:9999999;font-family:monospace;display:none;';
+    document.body.appendChild(dbgDiv);
+
+    window._dbg = function(msg) {
+        dbgDiv.style.display = 'block';
+        var line = document.createElement('div');
+        line.textContent = new Date().toISOString().slice(11,19) + ' ' + msg;
+        dbgDiv.appendChild(line);
+        dbgDiv.scrollTop = dbgDiv.scrollHeight;
+    };
+
+    window.onerror = function(msg, src, line) {
+        window._dbg('ERR: ' + msg + ' @ line ' + line);
+        return false;
+    };
+})();
+
 // ---- Yardımcı ----
 function escHtml(s) {
     return String(s)
@@ -298,17 +319,24 @@ var groupCustomers = [];
 
 // ---- Event'leri başlat ----
 (function initCustModal() {
+    _dbg('initCustModal başladı');
 
-    // 1. Modal'ı body'ye taşı (iOS overflow/clipping fix)
+    // 1. Modal'ı body'ye taşı
     var modal = document.getElementById('custModal');
+    _dbg('modal: ' + (modal ? 'bulundu' : 'YOK'));
     if (modal && modal.parentElement !== document.body) {
         document.body.appendChild(modal);
+        _dbg('modal body\'e taşındı');
     }
 
-    // 2. Müşteri alanı — modal aç
+    // 2. Müşteri alanı
     var singleDisp = document.getElementById('customerDisplay');
+    _dbg('customerDisplay: ' + (singleDisp ? 'bulundu' : 'YOK'));
     if (singleDisp) {
-        singleDisp.addEventListener('click', function() { openCustModal('single'); });
+        singleDisp.addEventListener('click', function() {
+            _dbg('customerDisplay tıklandı');
+            openCustModal('single');
+        });
     }
 
     var groupDisp = document.getElementById('groupDisplay');
@@ -316,7 +344,7 @@ var groupCustomers = [];
         groupDisp.addEventListener('click', function() { openCustModal('group'); });
     }
 
-    // 3. Modal kapat butonları
+    // 3. Kapat butonları
     var closeBtn = document.getElementById('closeCustModalBtn');
     if (closeBtn) closeBtn.addEventListener('click', closeCustModal);
 
@@ -326,32 +354,31 @@ var groupCustomers = [];
     // 4. Arama input
     var searchInput = document.getElementById('custModalInput');
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            renderCustList(this.value);
-        });
+        searchInput.addEventListener('input', function() { renderCustList(this.value); });
     }
 
-    // 5. Liste seçimi — Event Delegation (mobil dokunmaları kaçırmaz)
+    // 5. Liste seçimi — Event Delegation
     var list = document.getElementById('custModalList');
+    _dbg('custModalList: ' + (list ? 'bulundu' : 'YOK'));
     if (list) {
         list.addEventListener('click', function(e) {
             var target = e.target.closest('[data-index]');
             if (!target) return;
             var index = parseInt(target.getAttribute('data-index'), 10);
+            _dbg('satır tıklandı: ' + index);
             if (!isNaN(index)) _pickFromModal(index);
         });
     }
 
-    // 6. Grup randevusu toggle
+    // 6. Toggle'lar
     var isGroupChk = document.getElementById('isGroup');
     if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
 
-    // 7. Tekrarlayan randevu toggle
     var isRecurringChk = document.getElementById('isRecurring');
     if (isRecurringChk) isRecurringChk.addEventListener('change', toggleRecurring);
 
-    // Başlangıç render
     renderGroupCustomers();
+    _dbg('init tamamlandı. Müşteri sayısı: ' + allCustomers.length);
 })();
 
 function toggleGroupMode() {
