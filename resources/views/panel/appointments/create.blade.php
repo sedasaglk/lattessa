@@ -43,10 +43,10 @@
         </div>
         @endif
 
+        {{-- Grup Randevusu Toggle --}}
         <div class="border border-indigo-100 rounded-xl p-4 bg-indigo-50/40">
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" name="is_group" value="1" id="isGroup"
-                       onchange="toggleGroupMode()"
                        class="rounded border-gray-300 accent-indigo-600">
                 <span class="text-sm font-medium text-gray-700">👥 Grup Randevusu</span>
             </label>
@@ -58,7 +58,7 @@
             <div id="customerDisplay"
                  role="button"
                  tabindex="0"
-                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;">
+                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">
                 İsim veya son 4 hane telefon...
             </div>
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
@@ -77,13 +77,14 @@
                 <div id="groupDisplay"
                      role="button"
                      tabindex="0"
-                     style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;">
+                     style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">
                     Müşteri ekle...
                 </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
 
+        {{-- Hizmet --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Hizmet</label>
             <select name="service_id" required
@@ -97,6 +98,7 @@
             </select>
         </div>
 
+        {{-- Personel --}}
         @if($authUser->role === 'firma_sahibi')
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Personel</label>
@@ -117,6 +119,7 @@
         </div>
         @endif
 
+        {{-- Tarih ve Saat --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tarih ve Saat</label>
             <input type="datetime-local" name="start_time" value="{{ old('start_time') }}" required
@@ -124,6 +127,7 @@
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
         </div>
 
+        {{-- Notlar --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Notlar (opsiyonel)</label>
             <textarea name="notes" rows="3"
@@ -131,10 +135,10 @@
                       placeholder="Randevuya ait notlar...">{{ old('notes') }}</textarea>
         </div>
 
+        {{-- Tekrarlayan Randevu --}}
         <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
             <label class="flex items-center gap-2 cursor-pointer mb-3">
                 <input type="checkbox" name="is_recurring" value="1" id="isRecurring"
-                       onchange="toggleRecurring()"
                        class="rounded border-gray-300">
                 <span class="text-sm font-medium text-gray-700">Tekrarlayan Randevu</span>
             </label>
@@ -175,73 +179,106 @@
 </div>
 
 {{-- Müşteri Arama Modalı --}}
-<div id="custModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:#fff;flex-direction:column;pointer-events:auto;">
+<div id="custModal"
+     style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:#fff;flex-direction:column;pointer-events:auto;">
     <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;">
-        <button type="button" id="closeCustModalBtn" style="font-size:22px;color:#6b7280;padding:4px 12px;background:none;border:none;cursor:pointer;line-height:1;touch-action:manipulation;">✕</button>
+        <button type="button" id="closeCustModalBtn"
+                style="font-size:22px;color:#6b7280;padding:4px 12px;background:none;border:none;cursor:pointer;line-height:1;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">✕</button>
         <input id="custModalInput" type="text" autocomplete="off"
                placeholder="İsim veya son 4 hane telefon..."
                style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
-        <button type="button" id="doneCustModalBtn" style="padding:8px 12px;background:#f3f4f6;border:none;border-radius:8px;font-size:14px;color:#374151;cursor:pointer;touch-action:manipulation;">Tamam</button>
+        <button type="button" id="doneCustModalBtn"
+                style="padding:8px 12px;background:#f3f4f6;border:none;border-radius:8px;font-size:14px;color:#374151;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">Tamam</button>
     </div>
-    <div id="custModalList" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:40px;"></div>
+    <div id="custModalList"
+         style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:40px;"></div>
 </div>
 
 <script>
+// ---- Yardımcı ----
 function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
-var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
+// ---- Veri ----
+var allCustomers = @json($customers->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'phone' => $c->phone ?? '']));
 var _custModalMode = 'single';
 var _custResults   = [];
 
+// ---- Filtre ----
 function filterCust(q) {
     q = (q || '').trim().toLowerCase();
     if (!q) return allCustomers.slice(0, 60);
     return allCustomers.filter(function(c) {
         return c.name.toLowerCase().includes(q) ||
-               (c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4).includes(q)));
+               (c.phone && (
+                   c.phone.toString().includes(q) ||
+                   c.phone.toString().slice(-4).includes(q)
+               ));
     }).slice(0, 60);
 }
 
+// ---- Modal Aç/Kapat ----
 function openCustModal(mode) {
     _custModalMode = mode || 'single';
     var modal = document.getElementById('custModal');
     if (!modal) return;
     modal.style.display = 'flex';
-    var input = document.getElementById('custModalInput');
-    input.value = '';
+    document.getElementById('custModalInput').value = '';
     renderCustList('');
 }
 
 function closeCustModal() {
     var modal = document.getElementById('custModal');
     if (modal) modal.style.display = 'none';
-    document.activeElement && document.activeElement.blur();
+    // Klavyeyi güvenli kapat
+    if (document.activeElement) document.activeElement.blur();
 }
 
+// ---- Liste Render ----
 function renderCustList(q) {
     _custResults = filterCust(q);
     var list = document.getElementById('custModalList');
     list.innerHTML = '';
+
     if (!_custResults.length) {
         list.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
         return;
     }
+
     _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         var row = document.createElement('div');
         row.setAttribute('data-index', i);
-        row.style.cssText = 'padding:18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;';
-        row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>'
-            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
+        // touch-action:manipulation → 300ms gecikme yok
+        // pointer-events child elemanlarda none → tıklama hedefi şaşmaz
+        row.style.cssText = [
+            'padding:18px',
+            'border-bottom:1px solid #f3f4f6',
+            'font-size:15px',
+            'cursor:pointer',
+            'background:#fff',
+            '-webkit-tap-highlight-color:rgba(0,0,0,0.08)',
+            'touch-action:manipulation',
+            'user-select:none',
+            '-webkit-user-select:none'
+        ].join(';');
+        row.innerHTML =
+            '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>' +
+            (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
         list.appendChild(row);
     });
 }
 
+// ---- Seçim ----
 function _pickFromModal(i) {
     var c = _custResults[i];
     if (!c) return;
+
     if (_custModalMode === 'group') {
         addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
         document.getElementById('custModalInput').value = '';
@@ -256,13 +293,16 @@ function _pickFromModal(i) {
     }
 }
 
-// Event Delegation Yapısı
+// ---- Tüm Event'ler DOMContentLoaded altında ----
 document.addEventListener('DOMContentLoaded', function() {
+
+    // 1. Modal'ı body'ye taşı (iOS overflow/clipping fix)
     var modal = document.getElementById('custModal');
     if (modal && modal.parentElement !== document.body) {
         document.body.appendChild(modal);
     }
 
+    // 2. Müşteri alanı — modal aç
     var singleDisp = document.getElementById('customerDisplay');
     if (singleDisp) {
         singleDisp.addEventListener('click', function() { openCustModal('single'); });
@@ -273,25 +313,49 @@ document.addEventListener('DOMContentLoaded', function() {
         groupDisp.addEventListener('click', function() { openCustModal('group'); });
     }
 
-    document.getElementById('closeCustModalBtn').addEventListener('click', closeCustModal);
-    document.getElementById('doneCustModalBtn').addEventListener('click', closeCustModal);
+    // 3. Modal kapat butonları
+    var closeBtn = document.getElementById('closeCustModalBtn');
+    if (closeBtn) closeBtn.addEventListener('click', closeCustModal);
 
+    var doneBtn = document.getElementById('doneCustModalBtn');
+    if (doneBtn) doneBtn.addEventListener('click', closeCustModal);
+
+    // 4. Arama input
+    var searchInput = document.getElementById('custModalInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            renderCustList(this.value);
+        });
+    }
+
+    // 5. Liste seçimi — Event Delegation (mobil dokunmaları kaçırmaz)
     var list = document.getElementById('custModalList');
     if (list) {
         list.addEventListener('click', function(e) {
             var target = e.target.closest('[data-index]');
             if (!target) return;
-            var index = parseInt(target.getAttribute('data-index'));
+            var index = parseInt(target.getAttribute('data-index'), 10);
             if (!isNaN(index)) _pickFromModal(index);
         });
     }
+
+    // 6. Grup randevusu toggle
+    var isGroupChk = document.getElementById('isGroup');
+    if (isGroupChk) {
+        isGroupChk.addEventListener('change', toggleGroupMode);
+    }
+
+    // 7. Tekrarlayan randevu toggle
+    var isRecurringChk = document.getElementById('isRecurring');
+    if (isRecurringChk) {
+        isRecurringChk.addEventListener('change', toggleRecurring);
+    }
+
+    // Başlangıç render
+    renderGroupCustomers();
 });
 
-document.getElementById('custModalInput').addEventListener('input', function() {
-    renderCustList(this.value);
-});
-
-// ---- GRUP RANDEVUSU ----
+// ---- Grup Randevusu ----
 var groupCustomers = [];
 
 function toggleGroupMode() {
@@ -299,47 +363,49 @@ function toggleGroupMode() {
     document.getElementById('singleCustomerSection').classList.toggle('hidden', isGroup);
     document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
     if (isGroup) {
-        document.getElementById('isRecurring').checked = false;
+        var rec = document.getElementById('isRecurring');
+        rec.checked = false;
         document.getElementById('recurringOptions').classList.add('hidden');
-        document.getElementById('isRecurring').disabled = true;
+        rec.disabled = true;
     } else {
         document.getElementById('isRecurring').disabled = false;
     }
 }
 
 function toggleRecurring() {
-    const cb = document.getElementById('isRecurring');
-    const opts = document.getElementById('recurringOptions');
+    var cb   = document.getElementById('isRecurring');
+    var opts = document.getElementById('recurringOptions');
     opts.classList.toggle('hidden', !cb.checked);
 }
 
 function addGroupCustomer(id, name, phone) {
-    if (groupCustomers.find(function(c){ return c.id == id; })) return;
-    groupCustomers.push({id: id, name: name, phone: phone});
+    if (groupCustomers.find(function(c) { return c.id == id; })) return;
+    groupCustomers.push({ id: id, name: name, phone: phone });
     renderGroupCustomers();
 }
 
 function removeGroupCustomer(id) {
-    groupCustomers = groupCustomers.filter(function(c){ return c.id != id; });
+    groupCustomers = groupCustomers.filter(function(c) { return c.id != id; });
     renderGroupCustomers();
 }
 
 function renderGroupCustomers() {
     var list = document.getElementById('groupCustomerList');
+    if (!list) return;
     if (groupCustomers.length === 0) {
         list.innerHTML = '<p class="text-xs text-gray-400 italic">Henüz katılımcı eklenmedi.</p>';
     } else {
         list.innerHTML = groupCustomers.map(function(c) {
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
             return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">' +
-                '<span><strong>' + escHtml(c.name) + '</strong> <span class="text-gray-400 text-xs">···' + last4 + '</span></span>' +
+                '<span><strong>' + escHtml(c.name) + '</strong>' +
+                ' <span class="text-gray-400 text-xs">···' + last4 + '</span></span>' +
                 '<input type="hidden" name="customer_ids[]" value="' + c.id + '">' +
-                '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>' +
+                '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" ' +
+                'class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>' +
                 '</div>';
         }).join('');
     }
 }
-
-renderGroupCustomers();
 </script>
 @endsection
