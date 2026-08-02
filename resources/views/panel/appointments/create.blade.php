@@ -180,13 +180,14 @@
 
 {{-- Müşteri Arama Modalı --}}
 <div id="custSearchModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;flex-direction:column;">
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;">
+    <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;">
         <button type="button" onclick="closeCustModal()" style="font-size:22px;color:#6b7280;line-height:1;padding:2px 8px;background:none;border:none;cursor:pointer;">✕</button>
         <input id="custModalInput" type="text" autocomplete="off"
                placeholder="İsim veya son 4 hane telefon..."
                style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
+        <button type="button" onclick="document.getElementById('custModalInput').blur()" style="padding:8px 10px;background:#f3f4f6;border:none;border-radius:8px;font-size:14px;color:#374151;cursor:pointer;">Tamam</button>
     </div>
-    <div id="custModalResults" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;"></div>
+    <div id="custModalResults" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:320px;"></div>
 </div>
 
 
