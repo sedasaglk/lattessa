@@ -59,18 +59,12 @@
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <input type="text" id="customerFilter" autocomplete="off"
-                   placeholder="İsim veya son 4 hane telefon ile ara..."
-                   class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm mb-2"
-                   oninput="filterCustomerSelect('single', this.value)">
-            <select name="customer_id" id="customerSelect"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
-                <option value="">Müşteri seçin</option>
-                @foreach($customers as $c)
-                    <option value="{{ $c->id }}" {{ old('customer_id') == $c->id ? 'selected' : '' }}>
-                        {{ $c->name }}{{ $c->phone ? ' ···'.substr($c->phone, -4) : '' }}
-                    </option>
-                @endforeach
-            </select>
+                   placeholder="İsim veya son 4 hane telefon..."
+                   class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
+                   oninput="searchCust(this.value,'single')"
+                   onfocus="searchCust(this.value,'single')">
+            <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
+            <div id="customerResults" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:4px;max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;"></div>
         </div>
 
         {{-- Grup Müşteri Listesi (grup modunda görünür) --}}
@@ -85,20 +79,12 @@
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 {{-- Müşteri arama (grup) --}}
                 <input type="text" id="groupFilter" autocomplete="off"
-                       placeholder="İsim veya son 4 hane telefon ile ara..."
-                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm mb-2"
-                       oninput="filterCustomerSelect('group', this.value)">
-                <select id="groupCustomerPicker"
-                        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        onchange="pickGroupCustomer(this)">
-                    <option value="">Müşteri seçin...</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" data-name="{{ $c->name }}" data-phone="{{ $c->phone ?? '' }}">
-                            {{ $c->name }}{{ $c->phone ? ' ···'.substr($c->phone, -4) : '' }}
-                        </option>
-                    @endforeach
-                </select>
-                <p class="text-xs text-gray-400 mt-1">Seçilen müşteri listeye eklenir.</p>
+                       placeholder="İsim veya son 4 hane telefon..."
+                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                       oninput="searchCust(this.value,'group')"
+                       onfocus="searchCust(this.value,'group')">
+                <div id="groupResults" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;"></div>
+                <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
 
@@ -207,40 +193,63 @@ function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
 
-// Müşteri filtreleme: isim veya son 4 hane telefon
-function filterCustomerSelect(mode, q) {
+// Müşteri ara ve sonuçları button listesi olarak göster
+function searchCust(q, mode) {
     q = (q || '').trim().toLowerCase();
-    var selId = mode === 'group' ? 'groupCustomerPicker' : 'customerSelect';
-    var sel = document.getElementById(selId);
-    if (!sel) return;
-    var placeholder = mode === 'group' ? 'Müşteri seçin...' : 'Müşteri seçin';
-    sel.innerHTML = '<option value="">' + placeholder + '</option>';
+    var containerId = mode === 'group' ? 'groupResults' : 'customerResults';
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
     var results = allCustomers.filter(function(c) {
         if (!q) return true;
         var nameMatch = c.name.toLowerCase().includes(q);
         var phoneMatch = c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4).includes(q));
         return nameMatch || phoneMatch;
-    }).slice(0, 100);
+    }).slice(0, 60);
+
+    if (!results.length) {
+        container.innerHTML = '<div style="padding:14px 16px;color:#9ca3af;font-size:14px;text-align:center;">Müşteri bulunamadı</div>';
+        container.style.display = 'block';
+        return;
+    }
+
+    container.innerHTML = '';
     results.forEach(function(c) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        var opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name + (last4 ? ' ···' + last4 : '');
-        opt.dataset.name = c.name;
-        opt.dataset.phone = c.phone || '';
-        sel.appendChild(opt);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.cssText = 'display:block;width:100%;text-align:left;padding:13px 16px;border:none;border-bottom:1px solid #f3f4f6;background:#fff;font-size:15px;cursor:pointer;font-family:inherit;';
+        btn.innerHTML = '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
+            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            pickCust(c, mode);
+        });
+        container.appendChild(btn);
     });
+    container.style.display = 'block';
 }
 
-// Grup modunda seçim yapıldığında
-function pickGroupCustomer(sel) {
-    if (!sel.value) return;
-    var opt = sel.options[sel.selectedIndex];
-    addGroupCustomer(parseInt(sel.value), opt.dataset.name || opt.textContent, opt.dataset.phone || '');
-    sel.selectedIndex = 0;
-    var filterEl = document.getElementById('groupFilter');
-    if (filterEl) { filterEl.value = ''; filterCustomerSelect('group', ''); }
+function pickCust(c, mode) {
+    if (mode === 'group') {
+        addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
+        document.getElementById('groupFilter').value = '';
+        document.getElementById('groupResults').style.display = 'none';
+    } else {
+        document.getElementById('customer_id_input').value = c.id;
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        document.getElementById('customerFilter').value = c.name + (last4 ? ' ···' + last4 : '');
+        document.getElementById('customerResults').style.display = 'none';
+    }
 }
+
+// Input dışına tıklanınca listeyi kapat
+document.addEventListener('click', function(e) {
+    var sf = document.getElementById('singleCustomerSection');
+    var gf = document.getElementById('groupSection');
+    if (sf && !sf.contains(e.target)) document.getElementById('customerResults').style.display = 'none';
+    if (gf && !gf.contains(e.target)) { var gr = document.getElementById('groupResults'); if(gr) gr.style.display='none'; }
+});
 
 // ---- GRUP RANDEVUSU ----
 var groupCustomers = [];
@@ -250,8 +259,8 @@ function toggleGroupMode() {
     document.getElementById('singleCustomerSection').classList.toggle('hidden', isGroup);
     document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
 
-    var singleSel = document.getElementById('customerSelect');
-    if (singleSel) singleSel.required = !isGroup;
+    // customer_id zorunlu kontrolü grup modunda atlanır
+
 
     if (isGroup) {
         document.getElementById('isRecurring').checked = false;
