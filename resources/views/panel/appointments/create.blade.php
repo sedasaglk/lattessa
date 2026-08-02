@@ -24,13 +24,11 @@
         @csrf
 
         @if($userBranchId)
-        {{-- Şubesi belli olan personel: gizli input --}}
         <input type="hidden" name="branch_id" value="{{ old('branch_id', $userBranchId) }}">
         <div class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
             🏢 {{ $branches->firstWhere('id', $userBranchId)?->name ?? 'Şube' }}
         </div>
         @else
-        {{-- Firma sahibi: şube seçebilir --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Şube</label>
             <select name="branch_id" required
@@ -45,7 +43,6 @@
         </div>
         @endif
 
-        {{-- Grup Randevusu Toggle --}}
         <div class="border border-indigo-100 rounded-xl p-4 bg-indigo-50/40">
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" name="is_group" value="1" id="isGroup"
@@ -55,7 +52,7 @@
             </label>
         </div>
 
-        {{-- Tekil Müşteri (grup değilken görünür) --}}
+        {{-- Tekil Müşteri --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <div id="customerDisplay"
@@ -66,7 +63,7 @@
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
-        {{-- Grup Müşteri Listesi (grup modunda görünür) --}}
+        {{-- Grup Müşteri --}}
         <div id="groupSection" class="hidden space-y-3">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Grup Kapasitesi (max katılımcı)</label>
@@ -76,7 +73,6 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
-                {{-- Müşteri arama (grup) --}}
                 <div id="groupDisplay"
                      onclick="openCustModal('group')"
                      style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;">
@@ -113,7 +109,6 @@
             </select>
         </div>
         @else
-        {{-- Diğer personel: sadece kendisi --}}
         <input type="hidden" name="staff_id" value="{{ $authUser->id }}">
         <div class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
             👤 {{ $authUser->name }}
@@ -134,7 +129,6 @@
                       placeholder="Randevuya ait notlar...">{{ old('notes') }}</textarea>
         </div>
 
-        {{-- Tekrarlayan Randevu --}}
         <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
             <label class="flex items-center gap-2 cursor-pointer mb-3">
                 <input type="checkbox" name="is_recurring" value="1" id="isRecurring"
@@ -191,14 +185,9 @@
 </div>
 
 <script>
-function toggleRecurring() {
-    const cb = document.getElementById('isRecurring');
-    const opts = document.getElementById('recurringOptions');
-    opts.classList.toggle('hidden', !cb.checked);
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-// ---- YARDIMCI ----
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone ?? '']));
 var _custModalMode = 'single';
@@ -218,6 +207,10 @@ function openCustModal(mode) {
     document.getElementById('custModal').style.display = 'flex';
     document.getElementById('custModalInput').value = '';
     renderCustList('');
+    // Klavye için küçük gecikme (iOS)
+    setTimeout(function() {
+        document.getElementById('custModalInput').focus();
+    }, 100);
 }
 
 function closeCustModal() {
@@ -229,25 +222,24 @@ function renderCustList(q) {
     var list = document.getElementById('custModalList');
     list.innerHTML = '';
     if (!_custResults.length) {
-        var empty = document.createElement('div');
-        empty.style.cssText = 'padding:20px;text-align:center;color:#9ca3af;font-size:14px;';
-        empty.textContent = 'Müşteri bulunamadı';
-        list.appendChild(empty);
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
         return;
     }
     _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         var row = document.createElement('div');
-        row.style.cssText = 'padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);user-select:none;-webkit-user-select:none;';
-        row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>'
-            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
-        // iOS native: touchstart (klavye kapanmadan önce çalışır)
-        row.addEventListener('touchstart', function(e) {
+        row.style.cssText = 'padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.1);';
+        row.innerHTML = '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
+            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
+        // iOS native WKWebView
+        row.addEventListener('touchend', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             _pickFromModal(i);
         }, { passive: false });
-        // Desktop + Chrome emülasyon: click
-        row.addEventListener('click', function() {
+        // Desktop ve Chrome emülasyon
+        row.addEventListener('click', function(e) {
+            e.stopPropagation();
             _pickFromModal(i);
         });
         list.appendChild(row);
@@ -271,11 +263,9 @@ function _pickFromModal(i) {
     }
 }
 
-// Modal body'ye taşı (iOS overflow clipping fix)
+// Modal'ı body'e taşı (iOS overflow clipping fix)
 document.body.appendChild(document.getElementById('custModal'));
 
-
-// Modal arama input
 document.getElementById('custModalInput').addEventListener('input', function() {
     renderCustList(this.value);
 });
@@ -287,10 +277,6 @@ function toggleGroupMode() {
     var isGroup = document.getElementById('isGroup').checked;
     document.getElementById('singleCustomerSection').classList.toggle('hidden', isGroup);
     document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
-
-    // customer_id zorunlu kontrolü grup modunda atlanır
-
-
     if (isGroup) {
         document.getElementById('isRecurring').checked = false;
         document.getElementById('recurringOptions').classList.add('hidden');
@@ -298,6 +284,12 @@ function toggleGroupMode() {
     } else {
         document.getElementById('isRecurring').disabled = false;
     }
+}
+
+function toggleRecurring() {
+    const cb = document.getElementById('isRecurring');
+    const opts = document.getElementById('recurringOptions');
+    opts.classList.toggle('hidden', !cb.checked);
 }
 
 function addGroupCustomer(id, name, phone) {
