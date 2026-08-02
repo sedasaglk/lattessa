@@ -58,11 +58,11 @@
         {{-- Tekil Müşteri (grup değilken görünür) --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <input type="text" id="customerDisplay" readonly autocomplete="off"
-                   placeholder="İsim veya son 4 hane telefon..."
-                   class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
-                   style="cursor:pointer;"
-                   id="customerDisplay">
+            <div id="customerDisplay"
+                 onclick="openCustModal('single')"
+                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;">
+                İsim veya son 4 hane telefon...
+            </div>
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
@@ -77,11 +77,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 {{-- Müşteri arama (grup) --}}
-                <input type="text" id="groupDisplay" readonly autocomplete="off"
-                       placeholder="Müşteri ekle..."
-                       class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                       style="cursor:pointer;"
-                       id="groupDisplay">
+                <div id="groupDisplay"
+                     onclick="openCustModal('group')"
+                     style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;">
+                    Müşteri ekle...
+                </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -265,7 +265,9 @@ function _pickFromModal(i) {
     } else {
         document.getElementById('customer_id_input').value = c.id;
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        document.getElementById('customerDisplay').value = c.name + (last4 ? ' (···' + last4 + ')' : '');
+        var disp = document.getElementById('customerDisplay');
+        disp.textContent = c.name + (last4 ? ' (···' + last4 + ')' : '');
+        disp.style.color = '#111';
         closeCustModal();
     }
 }
@@ -273,23 +275,6 @@ function _pickFromModal(i) {
 // Modal body'ye taşı (iOS overflow clipping fix)
 document.body.appendChild(document.getElementById('custModal'));
 
-// Müşteri alanı tıklama/dokunma — touchstart+preventDefault ile sentetik click'i engelle
-(function() {
-    function bindOpen(id, mode) {
-        var el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('touchstart', function(e) {
-            e.preventDefault();   // iOS sentetik click üretimini engeller
-            openCustModal(mode);
-        }, { passive: false });
-        el.addEventListener('click', function(e) {
-            e.preventDefault();
-            openCustModal(mode);
-        });
-    }
-    bindOpen('customerDisplay', 'single');
-    bindOpen('groupDisplay', 'group');
-})();
 
 // Modal arama input
 document.getElementById('custModalInput').addEventListener('input', function() {
