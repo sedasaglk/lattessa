@@ -293,9 +293,10 @@ function _pickFromModal(i) {
     }
 }
 
+// ---- Grup Randevusu ----
+var groupCustomers = [];
+
 // ---- Event'leri başlat ----
-// Script, HTML'den sonra geldiği için DOMContentLoaded beklemeye gerek yok;
-// doğrudan çalıştırıyoruz (Blade layout uyumlu).
 (function initCustModal() {
 
     // 1. Modal'ı body'ye taşı (iOS overflow/clipping fix)
@@ -352,9 +353,6 @@ function _pickFromModal(i) {
     // Başlangıç render
     renderGroupCustomers();
 })();
-
-// ---- Grup Randevusu ----
-var groupCustomers = [];
 
 function toggleGroupMode() {
     var isGroup = document.getElementById('isGroup').checked;
