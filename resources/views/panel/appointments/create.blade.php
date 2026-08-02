@@ -329,19 +329,34 @@ var groupCustomers = [];
         _dbg('modal body\'e taşındı');
     }
 
-    // 2. Müşteri alanı
+    // 2. Müşteri alanı — click (desktop) + touchend (iOS WKWebView)
     var singleDisp = document.getElementById('customerDisplay');
     _dbg('customerDisplay: ' + (singleDisp ? 'bulundu' : 'YOK'));
     if (singleDisp) {
+        var _singleOpened = false;
+        singleDisp.addEventListener('touchend', function(e) {
+            _dbg('customerDisplay touchend');
+            _singleOpened = true;
+            openCustModal('single');
+        });
         singleDisp.addEventListener('click', function() {
-            _dbg('customerDisplay tıklandı');
+            _dbg('customerDisplay click');
+            if (_singleOpened) { _singleOpened = false; return; } // touchend zaten açtı
             openCustModal('single');
         });
     }
 
     var groupDisp = document.getElementById('groupDisplay');
     if (groupDisp) {
-        groupDisp.addEventListener('click', function() { openCustModal('group'); });
+        var _groupOpened = false;
+        groupDisp.addEventListener('touchend', function() {
+            _groupOpened = true;
+            openCustModal('group');
+        });
+        groupDisp.addEventListener('click', function() {
+            if (_groupOpened) { _groupOpened = false; return; }
+            openCustModal('group');
+        });
     }
 
     // 3. Kapat butonları
@@ -357,16 +372,28 @@ var groupCustomers = [];
         searchInput.addEventListener('input', function() { renderCustList(this.value); });
     }
 
-    // 5. Liste seçimi — Event Delegation
+    // 5. Liste seçimi — click + touchend (iOS WKWebView)
     var list = document.getElementById('custModalList');
     _dbg('custModalList: ' + (list ? 'bulundu' : 'YOK'));
     if (list) {
+        var _lastTouchIdx = -1;
+        list.addEventListener('touchend', function(e) {
+            var target = e.target.closest('[data-index]');
+            if (!target) return;
+            var index = parseInt(target.getAttribute('data-index'), 10);
+            if (isNaN(index)) return;
+            _dbg('satır touchend: ' + index);
+            _lastTouchIdx = index;
+            _pickFromModal(index);
+        });
         list.addEventListener('click', function(e) {
             var target = e.target.closest('[data-index]');
             if (!target) return;
             var index = parseInt(target.getAttribute('data-index'), 10);
-            _dbg('satır tıklandı: ' + index);
-            if (!isNaN(index)) _pickFromModal(index);
+            if (isNaN(index)) return;
+            if (_lastTouchIdx === index) { _lastTouchIdx = -1; return; } // touchend zaten seçti
+            _dbg('satır click: ' + index);
+            _pickFromModal(index);
         });
     }
 
