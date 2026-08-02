@@ -280,7 +280,7 @@ function renderCustModalResults(q) {
     } else {
         html = _modalResults.map(function(c, i){
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div onclick="_pickM('+i+')" '
+            return '<div data-idx="'+i+'" '
                 + 'style="padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.1);">'
                 + '<strong style="color:#111;">'+escHtml(c.name)+'</strong> '
                 + '<span style="color:#9ca3af;font-size:13px;">···'+last4+'</span>'
@@ -315,6 +315,18 @@ document.getElementById('custModalInput').addEventListener('input', function(){
     renderCustModalResults(this.value);
 });
 
+// Mobil seçim: touchstart ile → iOS klavyesi kapanmadan önce seçimi yakala
+document.getElementById('custModalResults').addEventListener('touchstart', function(e) {
+    var el = e.target;
+    while (el && el !== this) {
+        if (el.dataset && el.dataset.idx !== undefined) {
+            e.preventDefault(); // klavye dismiss'i engelle
+            _pickM(parseInt(el.dataset.idx));
+            return;
+        }
+        el = el.parentElement;
+    }
+}, { passive: false });
 
 // Desktop dropdown
 var isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
