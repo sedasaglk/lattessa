@@ -62,7 +62,7 @@
                    placeholder="İsim veya son 4 hane telefon..."
                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm"
                    style="cursor:pointer;"
-                   onclick="openCustModal('single')" ontouchend="openCustModal('single')">
+                   id="customerDisplay">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
@@ -81,7 +81,7 @@
                        placeholder="Müşteri ekle..."
                        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                        style="cursor:pointer;"
-                       onclick="openCustModal('group')" ontouchend="openCustModal('group')">
+                       id="groupDisplay">
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -272,6 +272,24 @@ function _pickFromModal(i) {
 
 // Modal body'ye taşı (iOS overflow clipping fix)
 document.body.appendChild(document.getElementById('custModal'));
+
+// Müşteri alanı tıklama/dokunma — touchstart+preventDefault ile sentetik click'i engelle
+(function() {
+    function bindOpen(id, mode) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', function(e) {
+            e.preventDefault();   // iOS sentetik click üretimini engeller
+            openCustModal(mode);
+        }, { passive: false });
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            openCustModal(mode);
+        });
+    }
+    bindOpen('customerDisplay', 'single');
+    bindOpen('groupDisplay', 'group');
+})();
 
 // Modal arama input
 document.getElementById('custModalInput').addEventListener('input', function() {
