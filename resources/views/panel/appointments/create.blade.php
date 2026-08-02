@@ -179,25 +179,14 @@
 </div>
 
 {{-- Müşteri Arama Modalı --}}
-<div id="custSearchModal" style="display:none;position:fixed;inset:0;z-index:99999;">
-    {{-- Arka plan overlay --}}
-    <div onclick="closeCustModal()" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
-    {{-- Bottom sheet --}}
-    <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;max-height:80vh;display:flex;flex-direction:column;">
-        {{-- Handle --}}
-        <div style="display:flex;justify-content:center;padding:10px 0 4px;">
-            <div style="width:40px;height:4px;background:#d1d5db;border-radius:2px;"></div>
-        </div>
-        {{-- Search bar --}}
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px 12px;border-bottom:1px solid #f3f4f6;">
-            <input id="custModalInput" type="text" autocomplete="off"
-                   placeholder="İsim veya son 4 hane telefon..."
-                   style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
-            <button type="button" onclick="closeCustModal()" style="color:#6b7280;background:none;border:none;font-size:20px;padding:4px 6px;cursor:pointer;">✕</button>
-        </div>
-        {{-- Sonuçlar --}}
-        <div id="custModalResults" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;"></div>
+<div id="custSearchModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;">
+        <button type="button" onclick="closeCustModal()" style="font-size:22px;color:#6b7280;line-height:1;padding:2px 8px;background:none;border:none;cursor:pointer;">✕</button>
+        <input id="custModalInput" type="text" autocomplete="off"
+               placeholder="İsim veya son 4 hane telefon..."
+               style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
     </div>
+    <div id="custModalResults" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;"></div>
 </div>
 
 
@@ -271,7 +260,7 @@ function filterC(q) {
 
 function openCustModal(mode) {
     _custModalMode = mode || 'single';
-    document.getElementById('custSearchModal').style.display = 'block';
+    document.getElementById('custSearchModal').style.display = 'flex';
     var inp = document.getElementById('custModalInput');
     inp.value = '';
     renderCustModalResults('');
@@ -289,7 +278,8 @@ function renderCustModalResults(q) {
     } else {
         html = results.slice(0,100).map(function(c){
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div style="padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.05);" onclick="pickCustModal('+c.id+',\''+c.name.replace(/'/g,"\\'")+'\',' +'\''+String(c.phone||'').replace(/'/g,"\\'")+'\''+')">'
+            return '<div data-cid="'+c.id+'" data-cname="'+escHtml(c.name)+'" data-cphone="'+escHtml(String(c.phone||''))+'" '
+                + 'style="padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.1);">'
                 + '<strong style="color:#111;">'+escHtml(c.name)+'</strong> '
                 + '<span style="color:#9ca3af;font-size:13px;">···'+last4+'</span>'
                 + '</div>';
@@ -316,6 +306,19 @@ document.body.appendChild(document.getElementById('custSearchModal'));
 
 document.getElementById('custModalInput').addEventListener('input', function(){
     renderCustModalResults(this.value);
+});
+
+// Müşteri seçimi - event delegation (iOS onclick div sorunu için)
+document.getElementById('custModalResults').addEventListener('touchend', function(e){
+    var el = e.target.closest('[data-cid]');
+    if (!el) return;
+    e.preventDefault();
+    pickCustModal(parseInt(el.dataset.cid), el.dataset.cname, el.dataset.cphone);
+});
+document.getElementById('custModalResults').addEventListener('click', function(e){
+    var el = e.target.closest('[data-cid]');
+    if (!el) return;
+    pickCustModal(parseInt(el.dataset.cid), el.dataset.cname, el.dataset.cphone);
 });
 
 // Desktop dropdown
