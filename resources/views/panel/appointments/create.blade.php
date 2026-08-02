@@ -260,13 +260,18 @@ function pickCust(c, mode) {
     }
 }
 
-// oninput HTML attribute yerine addEventListener (daha güvenilir)
+// Dropdown divlerini body'ye taşı (overflow/stacking context sorunlarından kaçınmak için)
+document.body.appendChild(document.getElementById('customerResults'));
+var _gr = document.getElementById('groupResults');
+if (_gr) document.body.appendChild(_gr);
+
+// Event listeners
 document.getElementById('customerFilter').addEventListener('input', function() { searchCust(this.value, 'single'); });
-document.getElementById('customerFilter').addEventListener('blur',  function() { setTimeout(function(){ document.getElementById('customerResults').style.display='none'; }, 150); });
+document.getElementById('customerFilter').addEventListener('blur',  function() { setTimeout(function(){ document.getElementById('customerResults').style.display='none'; }, 200); });
 var gf = document.getElementById('groupFilter');
 if (gf) {
     gf.addEventListener('input', function() { searchCust(this.value, 'group'); });
-    gf.addEventListener('blur',  function() { setTimeout(function(){ document.getElementById('groupResults').style.display='none'; }, 150); });
+    gf.addEventListener('blur',  function() { setTimeout(function(){ var el=document.getElementById('groupResults'); if(el) el.style.display='none'; }, 200); });
 }
 
 // ---- GRUP RANDEVUSU ----
