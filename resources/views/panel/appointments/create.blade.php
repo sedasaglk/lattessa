@@ -270,15 +270,16 @@ function closeCustModal() {
     document.getElementById('custSearchModal').style.display = 'none';
 }
 
+var _modalResults = [];
 function renderCustModalResults(q) {
-    var results = filterC(q);
+    _modalResults = filterC(q).slice(0,100);
     var html = '';
-    if (!results.length) {
+    if (!_modalResults.length) {
         html = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
     } else {
-        html = results.slice(0,100).map(function(c){
+        html = _modalResults.map(function(c, i){
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div data-cid="'+c.id+'" data-cname="'+escHtml(c.name)+'" data-cphone="'+escHtml(String(c.phone||''))+'" '
+            return '<div onclick="_pickM('+i+')" '
                 + 'style="padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.1);">'
                 + '<strong style="color:#111;">'+escHtml(c.name)+'</strong> '
                 + '<span style="color:#9ca3af;font-size:13px;">···'+last4+'</span>'
@@ -286,6 +287,11 @@ function renderCustModalResults(q) {
         }).join('');
     }
     document.getElementById('custModalResults').innerHTML = html;
+}
+function _pickM(i) {
+    var c = _modalResults[i];
+    if (!c) return;
+    pickCustModal(c.id, c.name, String(c.phone||''));
 }
 
 function pickCustModal(id, name, phone) {
@@ -308,18 +314,6 @@ document.getElementById('custModalInput').addEventListener('input', function(){
     renderCustModalResults(this.value);
 });
 
-// Müşteri seçimi - event delegation (iOS onclick div sorunu için)
-document.getElementById('custModalResults').addEventListener('touchend', function(e){
-    var el = e.target.closest('[data-cid]');
-    if (!el) return;
-    e.preventDefault();
-    pickCustModal(parseInt(el.dataset.cid), el.dataset.cname, el.dataset.cphone);
-});
-document.getElementById('custModalResults').addEventListener('click', function(e){
-    var el = e.target.closest('[data-cid]');
-    if (!el) return;
-    pickCustModal(parseInt(el.dataset.cid), el.dataset.cname, el.dataset.cphone);
-});
 
 // Desktop dropdown
 var isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
