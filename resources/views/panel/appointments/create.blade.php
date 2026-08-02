@@ -293,8 +293,10 @@ function _pickFromModal(i) {
     }
 }
 
-// ---- Tüm Event'ler DOMContentLoaded altında ----
-document.addEventListener('DOMContentLoaded', function() {
+// ---- Event'leri başlat ----
+// Script, HTML'den sonra geldiği için DOMContentLoaded beklemeye gerek yok;
+// doğrudan çalıştırıyoruz (Blade layout uyumlu).
+(function initCustModal() {
 
     // 1. Modal'ı body'ye taşı (iOS overflow/clipping fix)
     var modal = document.getElementById('custModal');
@@ -341,19 +343,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 6. Grup randevusu toggle
     var isGroupChk = document.getElementById('isGroup');
-    if (isGroupChk) {
-        isGroupChk.addEventListener('change', toggleGroupMode);
-    }
+    if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
 
     // 7. Tekrarlayan randevu toggle
     var isRecurringChk = document.getElementById('isRecurring');
-    if (isRecurringChk) {
-        isRecurringChk.addEventListener('change', toggleRecurring);
-    }
+    if (isRecurringChk) isRecurringChk.addEventListener('change', toggleRecurring);
 
     // Başlangıç render
     renderGroupCustomers();
-});
+})();
 
 // ---- Grup Randevusu ----
 var groupCustomers = [];
