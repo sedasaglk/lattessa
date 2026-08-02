@@ -56,7 +56,8 @@
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <div id="customerDisplay"
-                 onclick="openCustModal('single')"
+                 role="button"
+                 tabindex="0"
                  style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;">
                 İsim veya son 4 hane telefon...
             </div>
@@ -74,7 +75,8 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 <div id="groupDisplay"
-                     onclick="openCustModal('group')"
+                     role="button"
+                     tabindex="0"
                      style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;">
                     Müşteri ekle...
                 </div>
@@ -173,15 +175,15 @@
 </div>
 
 {{-- Müşteri Arama Modalı --}}
-<div id="custModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#fff;flex-direction:column;">
+<div id="custModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:#fff;flex-direction:column;pointer-events:auto;">
     <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;">
-        <button type="button" onclick="closeCustModal()" style="font-size:22px;color:#6b7280;padding:2px 8px;background:none;border:none;cursor:pointer;line-height:1;">✕</button>
+        <button type="button" id="closeCustModalBtn" style="font-size:22px;color:#6b7280;padding:4px 12px;background:none;border:none;cursor:pointer;line-height:1;touch-action:manipulation;">✕</button>
         <input id="custModalInput" type="text" autocomplete="off"
                placeholder="İsim veya son 4 hane telefon..."
                style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
-        <button type="button" onclick="document.getElementById('custModalInput').blur()" style="padding:8px 10px;background:#f3f4f6;border:none;border-radius:8px;font-size:14px;color:#374151;cursor:pointer;">Tamam</button>
+        <button type="button" id="doneCustModalBtn" style="padding:8px 12px;background:#f3f4f6;border:none;border-radius:8px;font-size:14px;color:#374151;cursor:pointer;touch-action:manipulation;">Tamam</button>
     </div>
-    <div id="custModalList" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;"></div>
+    <div id="custModalList" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:40px;"></div>
 </div>
 
 <script>
@@ -204,17 +206,18 @@ function filterCust(q) {
 
 function openCustModal(mode) {
     _custModalMode = mode || 'single';
-    document.getElementById('custModal').style.display = 'flex';
-    document.getElementById('custModalInput').value = '';
+    var modal = document.getElementById('custModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    var input = document.getElementById('custModalInput');
+    input.value = '';
     renderCustList('');
-    // Klavye için küçük gecikme (iOS)
-    setTimeout(function() {
-        document.getElementById('custModalInput').focus();
-    }, 100);
 }
 
 function closeCustModal() {
-    document.getElementById('custModal').style.display = 'none';
+    var modal = document.getElementById('custModal');
+    if (modal) modal.style.display = 'none';
+    document.activeElement && document.activeElement.blur();
 }
 
 function renderCustList(q) {
@@ -228,19 +231,10 @@ function renderCustList(q) {
     _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         var row = document.createElement('div');
-        row.style.cssText = 'padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.1);touch-action:manipulation;';
-        row.innerHTML = '<strong style="color:#111;">' + escHtml(c.name) + '</strong>'
-            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
-        // pointerdown: mobil+desktop, 300ms delay yok
-        row.addEventListener('pointerdown', function(e) {
-            e.currentTarget._pdFired = true;
-            _pickFromModal(i);
-        });
-        // click: pointerdown çalışmadığında fallback
-        row.addEventListener('click', function(e) {
-            if (e.currentTarget._pdFired) { e.currentTarget._pdFired = false; return; }
-            _pickFromModal(i);
-        });
+        row.setAttribute('data-index', i);
+        row.style.cssText = 'padding:18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;';
+        row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>'
+            + (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
         list.appendChild(row);
     });
 }
@@ -262,8 +256,36 @@ function _pickFromModal(i) {
     }
 }
 
-// Modal'ı body'e taşı (iOS overflow clipping fix)
-document.body.appendChild(document.getElementById('custModal'));
+// Event Delegation Yapısı
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('custModal');
+    if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+
+    var singleDisp = document.getElementById('customerDisplay');
+    if (singleDisp) {
+        singleDisp.addEventListener('click', function() { openCustModal('single'); });
+    }
+
+    var groupDisp = document.getElementById('groupDisplay');
+    if (groupDisp) {
+        groupDisp.addEventListener('click', function() { openCustModal('group'); });
+    }
+
+    document.getElementById('closeCustModalBtn').addEventListener('click', closeCustModal);
+    document.getElementById('doneCustModalBtn').addEventListener('click', closeCustModal);
+
+    var list = document.getElementById('custModalList');
+    if (list) {
+        list.addEventListener('click', function(e) {
+            var target = e.target.closest('[data-index]');
+            if (!target) return;
+            var index = parseInt(target.getAttribute('data-index'));
+            if (!isNaN(index)) _pickFromModal(index);
+        });
+    }
+});
 
 document.getElementById('custModalInput').addEventListener('input', function() {
     renderCustList(this.value);
