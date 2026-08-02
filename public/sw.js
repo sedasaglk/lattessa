@@ -1,10 +1,5 @@
-const CACHE_NAME = 'lattessa-v4';
-const urlsToCache = [
-    '/',
-    '/manifest.json',
-    '/icons/icon-192x192.png',
-    '/icons/icon-512x512.png',
-];
+const CACHE_NAME = 'lattessa-v5';
+const urlsToCache = [];
 
 self.addEventListener('install', event => {
     event.waitUntil(
