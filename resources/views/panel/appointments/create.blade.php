@@ -201,11 +201,23 @@ function searchCust(q, mode) {
 
     if (!q) { container.style.display = 'none'; return; }
 
-    // Input'un ekran konumunu al ve dropdown'u tam altına sabitle
+    // Input konumunu al, boşluğa göre yukarı veya aşağı aç
     var rect = inp.getBoundingClientRect();
-    container.style.top    = (rect.bottom + 2) + 'px';
-    container.style.left   = rect.left + 'px';
-    container.style.width  = rect.width + 'px';
+    var vh = window.innerHeight;
+    var spaceBelow = vh - rect.bottom - 4;
+    var maxH = Math.min(260, Math.max(spaceBelow, vh - rect.bottom - 80));
+    container.style.left      = rect.left + 'px';
+    container.style.width     = rect.width + 'px';
+    container.style.maxHeight = maxH + 'px';
+    if (spaceBelow >= 120) {
+        container.style.top    = (rect.bottom + 4) + 'px';
+        container.style.bottom = 'auto';
+    } else {
+        // Yeterli alan yok — yukarı aç
+        container.style.bottom = (vh - rect.top + 4) + 'px';
+        container.style.top    = 'auto';
+        container.style.maxHeight = Math.min(260, rect.top - 8) + 'px';
+    }
 
     var results = allCustomers.filter(function(c) {
         var nameMatch = c.name.toLowerCase().includes(q);
