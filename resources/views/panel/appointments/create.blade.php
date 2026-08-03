@@ -244,9 +244,19 @@ function renderCustList(q) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         var row = document.createElement('div');
         row.style.cssText = 'padding:18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;-webkit-user-select:none';
-        (function(idx) { row.onclick = function() { _pickFromModal(idx); }; })(i);
         row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>' +
             (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
+        (function(idx) {
+            var _mv = false;
+            row.addEventListener('touchstart', function() { _mv = false; }, {passive: true});
+            row.addEventListener('touchmove',  function() { _mv = true;  }, {passive: true});
+            row.addEventListener('touchend', function(e) {
+                if (_mv) return;
+                e.preventDefault();
+                _pickFromModal(idx);
+            }, {passive: false});
+            row.addEventListener('click', function() { _pickFromModal(idx); });
+        })(i);
         list.appendChild(row);
     });
 }
@@ -271,6 +281,7 @@ function _pickFromModal(i) {
                 disp.textContent = _selC.name + (last4 ? ' (···' + last4 + ')' : '');
                 disp.style.color = '#111';
             }
+            window._custJustSelected = false;
         }, 100);
     }
 }
