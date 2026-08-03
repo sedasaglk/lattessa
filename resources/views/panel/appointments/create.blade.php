@@ -292,14 +292,18 @@ function _pickFromModal(i) {
         _dbg('grup eklendi');
     } else {
         var hiddenInp = document.getElementById('customer_id_input');
-        var disp = document.getElementById('customerDisplay');
-        _dbg('hiddenInp=' + !!hiddenInp + ' disp=' + !!disp);
         if (hiddenInp) hiddenInp.value = c.id;
-        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        if (disp) { disp.textContent = c.name + (last4 ? ' (···' + last4 + ')' : ''); disp.style.color = '#111'; }
         window._custJustSelected = true;
         closeCustModal();
-        _dbg('seçim tamam: ' + c.name);
+        var _selC = c;
+        setTimeout(function() {
+            var disp = document.getElementById('customerDisplay');
+            var last4 = _selC.phone ? _selC.phone.toString().slice(-4) : '';
+            if (disp) {
+                disp.textContent = _selC.name + (last4 ? ' (···' + last4 + ')' : '');
+                disp.style.color = '#111';
+            }
+        }, 50);
     }
 }
 
