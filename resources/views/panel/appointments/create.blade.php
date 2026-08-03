@@ -55,13 +55,11 @@
         {{-- Tekil Müşteri --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <div id="customerDisplay"
-                 role="button"
-                 tabindex="0"
+            <input type="text" id="customerDisplay" readonly
                  onclick="openCustModal('single')"
-                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">
-                İsim veya son 4 hane telefon...
-            </div>
+                 placeholder="İsim veya son 4 hane telefon..."
+                 autocomplete="off"
+                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#374151;background:#fff;min-height:42px;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);outline:none;-webkit-user-select:none;user-select:none;">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
@@ -75,13 +73,11 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
-                <div id="groupDisplay"
-                     role="button"
-                     tabindex="0"
+                <input type="text" id="groupDisplay" readonly
                      onclick="openCustModal('group')"
-                     style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">
-                    Müşteri ekle...
-                </div>
+                     placeholder="Müşteri ekle..."
+                     autocomplete="off"
+                     style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#374151;background:#fff;min-height:42px;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);outline:none;-webkit-user-select:none;user-select:none;">
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -283,28 +279,20 @@ function _pickFromModal(i) {
     var last4    = c.phone ? c.phone.toString().slice(-4) : '';
     var dispText = c.name + (last4 ? ' (···' + last4 + ')' : '');
 
-    /* 1. Aninda güncelle (senkron) */
+    /* customerDisplay artik <input readonly> — .value her zaman iOS'ta render edilir */
     var disp = document.getElementById('customerDisplay');
-    if (disp) { disp.textContent = dispText; disp.style.color = '#111'; }
+    if (disp) { disp.value = dispText; }
 
-    /* 2. Modal'i kapat - SONRA degil ONCE senkron guncelle, sonra kapat */
     window._custJustSelected = true;
     closeCustModal();
 
-    /* 3. iOS overflow-y tile cache icin modal kapandiktan sonra tekrar set et */
-    requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-            var d = document.getElementById('customerDisplay');
-            if (d) { d.textContent = dispText; d.style.color = '#111'; }
-            /* scroll layer'i tetikle */
-            var m = document.querySelector('main');
-            if (m) { var s = m.scrollTop; m.scrollTop = s + 1; m.scrollTop = s; }
-            setTimeout(function() {
-                window._custJustSelected = false;
-                _pickBusy = false;
-            }, 400);
-        });
-    });
+    setTimeout(function() {
+        /* Guvenlik: modal kapatildiktan sonra tekrar set et */
+        var d = document.getElementById('customerDisplay');
+        if (d) { d.value = dispText; }
+        window._custJustSelected = false;
+        _pickBusy = false;
+    }, 300);
 }
 
 var groupCustomers = [];
