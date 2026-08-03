@@ -3,6 +3,47 @@
 @section('title', 'Yeni Randevu')
 
 @section('content')
+
+{{-- Müşteri dropdown stilleri --}}
+<style>
+#custDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 4px;
+    display: none;
+}
+#custDropdown .cust-row {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    font-size: 14px;
+    color: #111;
+    background: #fff;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.06);
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+}
+#custDropdown .cust-row:last-child { border-bottom: none; }
+#custDropdown .cust-row:active { background: #f9fafb; }
+#custDropdown .cust-empty {
+    padding: 16px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 14px;
+}
+</style>
+
 <div class="mb-6 flex items-center gap-3">
     <a href="{{ route('panel.appointments.index', ['tenant_slug' => $tenant->slug]) }}"
        class="text-gray-400 hover:text-gray-900">← Geri</a>
@@ -55,11 +96,16 @@
         {{-- Tekil Müşteri --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <button type="button" id="customerDisplay"
-                    onclick="openCustModal('single')"
-                    style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;box-sizing:border-box;text-align:left;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">
-                İsim veya son 4 hane telefon...
-            </button>
+            <div style="position:relative;">
+                <input type="text"
+                       id="custSearch"
+                       autocomplete="off"
+                       placeholder="İsim veya son 4 hane telefon..."
+                       style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;"
+                       onfocus="custOnFocus()"
+                       oninput="custOnInput(this.value)">
+                <div id="custDropdown"></div>
+            </div>
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
@@ -73,11 +119,16 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
-                <button type="button" id="groupDisplay"
-                        onclick="openCustModal('group')"
-                        style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;box-sizing:border-box;text-align:left;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">
-                    Müşteri ekle...
-                </button>
+                <div style="position:relative;">
+                    <input type="text"
+                           id="groupCustSearch"
+                           autocomplete="off"
+                           placeholder="Müşteri ekle..."
+                           style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;"
+                           oninput="groupCustOnInput(this.value)"
+                           onfocus="groupCustOnFocus()">
+                    <div id="groupCustDropdown" style="position:absolute;top:100%;left:0;right:0;z-index:9999;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);max-height:250px;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-top:4px;display:none;"></div>
+                </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -176,157 +227,171 @@
     </form>
 </div>
 
-{{-- Müşteri Arama Modalı --}}
-<div id="custModal"
-     style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:#fff;flex-direction:column;">
-    <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;">
-        <button type="button" id="closeCustModalBtn"
-                style="font-size:22px;color:#6b7280;padding:4px 12px;background:none;border:none;cursor:pointer;line-height:1;touch-action:manipulation;">✕</button>
-        <input id="custModalInput" type="text" autocomplete="off"
-               placeholder="İsim veya son 4 hane telefon..."
-               style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;outline:none;font-family:inherit;">
-        <button type="button" id="doneCustModalBtn"
-                style="padding:8px 12px;background:#f3f4f6;border:none;border-radius:8px;font-size:14px;color:#374151;cursor:pointer;touch-action:manipulation;">Tamam</button>
-    </div>
-    <div id="custModalList"
-         style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:40px;"></div>
-</div>
-
 <script>
+/* ============================================================
+   Müşteri verisi
+   ============================================================ */
+var allCustomers = @json($customers->map(fn($c) => [
+    'id'    => $c->id,
+    'name'  => $c->name,
+    'phone' => $c->phone ?? ''
+]));
+
+/* ============================================================
+   Yardımcı fonksiyonlar
+   ============================================================ */
 function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
-var allCustomers = @json($customers->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'phone' => $c->phone ?? '']));
-var _custModalMode = 'single';
-var _custResults   = [];
-var _pickBusy      = false;
-
-function filterCust(q) {
+function filterCust(q, limit) {
     q = (q || '').trim().toLowerCase();
-    if (!q) return allCustomers.slice(0, 60);
+    limit = limit || 50;
+    if (!q) return allCustomers.slice(0, limit);
     return allCustomers.filter(function(c) {
+        var phone = c.phone ? c.phone.toString() : '';
         return c.name.toLowerCase().includes(q) ||
-               (c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4).includes(q)));
-    }).slice(0, 60);
+               phone.includes(q) ||
+               phone.slice(-4) === q;
+    }).slice(0, limit);
 }
 
-function openCustModal(mode) {
-    if (window._custJustSelected) { window._custJustSelected = false; return; }
-    _custModalMode = mode || 'single';
-    var modal = document.getElementById('custModal');
-    if (!modal) return;
-    document.body.appendChild(modal);
-    modal.style.display    = 'flex';
-    modal.style.position   = 'fixed';
-    modal.style.top        = '0';
-    modal.style.left       = '0';
-    modal.style.right      = '0';
-    modal.style.bottom     = '0';
-    modal.style.width      = '100%';
-    modal.style.height     = window.innerHeight + 'px';
-    modal.style.flexDirection = 'column';
-    document.getElementById('custModalInput').value = '';
-    renderCustList('');
-    setTimeout(function() {
-        var inp = document.getElementById('custModalInput');
-        if (inp) inp.focus();
-    }, 150);
+/* ============================================================
+   TEKİL MÜŞTERİ — dropdown
+   ============================================================ */
+var custSelected = false;
+
+function custOnFocus() {
+    custSelected = false;
+    showCustDropdown(document.getElementById('custSearch').value);
 }
 
-function closeCustModal() {
-    var modal = document.getElementById('custModal');
-    if (modal) modal.style.display = 'none';
+function custOnInput(val) {
+    custSelected = false;
+    document.getElementById('customer_id_input').value = '';
+    showCustDropdown(val);
 }
 
-function renderCustList(q) {
-    _custResults = filterCust(q);
-    var list = document.getElementById('custModalList');
-    if (!list) return;
-    list.innerHTML = '';
-    if (!_custResults.length) {
-        list.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
+function showCustDropdown(q) {
+    var dd   = document.getElementById('custDropdown');
+    var list = filterCust(q);
+    dd.innerHTML = '';
+
+    if (!list.length) {
+        dd.innerHTML = '<div class="cust-empty">Müşteri bulunamadı</div>';
+        dd.style.display = 'block';
         return;
     }
-    _custResults.forEach(function(c, i) {
+
+    list.forEach(function(c) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        var row = document.createElement('div');
-        row.style.cssText = 'display:block;width:100%;box-sizing:border-box;text-align:left;padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#ffffff;color:#111111;line-height:1.4;min-height:56px;-webkit-tap-highlight-color:rgba(0,0,0,0.06);touch-action:manipulation;';
-        row.innerHTML = '<strong style="color:#111111;">' + escHtml(c.name) + '</strong>' +
-            (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
-        (function(idx) {
-            row.onclick = function() { _pickFromModal(idx); };
-        })(i);
-        list.appendChild(row);
+        var row   = document.createElement('div');
+        row.className = 'cust-row';
+        row.innerHTML  = '<strong>' + escHtml(c.name) + '</strong>' +
+            (last4 ? ' <span style="color:#9ca3af;font-size:12px;">···' + last4 + '</span>' : '');
+
+        /* mousedown yerine pointerdown: blur'dan önce tetiklenir */
+        row.addEventListener('pointerdown', function(e) {
+            e.preventDefault(); /* input blur'u engelle */
+            selectCust(c);
+        });
+        /* Fallback: touch cihazlarda pointerdown desteklenmiyorsa */
+        row.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            selectCust(c);
+        }, { passive: false });
+
+        dd.appendChild(row);
     });
+
+    dd.style.display = 'block';
 }
 
-function _pickFromModal(i) {
-    if (_pickBusy) return;
-    _pickBusy = true;
-    var c = _custResults[i];
-    if (!c) { _pickBusy = false; return; }
-
-    if (_custModalMode === 'group') {
-        addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
-        document.getElementById('custModalInput').value = '';
-        renderCustList('');
-        _pickBusy = false;
-        return;
-    }
-
-    var hiddenInp = document.getElementById('customer_id_input');
-    if (hiddenInp) hiddenInp.value = c.id;
-
+function selectCust(c) {
+    custSelected = true;
     var last4    = c.phone ? c.phone.toString().slice(-4) : '';
     var dispText = c.name + (last4 ? ' (···' + last4 + ')' : '');
 
-    var disp = document.getElementById('customerDisplay');
-    if (disp) {
-        disp.textContent = dispText;
-        disp.style.color = '#111';
-    }
-
-    window._custJustSelected = true;
-    closeCustModal();
-    _pickBusy = false;
-
-    setTimeout(function() { window._custJustSelected = false; }, 500);
+    document.getElementById('custSearch').value        = dispText;
+    document.getElementById('customer_id_input').value = c.id;
+    hideCustDropdown();
 }
 
+function hideCustDropdown() {
+    var dd = document.getElementById('custDropdown');
+    if (dd) dd.style.display = 'none';
+}
+
+/* Dışarı tıklanınca kapat */
+document.addEventListener('pointerdown', function(e) {
+    var search = document.getElementById('custSearch');
+    var dd     = document.getElementById('custDropdown');
+    if (search && dd && !search.contains(e.target) && !dd.contains(e.target)) {
+        hideCustDropdown();
+    }
+});
+
+/* ============================================================
+   GRUP MÜŞTERİ — dropdown
+   ============================================================ */
 var groupCustomers = [];
 
-(function initCustModal() {
-    var modal = document.getElementById('custModal');
-    if (modal && modal.parentElement !== document.body) { document.body.appendChild(modal); }
-    document.getElementById('closeCustModalBtn').addEventListener('click', closeCustModal);
-    document.getElementById('doneCustModalBtn').addEventListener('click', closeCustModal);
-    document.getElementById('custModalInput').addEventListener('input', function() { renderCustList(this.value); });
-    var isGroupChk = document.getElementById('isGroup');
-    if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
-    var isRecurringChk = document.getElementById('isRecurring');
-    if (isRecurringChk) isRecurringChk.addEventListener('change', toggleRecurring);
-    renderGroupCustomers();
-})();
+function groupCustOnFocus() {
+    showGroupDropdown(document.getElementById('groupCustSearch').value);
+}
 
-function toggleGroupMode() {
-    var isGroup = document.getElementById('isGroup').checked;
-    document.getElementById('singleCustomerSection').classList.toggle('hidden', isGroup);
-    document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
-    if (isGroup) {
-        var rec = document.getElementById('isRecurring');
-        rec.checked = false;
-        document.getElementById('recurringOptions').classList.add('hidden');
-        rec.disabled = true;
-    } else {
-        document.getElementById('isRecurring').disabled = false;
+function groupCustOnInput(val) {
+    showGroupDropdown(val);
+}
+
+function showGroupDropdown(q) {
+    var dd   = document.getElementById('groupCustDropdown');
+    var list = filterCust(q);
+    dd.innerHTML = '';
+
+    if (!list.length) {
+        dd.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
+        dd.style.display = 'block';
+        return;
     }
+
+    list.forEach(function(c) {
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        var row   = document.createElement('div');
+        row.className = 'cust-row';
+        row.innerHTML  = '<strong>' + escHtml(c.name) + '</strong>' +
+            (last4 ? ' <span style="color:#9ca3af;font-size:12px;">···' + last4 + '</span>' : '');
+
+        row.addEventListener('pointerdown', function(e) {
+            e.preventDefault();
+            addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
+            document.getElementById('groupCustSearch').value = '';
+            dd.style.display = 'none';
+        });
+        row.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
+            document.getElementById('groupCustSearch').value = '';
+            dd.style.display = 'none';
+        }, { passive: false });
+
+        dd.appendChild(row);
+    });
+
+    dd.style.display = 'block';
 }
 
-function toggleRecurring() {
-    var cb = document.getElementById('isRecurring');
-    document.getElementById('recurringOptions').classList.toggle('hidden', !cb.checked);
-}
+document.addEventListener('pointerdown', function(e) {
+    var search = document.getElementById('groupCustSearch');
+    var dd     = document.getElementById('groupCustDropdown');
+    if (search && dd && !search.contains(e.target) && !dd.contains(e.target)) {
+        dd.style.display = 'none';
+    }
+});
 
 function addGroupCustomer(id, name, phone) {
     if (groupCustomers.find(function(c) { return c.id == id; })) return;
@@ -342,18 +407,54 @@ function removeGroupCustomer(id) {
 function renderGroupCustomers() {
     var list = document.getElementById('groupCustomerList');
     if (!list) return;
-    if (groupCustomers.length === 0) {
+    if (!groupCustomers.length) {
         list.innerHTML = '<p class="text-xs text-gray-400 italic">Henüz katılımcı eklenmedi.</p>';
-    } else {
-        list.innerHTML = groupCustomers.map(function(c) {
-            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">'
-                + '<span><strong>' + escHtml(c.name) + '</strong> <span class="text-gray-400 text-xs">···' + last4 + '</span></span>'
-                + '<input type="hidden" name="customer_ids[]" value="' + c.id + '">'
-                + '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>'
-                + '</div>';
-        }).join('');
+        return;
     }
+    list.innerHTML = groupCustomers.map(function(c) {
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">'
+            + '<span><strong>' + escHtml(c.name) + '</strong>'
+            + (last4 ? ' <span class="text-gray-400 text-xs">···' + last4 + '</span>' : '')
+            + '</span>'
+            + '<input type="hidden" name="customer_ids[]" value="' + c.id + '">'
+            + '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>'
+            + '</div>';
+    }).join('');
+}
+
+/* ============================================================
+   Grup / Tekrarlayan toggle
+   ============================================================ */
+(function init() {
+    renderGroupCustomers();
+
+    var isGroupChk = document.getElementById('isGroup');
+    if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
+
+    var isRecurringChk = document.getElementById('isRecurring');
+    if (isRecurringChk) isRecurringChk.addEventListener('change', toggleRecurring);
+})();
+
+function toggleGroupMode() {
+    var isGroup = document.getElementById('isGroup').checked;
+    document.getElementById('singleCustomerSection').classList.toggle('hidden', isGroup);
+    document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
+    if (isGroup) {
+        var rec = document.getElementById('isRecurring');
+        if (rec) { rec.checked = false; rec.disabled = true; }
+        var ro = document.getElementById('recurringOptions');
+        if (ro) ro.classList.add('hidden');
+    } else {
+        var rec2 = document.getElementById('isRecurring');
+        if (rec2) rec2.disabled = false;
+    }
+}
+
+function toggleRecurring() {
+    var cb = document.getElementById('isRecurring');
+    var ro = document.getElementById('recurringOptions');
+    if (cb && ro) ro.classList.toggle('hidden', !cb.checked);
 }
 </script>
 @endsection
