@@ -55,11 +55,10 @@
         {{-- Tekil Müşteri --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <input type="text" id="customerDisplay" readonly
-                 onclick="openCustModal('single')"
-                 placeholder="İsim veya son 4 hane telefon..."
-                 autocomplete="off"
-                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#374151;background:#fff;min-height:42px;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);outline:none;-webkit-user-select:none;user-select:none;">
+            <button type="button" id="customerDisplay"
+                 style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;box-sizing:border-box;text-align:left;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">
+                İsim veya son 4 hane telefon...
+            </button>
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
@@ -262,10 +261,11 @@ function renderCustList(q) {
 
         row.type = 'button';
 
+        row.dataset.customerIndex = i;
+
         row.style.cssText =
             'display:block;' +
             'width:100%;' +
-            'min-height:64px;' +
             'text-align:left;' +
             'padding:18px;' +
             'border:none;' +
@@ -273,75 +273,26 @@ function renderCustList(q) {
             'font-size:15px;' +
             'cursor:pointer;' +
             'background:#fff;' +
-            'color:#111;' +
-            'position:relative;' +
-            'z-index:1000000;' +
-            'pointer-events:auto;' +
             'touch-action:manipulation;' +
-            '-webkit-tap-highlight-color:rgba(0,0,0,0.08);' +
-            'user-select:none;' +
-            '-webkit-user-select:none;';
+            'pointer-events:auto;';
 
         row.innerHTML =
-            '<strong style="color:#111;pointer-events:none;">' +
+            '<strong style="pointer-events:none;">' +
             escHtml(c.name) +
             '</strong>' +
-
             (last4
-                ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">' +
-                  '···' +
+                ? ' <span style="pointer-events:none;">···' +
                   last4 +
                   '</span>'
                 : '');
-
-        (function(index) {
-
-            var selected = false;
-
-            function selectCustomer(e) {
-
-                if (selected) {
-                    return;
-                }
-
-                selected = true;
-
-                if (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                _pickFromModal(index);
-            }
-
-            if (window.PointerEvent) {
-
-                row.addEventListener(
-                    'pointerup',
-                    selectCustomer
-                );
-
-            } else {
-
-                row.addEventListener(
-                    'touchend',
-                    selectCustomer,
-                    { passive: false }
-                );
-
-                row.addEventListener(
-                    'click',
-                    selectCustomer
-                );
-            }
-
-        })(i);
 
         list.appendChild(row);
     });
 }
 
 function _pickFromModal(i) {
+    alert('SEÇİM FONKSİYONU ÇALIŞTI: ' + i);
+
     if (_pickBusy) return;
     _pickBusy = true;
     var c = _custResults[i];
@@ -369,7 +320,8 @@ function _pickFromModal(i) {
     var d = document.getElementById('customerDisplay');
 
     if (d) {
-        d.value = dispText;
+        d.textContent = dispText;
+        d.style.color = '#374151';
     }
 
     _pickBusy = false;
@@ -387,6 +339,30 @@ var groupCustomers = [];
     document.getElementById('closeCustModalBtn').addEventListener('click', closeCustModal);
     document.getElementById('doneCustModalBtn').addEventListener('click', closeCustModal);
     document.getElementById('custModalInput').addEventListener('input', function() { renderCustList(this.value); });
+
+    document.getElementById('custModalList').addEventListener('pointerdown', function(e) {
+
+        var row = e.target.closest('button[data-customer-index]');
+
+        if (!row) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var index = parseInt(row.dataset.customerIndex, 10);
+
+        console.log('Müşteri seçiliyor:', index, _custResults[index]);
+
+        _pickFromModal(index);
+    });
+
+    document.getElementById('customerDisplay').addEventListener('pointerup', function(e) {
+        e.preventDefault();
+        openCustModal('single');
+    });
+
     var isGroupChk = document.getElementById('isGroup');
     if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
     var isRecurringChk = document.getElementById('isRecurring');
