@@ -300,19 +300,23 @@ function renderCustList(q) {
 // ---- Seçim ----
 function _pickFromModal(i) {
     var c = _custResults[i];
+    _dbg('pick i=' + i + ' c=' + (c ? c.name : 'NULL') + ' mode=' + _custModalMode);
     if (!c) return;
 
     if (_custModalMode === 'group') {
         addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
         document.getElementById('custModalInput').value = '';
         renderCustList('');
+        _dbg('grup eklendi');
     } else {
-        document.getElementById('customer_id_input').value = c.id;
-        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        var hiddenInp = document.getElementById('customer_id_input');
         var disp = document.getElementById('customerDisplay');
-        disp.textContent = c.name + (last4 ? ' (···' + last4 + ')' : '');
-        disp.style.color = '#111';
+        _dbg('hiddenInp=' + !!hiddenInp + ' disp=' + !!disp);
+        if (hiddenInp) hiddenInp.value = c.id;
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        if (disp) { disp.textContent = c.name + (last4 ? ' (···' + last4 + ')' : ''); disp.style.color = '#111'; }
         closeCustModal();
+        _dbg('seçim tamam: ' + c.name);
     }
 }
 
