@@ -178,7 +178,7 @@
 
 {{-- Müşteri Arama Modalı --}}
 <div id="custModal"
-     style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:#fff;flex-direction:column;pointer-events:auto;">
+     style="display:none;position:fixed;inset:0;width:100vw;height:100dvh;z-index:2147483647;background:#fff;flex-direction:column;pointer-events:auto;touch-action:manipulation;">
     <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;">
         <button type="button" id="closeCustModalBtn"
                 style="font-size:22px;color:#6b7280;padding:4px 12px;background:none;border:none;cursor:pointer;line-height:1;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">✕</button>
@@ -234,26 +234,109 @@ function closeCustModal() {
 
 function renderCustList(q) {
     _custResults = filterCust(q);
+
     var list = document.getElementById('custModalList');
-    list.innerHTML = '';
-    if (!_custResults.length) {
-        list.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
+
+    if (!list) {
         return;
     }
+
+    list.innerHTML = '';
+
+    if (!_custResults.length) {
+        list.innerHTML =
+            '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">' +
+            'Müşteri bulunamadı' +
+            '</div>';
+
+        return;
+    }
+
     _custResults.forEach(function(c, i) {
-        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+
+        var last4 = c.phone
+            ? c.phone.toString().slice(-4)
+            : '';
+
         var row = document.createElement('button');
+
         row.type = 'button';
-        /* touch-action:manipulation: 300ms tap gecikme yok, sentetik click aninda gelir */
-        row.style.cssText = 'display:block;width:100%;text-align:left;padding:18px;border:none;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;-webkit-user-select:none;pointer-events:auto;';
-        row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>' +
-            (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
-        (function(idx) {
-            row.onclick = function(e) {
-                e.stopPropagation();
-                _pickFromModal(idx);
-            };
+
+        row.style.cssText =
+            'display:block;' +
+            'width:100%;' +
+            'min-height:64px;' +
+            'text-align:left;' +
+            'padding:18px;' +
+            'border:none;' +
+            'border-bottom:1px solid #f3f4f6;' +
+            'font-size:15px;' +
+            'cursor:pointer;' +
+            'background:#fff;' +
+            'color:#111;' +
+            'position:relative;' +
+            'z-index:1000000;' +
+            'pointer-events:auto;' +
+            'touch-action:manipulation;' +
+            '-webkit-tap-highlight-color:rgba(0,0,0,0.08);' +
+            'user-select:none;' +
+            '-webkit-user-select:none;';
+
+        row.innerHTML =
+            '<strong style="color:#111;pointer-events:none;">' +
+            escHtml(c.name) +
+            '</strong>' +
+
+            (last4
+                ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">' +
+                  '···' +
+                  last4 +
+                  '</span>'
+                : '');
+
+        (function(index) {
+
+            var selected = false;
+
+            function selectCustomer(e) {
+
+                if (selected) {
+                    return;
+                }
+
+                selected = true;
+
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                _pickFromModal(index);
+            }
+
+            if (window.PointerEvent) {
+
+                row.addEventListener(
+                    'pointerup',
+                    selectCustomer
+                );
+
+            } else {
+
+                row.addEventListener(
+                    'touchend',
+                    selectCustomer,
+                    { passive: false }
+                );
+
+                row.addEventListener(
+                    'click',
+                    selectCustomer
+                );
+            }
+
         })(i);
+
         list.appendChild(row);
     });
 }
@@ -279,20 +362,21 @@ function _pickFromModal(i) {
     var last4    = c.phone ? c.phone.toString().slice(-4) : '';
     var dispText = c.name + (last4 ? ' (···' + last4 + ')' : '');
 
-    /* customerDisplay artik <input readonly> — .value her zaman iOS'ta render edilir */
-    var disp = document.getElementById('customerDisplay');
-    if (disp) { disp.value = dispText; }
-
     window._custJustSelected = true;
+
     closeCustModal();
 
+    var d = document.getElementById('customerDisplay');
+
+    if (d) {
+        d.value = dispText;
+    }
+
+    _pickBusy = false;
+
     setTimeout(function() {
-        /* Guvenlik: modal kapatildiktan sonra tekrar set et */
-        var d = document.getElementById('customerDisplay');
-        if (d) { d.value = dispText; }
         window._custJustSelected = false;
-        _pickBusy = false;
-    }, 300);
+    }, 100);
 }
 
 var groupCustomers = [];
