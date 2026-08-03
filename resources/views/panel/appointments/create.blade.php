@@ -178,7 +178,7 @@
 
 {{-- Müşteri Arama Modalı --}}
 <div id="custModal"
-     style="display:none;position:fixed;inset:0;width:100vw;height:100dvh;z-index:2147483647;background:#fff;flex-direction:column;overflow:hidden;">
+     style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:#fff;flex-direction:column;">
     <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;">
         <button type="button" id="closeCustModalBtn"
                 style="font-size:22px;color:#6b7280;padding:4px 12px;background:none;border:none;cursor:pointer;line-height:1;touch-action:manipulation;">✕</button>
@@ -217,7 +217,15 @@ function openCustModal(mode) {
     var modal = document.getElementById('custModal');
     if (!modal) return;
     document.body.appendChild(modal);
-    modal.style.display = 'flex';
+    modal.style.display    = 'flex';
+    modal.style.position   = 'fixed';
+    modal.style.top        = '0';
+    modal.style.left       = '0';
+    modal.style.right      = '0';
+    modal.style.bottom     = '0';
+    modal.style.width      = '100%';
+    modal.style.height     = window.innerHeight + 'px';
+    modal.style.flexDirection = 'column';
     document.getElementById('custModalInput').value = '';
     renderCustList('');
     setTimeout(function() {
