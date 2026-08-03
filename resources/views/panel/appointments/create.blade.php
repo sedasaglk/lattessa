@@ -177,7 +177,7 @@
 
 {{-- Müşteri Arama Modalı --}}
 <div id="custModal"
-     style="display:none;position:fixed;inset:0;width:100vw;height:100dvh;z-index:2147483647;background:#fff;flex-direction:column;pointer-events:auto;touch-action:manipulation;">
+     style="display:none;position:fixed;inset:0;width:100vw;height:100dvh;z-index:2147483647;isolation:isolate;background:#fff;flex-direction:column;pointer-events:auto;touch-action:auto;overflow:hidden;">
     <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#fff;flex-shrink:0;">
         <button type="button" id="closeCustModalBtn"
                 style="font-size:22px;color:#6b7280;padding:4px 12px;background:none;border:none;cursor:pointer;line-height:1;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">✕</button>
@@ -214,16 +214,37 @@ function filterCust(q) {
 
 function openCustModal(mode) {
     if (window._custJustSelected) { window._custJustSelected = false; return; }
+
     _custModalMode = mode || 'single';
+
     var modal = document.getElementById('custModal');
-    if (!modal) return;
-    modal.style.display = 'flex';
+
+    if (!modal) {
+        console.error('Müşteri modalı bulunamadı');
+        return;
+    }
+
+    /* Modalı body'nin en sonuna taşı — her açılışta */
+    document.body.appendChild(modal);
+
+    modal.style.display    = 'flex';
+    modal.style.position   = 'fixed';
+    modal.style.inset      = '0';
+    modal.style.width      = '100vw';
+    modal.style.height     = '100dvh';
+    modal.style.zIndex     = '2147483647';
+    modal.style.pointerEvents = 'auto';
+    modal.style.visibility = 'visible';
+    modal.style.opacity    = '1';
+
     document.getElementById('custModalInput').value = '';
+
     renderCustList('');
+
     setTimeout(function() {
         var inp = document.getElementById('custModalInput');
         if (inp) inp.focus();
-    }, 120);
+    }, 150);
 }
 
 function closeCustModal() {
@@ -336,6 +357,12 @@ var groupCustomers = [];
 (function initCustModal() {
     var modal = document.getElementById('custModal');
     if (modal && modal.parentElement !== document.body) { document.body.appendChild(modal); }
+
+    /* Capture aşamasında yakala: başka JS stopPropagation yapsa bile görünür */
+    modal.addEventListener('pointerdown', function(e) {
+        console.log('MODAL POINTERDOWN:', e.target);
+        alert('MODALA DOKUNMA ULAŞTI');
+    }, true);
     document.getElementById('closeCustModalBtn').addEventListener('click', closeCustModal);
     document.getElementById('doneCustModalBtn').addEventListener('click', closeCustModal);
     document.getElementById('custModalInput').addEventListener('input', function() { renderCustList(this.value); });
