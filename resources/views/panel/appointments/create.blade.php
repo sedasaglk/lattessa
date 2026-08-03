@@ -252,20 +252,24 @@ function filterCust(q, limit) {
 /* Dropdown'u viewport koordinatlarına göre konumlandır (mobil için kritik) */
 function positionDropdown(dd, anchor) {
     var rect = anchor.getBoundingClientRect();
-    var spaceBelow = window.innerHeight - rect.bottom - 8;
-    var spaceAbove = rect.top - 8;
-    var maxH = Math.min(280, Math.max(spaceBelow, spaceAbove));
+    /* visualViewport: iOS klavye açıkken gerçek görünen alanı verir */
+    var vH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+    var vTop = (window.visualViewport ? window.visualViewport.offsetTop : 0);
 
-    dd.style.left    = rect.left + 'px';
-    dd.style.width   = rect.width + 'px';
-    dd.style.maxHeight = maxH + 'px';
+    var spaceBelow = vH - (rect.bottom - vTop) - 8;
+    var spaceAbove = (rect.top - vTop) - 8;
 
-    if (spaceBelow >= 120 || spaceBelow >= spaceAbove) {
-        dd.style.top    = (rect.bottom + 4) + 'px';
-        dd.style.bottom = 'auto';
+    dd.style.left  = rect.left + 'px';
+    dd.style.width = rect.width + 'px';
+
+    if (spaceBelow >= 100 || spaceBelow >= spaceAbove) {
+        dd.style.top       = (rect.bottom + 4) + 'px';
+        dd.style.bottom    = 'auto';
+        dd.style.maxHeight = Math.max(100, Math.min(280, spaceBelow)) + 'px';
     } else {
-        dd.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
-        dd.style.top    = 'auto';
+        dd.style.top       = 'auto';
+        dd.style.bottom    = (vH - (rect.top - vTop) + 4) + 'px';
+        dd.style.maxHeight = Math.max(100, Math.min(280, spaceAbove)) + 'px';
     }
 }
 
@@ -286,6 +290,13 @@ function getCustDd() {
 function custOnFocus() {
     document.getElementById('customer_id_input').value = '';
     showCustDropdown(document.getElementById('custSearch').value);
+    /* iOS klavye animasyonu ~300ms — sonra pozisyonu yeniden hesapla */
+    setTimeout(function() {
+        var dd = getCustDd();
+        if (dd.style.display !== 'none') {
+            positionDropdown(dd, document.getElementById('custSearch'));
+        }
+    }, 350);
 }
 
 function custOnInput(val) {
@@ -354,6 +365,22 @@ document.addEventListener('touchstart', function(e) {
         hideCustDropdown();
     }
 }, { passive: true });
+
+/* visualViewport resize: iOS klavye açılınca dropdown pozisyonunu güncelle */
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+        var dd = getCustDd();
+        var search = document.getElementById('custSearch');
+        if (dd.style.display !== 'none' && search) {
+            positionDropdown(dd, search);
+        }
+        var gdd = getGroupDd();
+        var gsearch = document.getElementById('groupCustSearch');
+        if (gdd.style.display !== 'none' && gsearch) {
+            positionDropdown(gdd, gsearch);
+        }
+    });
+}
 
 /* ============================================================
    GRUP MÜŞTERİ — dropdown
