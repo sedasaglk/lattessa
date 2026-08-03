@@ -301,6 +301,10 @@ function hideResults(resultsEl, inputEl) {
     inp.addEventListener('focus', function() {
         hidden.value = '';
         show(inp.value);
+        /* Results görünsün: input'u viewport başına kaydır */
+        setTimeout(function() {
+            inp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     });
     inp.addEventListener('input', function() {
         hidden.value = '';
