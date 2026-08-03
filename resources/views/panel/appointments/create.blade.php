@@ -224,12 +224,26 @@ function openCustModal(mode) {
     modal.style.display = 'flex';
     document.getElementById('custModalInput').value = '';
     renderCustList('');
+    setTimeout(function() {
+        var inp = document.getElementById('custModalInput');
+        if (inp) inp.focus();
+    }, 100);
 }
 
 function closeCustModal() {
     var modal = document.getElementById('custModal');
     if (modal) modal.style.display = 'none';
-    if (document.activeElement) document.activeElement.blur();
+    if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+    }
+}
+
+function _forceRepaint(el) {
+    /* iOS overflow-y:auto tile cache'i geçersiz kıl */
+    if (!el) return;
+    var s = el.scrollTop;
+    el.scrollTop = s + 1;
+    el.scrollTop = s;
 }
 
 function renderCustList(q) {
@@ -242,20 +256,41 @@ function renderCustList(q) {
     }
     _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        var row = document.createElement('div');
-        row.style.cssText = 'padding:18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;-webkit-user-select:none';
+        var row = document.createElement('button');
+        row.type = 'button';
+        row.style.cssText = 'display:block;width:100%;text-align:left;padding:18px;border:none;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;-webkit-user-select:none;pointer-events:auto;';
         row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>' +
             (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
         (function(idx) {
-            var _mv = false;
-            row.addEventListener('touchstart', function() { _mv = false; }, {passive: true});
-            row.addEventListener('touchmove',  function() { _mv = true;  }, {passive: true});
+            /* pointerdown: blur'dan önce tetiklenir — kullanıcı önerisi */
+            var _pMoved = false;
+            var _pStartX = 0, _pStartY = 0;
+            row.addEventListener('pointerdown', function(e) {
+                _pMoved = false;
+                _pStartX = e.clientX;
+                _pStartY = e.clientY;
+            }, {passive: true});
+            row.addEventListener('pointermove', function(e) {
+                if (Math.abs(e.clientX - _pStartX) > 8 || Math.abs(e.clientY - _pStartY) > 8) {
+                    _pMoved = true;
+                }
+            }, {passive: true});
+            row.addEventListener('pointerup', function(e) {
+                if (_pMoved) return;
+                e.preventDefault(); /* sentetik click üretme */
+                _pickFromModal(idx);
+            });
+            /* touchend: iOS fallback */
+            var _tMoved = false;
+            row.addEventListener('touchstart', function() { _tMoved = false; }, {passive: true});
+            row.addEventListener('touchmove',  function() { _tMoved = true;  }, {passive: true});
             row.addEventListener('touchend', function(e) {
-                if (_mv) return;
-                e.preventDefault();
+                if (_tMoved) return;
+                if (e.cancelable) e.preventDefault();
                 _pickFromModal(idx);
             }, {passive: false});
-            row.addEventListener('click', function() { _pickFromModal(idx); });
+            /* click: desktop fallback */
+            row.addEventListener('click', function(e) { _pickFromModal(idx); });
         })(i);
         list.appendChild(row);
     });
@@ -274,15 +309,21 @@ function _pickFromModal(i) {
         window._custJustSelected = true;
         closeCustModal();
         var _selC = c;
-        setTimeout(function() {
-            var disp = document.getElementById('customerDisplay');
-            var last4 = _selC.phone ? _selC.phone.toString().slice(-4) : '';
-            if (disp) {
-                disp.textContent = _selC.name + (last4 ? ' (···' + last4 + ')' : '');
-                disp.style.color = '#111';
-            }
-            window._custJustSelected = false;
-        }, 100);
+        /* requestAnimationFrame x2: modal kapandıktan SONRA bir sonraki paint döngüsünde güncelle
+           Bu iOS overflow-y:auto tile cache sorununu çözer */
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                var disp = document.getElementById('customerDisplay');
+                var last4 = _selC.phone ? _selC.phone.toString().slice(-4) : '';
+                if (disp) {
+                    disp.textContent = _selC.name + (last4 ? ' (···' + last4 + ')' : '');
+                    disp.style.color = '#111';
+                }
+                /* main scroll container'ını yeniden tetikle (iOS tile cache) */
+                _forceRepaint(document.querySelector('main'));
+                window._custJustSelected = false;
+            });
+        });
     }
 }
 
@@ -291,12 +332,9 @@ var groupCustomers = [];
 (function initCustModal() {
     var modal = document.getElementById('custModal');
     if (modal && modal.parentElement !== document.body) { document.body.appendChild(modal); }
-    var closeBtn = document.getElementById('closeCustModalBtn');
-    if (closeBtn) closeBtn.addEventListener('click', closeCustModal);
-    var doneBtn = document.getElementById('doneCustModalBtn');
-    if (doneBtn) doneBtn.addEventListener('click', closeCustModal);
-    var searchInput = document.getElementById('custModalInput');
-    if (searchInput) { searchInput.addEventListener('input', function() { renderCustList(this.value); }); }
+    document.getElementById('closeCustModalBtn').addEventListener('click', closeCustModal);
+    document.getElementById('doneCustModalBtn').addEventListener('click', closeCustModal);
+    document.getElementById('custModalInput').addEventListener('input', function() { renderCustList(this.value); });
     var isGroupChk = document.getElementById('isGroup');
     if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
     var isRecurringChk = document.getElementById('isRecurring');
