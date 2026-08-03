@@ -58,6 +58,7 @@
             <div id="customerDisplay"
                  role="button"
                  tabindex="0"
+                 onclick="openCustModal('single')"
                  style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">
                 İsim veya son 4 hane telefon...
             </div>
@@ -77,6 +78,7 @@
                 <div id="groupDisplay"
                      role="button"
                      tabindex="0"
+                     onclick="openCustModal('group')"
                      style="cursor:pointer;width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#9ca3af;background:#fff;min-height:42px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.05);">
                     Müşteri ekle...
                 </div>
@@ -329,35 +331,8 @@ var groupCustomers = [];
         _dbg('modal body\'e taşındı');
     }
 
-    // 2. Müşteri alanı — click (desktop) + touchend (iOS WKWebView)
-    var singleDisp = document.getElementById('customerDisplay');
-    _dbg('customerDisplay: ' + (singleDisp ? 'bulundu' : 'YOK'));
-    if (singleDisp) {
-        var _singleOpened = false;
-        singleDisp.addEventListener('touchend', function(e) {
-            _dbg('customerDisplay touchend');
-            _singleOpened = true;
-            openCustModal('single');
-        });
-        singleDisp.addEventListener('click', function() {
-            _dbg('customerDisplay click');
-            if (_singleOpened) { _singleOpened = false; return; } // touchend zaten açtı
-            openCustModal('single');
-        });
-    }
-
-    var groupDisp = document.getElementById('groupDisplay');
-    if (groupDisp) {
-        var _groupOpened = false;
-        groupDisp.addEventListener('touchend', function() {
-            _groupOpened = true;
-            openCustModal('group');
-        });
-        groupDisp.addEventListener('click', function() {
-            if (_groupOpened) { _groupOpened = false; return; }
-            openCustModal('group');
-        });
-    }
+    // 2. Müşteri alanı — inline onclick HTML'de, burada ek listener gerekmez
+    _dbg('customerDisplay inline onclick aktif');
 
     // 3. Kapat butonları
     var closeBtn = document.getElementById('closeCustModalBtn');
