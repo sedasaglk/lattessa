@@ -197,26 +197,7 @@
 </div>
 
 <script>
-// ---- DEBUG PANELİ (test bittikten sonra kaldırılacak) ----
-(function() {
-    var dbgDiv = document.createElement('div');
-    dbgDiv.id = 'dbgPanel';
-    dbgDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.88);color:#0f0;font-size:11px;padding:6px 8px;max-height:180px;overflow-y:auto;z-index:9999999;font-family:monospace;display:none;';
-    document.body.appendChild(dbgDiv);
-
-    window._dbg = function(msg) {
-        dbgDiv.style.display = 'block';
-        var line = document.createElement('div');
-        line.textContent = new Date().toISOString().slice(11,19) + ' ' + msg;
-        dbgDiv.appendChild(line);
-        dbgDiv.scrollTop = dbgDiv.scrollHeight;
-    };
-
-    window.onerror = function(msg, src, line) {
-        window._dbg('ERR: ' + msg + ' @ line ' + line);
-        return false;
-    };
-})();
+window._dbg = function() {};
 
 // ---- Yardımcı ----
 function escHtml(s) {
@@ -247,6 +228,7 @@ function filterCust(q) {
 
 // ---- Modal Aç/Kapat ----
 function openCustModal(mode) {
+    if (window._custJustSelected) { window._custJustSelected = false; return; }
     _custModalMode = mode || 'single';
     var modal = document.getElementById('custModal');
     if (!modal) return;
@@ -315,6 +297,7 @@ function _pickFromModal(i) {
         if (hiddenInp) hiddenInp.value = c.id;
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         if (disp) { disp.textContent = c.name + (last4 ? ' (···' + last4 + ')' : ''); disp.style.color = '#111'; }
+        window._custJustSelected = true;
         closeCustModal();
         _dbg('seçim tamam: ' + c.name);
     }
