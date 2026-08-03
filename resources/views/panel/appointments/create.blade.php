@@ -361,10 +361,11 @@ var groupCustomers = [];
             if (!target) return;
             var index = parseInt(target.getAttribute('data-index'), 10);
             if (isNaN(index)) return;
+            e.preventDefault(); // sentetik click üretimini engelle (modal kapandıktan sonra customerDisplay'e çarpmasın)
             _dbg('satır touchend: ' + index);
             _lastTouchIdx = index;
             _pickFromModal(index);
-        });
+        }, { passive: false });
         list.addEventListener('click', function(e) {
             var target = e.target.closest('[data-index]');
             if (!target) return;
