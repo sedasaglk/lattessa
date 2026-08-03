@@ -4,40 +4,45 @@
 
 @section('content')
 
-{{-- Müşteri dropdown stilleri --}}
 <style>
-#custDropdown, #groupCustDropdown {
-    position: fixed; /* overflow:auto parent'tan bağımsız - mobil için kritik */
-    z-index: 9999;
-    background: #fff;
+.cust-results {
+    display: none;
     border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    background: #fff;
+    max-height: 240px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-#custDropdown .cust-row,
-#groupCustDropdown .cust-row {
-    padding: 14px 16px;
+.cust-results .cust-row {
+    display: block;
+    width: 100%;
+    padding: 13px 16px;
     border-bottom: 1px solid #f3f4f6;
-    cursor: pointer;
     font-size: 14px;
     color: #111;
     background: #fff;
+    cursor: pointer;
+    text-align: left;
     -webkit-tap-highlight-color: rgba(0,0,0,0.06);
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
+    box-sizing: border-box;
 }
-#custDropdown .cust-row:last-child,
-#groupCustDropdown .cust-row:last-child { border-bottom: none; }
-#custDropdown .cust-empty,
-#groupCustDropdown .cust-empty {
+.cust-results .cust-row:last-child { border-bottom: none; }
+.cust-results .cust-row:active { background: #f9fafb; }
+.cust-results .cust-empty {
     padding: 16px;
     text-align: center;
     color: #9ca3af;
     font-size: 14px;
+}
+/* input açıkken alt köşe düzleşsin */
+.cust-search-open {
+    border-radius: 10px 10px 0 0 !important;
 }
 </style>
 
@@ -97,9 +102,8 @@
                    id="custSearch"
                    autocomplete="off"
                    placeholder="İsim veya son 4 hane telefon..."
-                   style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;"
-                   onfocus="custOnFocus()"
-                   oninput="custOnInput(this.value)">
+                   style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;display:block;">
+            <div id="custResults" class="cust-results"></div>
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
 
@@ -117,9 +121,8 @@
                        id="groupCustSearch"
                        autocomplete="off"
                        placeholder="Müşteri ekle..."
-                       style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;"
-                       oninput="groupCustOnInput(this.value)"
-                       onfocus="groupCustOnFocus()">
+                       style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;display:block;">
+                <div id="groupCustResults" class="cust-results"></div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -219,22 +222,15 @@
 </div>
 
 <script>
-/* ============================================================
-   Müşteri verisi
-   ============================================================ */
+/* ── Müşteri verisi ────────────────────────────────────── */
 var allCustomers = @json($customers->map(fn($c) => [
     'id'    => $c->id,
     'name'  => $c->name,
     'phone' => $c->phone ?? ''
 ]));
 
-/* ============================================================
-   Yardımcı
-   ============================================================ */
 function escHtml(s) {
-    return String(s)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function filterCust(q, limit) {
@@ -242,219 +238,116 @@ function filterCust(q, limit) {
     limit = limit || 50;
     if (!q) return allCustomers.slice(0, limit);
     return allCustomers.filter(function(c) {
-        var phone = c.phone ? c.phone.toString() : '';
-        return c.name.toLowerCase().includes(q) ||
-               phone.includes(q) ||
-               phone.slice(-4) === q;
+        var p = c.phone ? c.phone.toString() : '';
+        return c.name.toLowerCase().includes(q) || p.includes(q) || p.slice(-4) === q;
     }).slice(0, limit);
 }
 
-/* Dropdown'u viewport koordinatlarına göre konumlandır (mobil için kritik) */
-function positionDropdown(dd, anchor) {
-    var rect = anchor.getBoundingClientRect();
-    /* visualViewport: iOS klavye açıkken gerçek görünen alanı verir */
-    var vH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-    var vTop = (window.visualViewport ? window.visualViewport.offsetTop : 0);
-
-    var spaceBelow = vH - (rect.bottom - vTop) - 8;
-    var spaceAbove = (rect.top - vTop) - 8;
-
-    dd.style.left  = rect.left + 'px';
-    dd.style.width = rect.width + 'px';
-
-    if (spaceBelow >= 100 || spaceBelow >= spaceAbove) {
-        dd.style.top       = (rect.bottom + 4) + 'px';
-        dd.style.bottom    = 'auto';
-        dd.style.maxHeight = Math.max(100, Math.min(280, spaceBelow)) + 'px';
-    } else {
-        dd.style.top       = 'auto';
-        dd.style.bottom    = (vH - (rect.top - vTop) + 4) + 'px';
-        dd.style.maxHeight = Math.max(100, Math.min(280, spaceAbove)) + 'px';
-    }
-}
-
-/* ============================================================
-   TEKİL MÜŞTERİ — dropdown
-   ============================================================ */
-/* Dropdown body'de yaşar — overflow:auto parent'tan bağımsız */
-var _custDd = null;
-function getCustDd() {
-    if (!_custDd) {
-        _custDd = document.createElement('div');
-        _custDd.id = 'custDropdown';
-        document.body.appendChild(_custDd);
-    }
-    return _custDd;
-}
-
-function custOnFocus() {
-    document.getElementById('customer_id_input').value = '';
-    showCustDropdown(document.getElementById('custSearch').value);
-    /* iOS klavye animasyonu ~300ms — sonra pozisyonu yeniden hesapla */
-    setTimeout(function() {
-        var dd = getCustDd();
-        if (dd.style.display !== 'none') {
-            positionDropdown(dd, document.getElementById('custSearch'));
-        }
-    }, 350);
-}
-
-function custOnInput(val) {
-    document.getElementById('customer_id_input').value = '';
-    showCustDropdown(val);
-}
-
-function showCustDropdown(q) {
-    var dd     = getCustDd();
-    var anchor = document.getElementById('custSearch');
-    var list   = filterCust(q);
-    dd.innerHTML = '';
-
+/* ── Sonuç listesi render ──────────────────────────────── */
+function renderResults(resultsEl, inputEl, list, onSelect) {
+    resultsEl.innerHTML = '';
     if (!list.length) {
-        dd.innerHTML = '<div class="cust-empty">Müşteri bulunamadı</div>';
-    } else {
-        list.forEach(function(c) {
+        resultsEl.innerHTML = '<div class="cust-empty">Müşteri bulunamadı</div>';
+        resultsEl.style.display = 'block';
+        inputEl.style.borderRadius = '10px 10px 0 0';
+        return;
+    }
+    list.forEach(function(c) {
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        var row   = document.createElement('div');
+        row.className = 'cust-row';
+        row.innerHTML = '<strong>' + escHtml(c.name) + '</strong>' +
+            (last4 ? ' <span style="color:#9ca3af;font-size:12px;">···' + last4 + '</span>' : '');
+
+        /* pointerdown: blur'dan önce tetiklenir, selection kaybı olmaz */
+        row.addEventListener('pointerdown', function(e) {
+            e.preventDefault();
+            onSelect(c);
+        });
+        /* iOS WKWebView fallback */
+        row.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            onSelect(c);
+        }, { passive: false });
+
+        resultsEl.appendChild(row);
+    });
+    resultsEl.style.display = 'block';
+    inputEl.style.borderRadius = '10px 10px 0 0';
+}
+
+function hideResults(resultsEl, inputEl) {
+    resultsEl.style.display = 'none';
+    inputEl.style.borderRadius = '10px';
+}
+
+/* ── Tekil müşteri ────────────────────────────────────── */
+(function() {
+    var inp     = document.getElementById('custSearch');
+    var results = document.getElementById('custResults');
+    var hidden  = document.getElementById('customer_id_input');
+    if (!inp || !results) return;
+
+    function show(q) {
+        renderResults(results, inp, filterCust(q), function(c) {
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            var row   = document.createElement('div');
-            row.className = 'cust-row';
-            row.innerHTML = '<strong>' + escHtml(c.name) + '</strong>' +
-                (last4 ? ' <span style="color:#9ca3af;font-size:12px;">···' + last4 + '</span>' : '');
-
-            row.addEventListener('pointerdown', function(e) {
-                e.preventDefault();
-                selectCust(c);
-            });
-            row.addEventListener('touchend', function(e) {
-                e.preventDefault();
-                selectCust(c);
-            }, { passive: false });
-
-            dd.appendChild(row);
+            inp.value    = c.name + (last4 ? ' (···' + last4 + ')' : '');
+            hidden.value = c.id;
+            hideResults(results, inp);
+            inp.blur();
         });
     }
 
-    positionDropdown(dd, anchor);
-    dd.style.display = 'block';
-}
-
-function selectCust(c) {
-    var last4    = c.phone ? c.phone.toString().slice(-4) : '';
-    var dispText = c.name + (last4 ? ' (···' + last4 + ')' : '');
-    document.getElementById('custSearch').value        = dispText;
-    document.getElementById('customer_id_input').value = c.id;
-    hideCustDropdown();
-}
-
-function hideCustDropdown() {
-    var dd = getCustDd();
-    dd.style.display = 'none';
-}
-
-/* Dışarı tıklanınca kapat */
-document.addEventListener('pointerdown', function(e) {
-    var search = document.getElementById('custSearch');
-    var dd     = getCustDd();
-    if (!search.contains(e.target) && !dd.contains(e.target)) {
-        hideCustDropdown();
-    }
-});
-document.addEventListener('touchstart', function(e) {
-    var search = document.getElementById('custSearch');
-    var dd     = getCustDd();
-    if (!search.contains(e.target) && !dd.contains(e.target)) {
-        hideCustDropdown();
-    }
-}, { passive: true });
-
-/* visualViewport resize: iOS klavye açılınca dropdown pozisyonunu güncelle */
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', function() {
-        var dd = getCustDd();
-        var search = document.getElementById('custSearch');
-        if (dd.style.display !== 'none' && search) {
-            positionDropdown(dd, search);
-        }
-        var gdd = getGroupDd();
-        var gsearch = document.getElementById('groupCustSearch');
-        if (gdd.style.display !== 'none' && gsearch) {
-            positionDropdown(gdd, gsearch);
+    inp.addEventListener('focus', function() {
+        hidden.value = '';
+        show(inp.value);
+    });
+    inp.addEventListener('input', function() {
+        hidden.value = '';
+        show(inp.value);
+    });
+    /* Dışarı tıklanınca kapat */
+    document.addEventListener('pointerdown', function(e) {
+        if (!inp.contains(e.target) && !results.contains(e.target)) {
+            hideResults(results, inp);
         }
     });
-}
+    document.addEventListener('touchstart', function(e) {
+        if (!inp.contains(e.target) && !results.contains(e.target)) {
+            hideResults(results, inp);
+        }
+    }, { passive: true });
+})();
 
-/* ============================================================
-   GRUP MÜŞTERİ — dropdown
-   ============================================================ */
+/* ── Grup müşteri ─────────────────────────────────────── */
 var groupCustomers = [];
-var _groupDd = null;
-function getGroupDd() {
-    if (!_groupDd) {
-        _groupDd = document.createElement('div');
-        _groupDd.id = 'groupCustDropdown';
-        document.body.appendChild(_groupDd);
-    }
-    return _groupDd;
-}
 
-function groupCustOnFocus() {
-    showGroupDropdown(document.getElementById('groupCustSearch').value);
-}
+(function() {
+    var inp     = document.getElementById('groupCustSearch');
+    var results = document.getElementById('groupCustResults');
+    if (!inp || !results) return;
 
-function groupCustOnInput(val) {
-    showGroupDropdown(val);
-}
-
-function showGroupDropdown(q) {
-    var dd     = getGroupDd();
-    var anchor = document.getElementById('groupCustSearch');
-    var list   = filterCust(q);
-    dd.innerHTML = '';
-
-    if (!list.length) {
-        dd.innerHTML = '<div class="cust-empty">Müşteri bulunamadı</div>';
-    } else {
-        list.forEach(function(c) {
-            var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            var row   = document.createElement('div');
-            row.className = 'cust-row';
-            row.innerHTML = '<strong>' + escHtml(c.name) + '</strong>' +
-                (last4 ? ' <span style="color:#9ca3af;font-size:12px;">···' + last4 + '</span>' : '');
-
-            row.addEventListener('pointerdown', function(e) {
-                e.preventDefault();
-                addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
-                document.getElementById('groupCustSearch').value = '';
-                dd.style.display = 'none';
-            });
-            row.addEventListener('touchend', function(e) {
-                e.preventDefault();
-                addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
-                document.getElementById('groupCustSearch').value = '';
-                dd.style.display = 'none';
-            }, { passive: false });
-
-            dd.appendChild(row);
+    function show(q) {
+        renderResults(results, inp, filterCust(q), function(c) {
+            addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
+            inp.value = '';
+            hideResults(results, inp);
         });
     }
 
-    positionDropdown(dd, anchor);
-    dd.style.display = 'block';
-}
-
-document.addEventListener('pointerdown', function(e) {
-    var search = document.getElementById('groupCustSearch');
-    var dd     = getGroupDd();
-    if (search && !search.contains(e.target) && !dd.contains(e.target)) {
-        dd.style.display = 'none';
-    }
-});
-document.addEventListener('touchstart', function(e) {
-    var search = document.getElementById('groupCustSearch');
-    var dd     = getGroupDd();
-    if (search && !search.contains(e.target) && !dd.contains(e.target)) {
-        dd.style.display = 'none';
-    }
-}, { passive: true });
+    inp.addEventListener('focus', function() { show(inp.value); });
+    inp.addEventListener('input', function() { show(inp.value); });
+    document.addEventListener('pointerdown', function(e) {
+        if (!inp.contains(e.target) && !results.contains(e.target)) {
+            hideResults(results, inp);
+        }
+    });
+    document.addEventListener('touchstart', function(e) {
+        if (!inp.contains(e.target) && !results.contains(e.target)) {
+            hideResults(results, inp);
+        }
+    }, { passive: true });
+})();
 
 function addGroupCustomer(id, name, phone) {
     if (groupCustomers.find(function(c) { return c.id == id; })) return;
@@ -478,46 +371,38 @@ function renderGroupCustomers() {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">'
             + '<span><strong>' + escHtml(c.name) + '</strong>'
-            + (last4 ? ' <span class="text-gray-400 text-xs">···' + last4 + '</span>' : '')
-            + '</span>'
+            + (last4 ? ' <span class="text-gray-400 text-xs">···' + last4 + '</span>' : '') + '</span>'
             + '<input type="hidden" name="customer_ids[]" value="' + c.id + '">'
             + '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>'
             + '</div>';
     }).join('');
 }
 
-/* ============================================================
-   Grup / Tekrarlayan toggle
-   ============================================================ */
+/* ── Toggle'lar ───────────────────────────────────────── */
 (function init() {
     renderGroupCustomers();
 
     var isGroupChk = document.getElementById('isGroup');
-    if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
+    if (isGroupChk) isGroupChk.addEventListener('change', function() {
+        var on = this.checked;
+        document.getElementById('singleCustomerSection').classList.toggle('hidden', on);
+        document.getElementById('groupSection').classList.toggle('hidden', !on);
+        if (on) {
+            var rec = document.getElementById('isRecurring');
+            if (rec) { rec.checked = false; rec.disabled = true; }
+            var ro = document.getElementById('recurringOptions');
+            if (ro) ro.classList.add('hidden');
+        } else {
+            var rec2 = document.getElementById('isRecurring');
+            if (rec2) rec2.disabled = false;
+        }
+    });
 
     var isRecurringChk = document.getElementById('isRecurring');
-    if (isRecurringChk) isRecurringChk.addEventListener('change', toggleRecurring);
-})();
-
-function toggleGroupMode() {
-    var isGroup = document.getElementById('isGroup').checked;
-    document.getElementById('singleCustomerSection').classList.toggle('hidden', isGroup);
-    document.getElementById('groupSection').classList.toggle('hidden', !isGroup);
-    if (isGroup) {
-        var rec = document.getElementById('isRecurring');
-        if (rec) { rec.checked = false; rec.disabled = true; }
+    if (isRecurringChk) isRecurringChk.addEventListener('change', function() {
         var ro = document.getElementById('recurringOptions');
-        if (ro) ro.classList.add('hidden');
-    } else {
-        var rec2 = document.getElementById('isRecurring');
-        if (rec2) rec2.disabled = false;
-    }
-}
-
-function toggleRecurring() {
-    var cb = document.getElementById('isRecurring');
-    var ro = document.getElementById('recurringOptions');
-    if (cb && ro) ro.classList.toggle('hidden', !cb.checked);
-}
+        if (ro) ro.classList.toggle('hidden', !this.checked);
+    });
+})();
 </script>
 @endsection
