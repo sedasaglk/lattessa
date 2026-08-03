@@ -242,10 +242,9 @@ function renderCustList(q) {
     }
     _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        var row = document.createElement('button');
-        row.type = 'button';
-        row.style.cssText = 'display:block;width:100%;text-align:left;padding:18px;border:none;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;color:#111;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.06);';
-        row.innerHTML = '<strong>' + escHtml(c.name) + '</strong>' +
+        var row = document.createElement('div');
+        row.style.cssText = 'display:block;width:100%;box-sizing:border-box;text-align:left;padding:16px 18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#ffffff;color:#111111;line-height:1.4;min-height:56px;-webkit-tap-highlight-color:rgba(0,0,0,0.06);touch-action:manipulation;';
+        row.innerHTML = '<strong style="color:#111111;">' + escHtml(c.name) + '</strong>' +
             (last4 ? ' <span style="color:#9ca3af;font-size:13px;">···' + last4 + '</span>' : '');
         (function(idx) {
             row.onclick = function() { _pickFromModal(idx); };
