@@ -206,6 +206,7 @@ function escHtml(s) {
 var allCustomers = @json($customers->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'phone' => $c->phone ?? '']));
 var _custModalMode = 'single';
 var _custResults   = [];
+var _pickBusy      = false;
 
 function filterCust(q) {
     q = (q || '').trim().toLowerCase();
@@ -227,23 +228,12 @@ function openCustModal(mode) {
     setTimeout(function() {
         var inp = document.getElementById('custModalInput');
         if (inp) inp.focus();
-    }, 100);
+    }, 120);
 }
 
 function closeCustModal() {
     var modal = document.getElementById('custModal');
     if (modal) modal.style.display = 'none';
-    if (document.activeElement && document.activeElement.blur) {
-        document.activeElement.blur();
-    }
-}
-
-function _forceRepaint(el) {
-    /* iOS overflow-y:auto tile cache'i geçersiz kıl */
-    if (!el) return;
-    var s = el.scrollTop;
-    el.scrollTop = s + 1;
-    el.scrollTop = s;
 }
 
 function renderCustList(q) {
@@ -258,73 +248,63 @@ function renderCustList(q) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         var row = document.createElement('button');
         row.type = 'button';
+        /* touch-action:manipulation: 300ms tap gecikme yok, sentetik click aninda gelir */
         row.style.cssText = 'display:block;width:100%;text-align:left;padding:18px;border:none;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;-webkit-user-select:none;pointer-events:auto;';
         row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>' +
             (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
         (function(idx) {
-            /* pointerdown: blur'dan önce tetiklenir — kullanıcı önerisi */
-            var _pMoved = false;
-            var _pStartX = 0, _pStartY = 0;
-            row.addEventListener('pointerdown', function(e) {
-                _pMoved = false;
-                _pStartX = e.clientX;
-                _pStartY = e.clientY;
-            }, {passive: true});
-            row.addEventListener('pointermove', function(e) {
-                if (Math.abs(e.clientX - _pStartX) > 8 || Math.abs(e.clientY - _pStartY) > 8) {
-                    _pMoved = true;
-                }
-            }, {passive: true});
-            row.addEventListener('pointerup', function(e) {
-                if (_pMoved) return;
-                e.preventDefault(); /* sentetik click üretme */
+            row.onclick = function(e) {
+                e.stopPropagation();
                 _pickFromModal(idx);
-            });
-            /* touchend: iOS fallback */
-            var _tMoved = false;
-            row.addEventListener('touchstart', function() { _tMoved = false; }, {passive: true});
-            row.addEventListener('touchmove',  function() { _tMoved = true;  }, {passive: true});
-            row.addEventListener('touchend', function(e) {
-                if (_tMoved) return;
-                if (e.cancelable) e.preventDefault();
-                _pickFromModal(idx);
-            }, {passive: false});
-            /* click: desktop fallback */
-            row.addEventListener('click', function(e) { _pickFromModal(idx); });
+            };
         })(i);
         list.appendChild(row);
     });
 }
 
 function _pickFromModal(i) {
+    if (_pickBusy) return;
+    _pickBusy = true;
     var c = _custResults[i];
-    if (!c) return;
+    if (!c) { _pickBusy = false; return; }
+
     if (_custModalMode === 'group') {
         addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
         document.getElementById('custModalInput').value = '';
         renderCustList('');
-    } else {
-        var hiddenInp = document.getElementById('customer_id_input');
-        if (hiddenInp) hiddenInp.value = c.id;
-        window._custJustSelected = true;
-        closeCustModal();
-        var _selC = c;
-        /* requestAnimationFrame x2: modal kapandıktan SONRA bir sonraki paint döngüsünde güncelle
-           Bu iOS overflow-y:auto tile cache sorununu çözer */
-        requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-                var disp = document.getElementById('customerDisplay');
-                var last4 = _selC.phone ? _selC.phone.toString().slice(-4) : '';
-                if (disp) {
-                    disp.textContent = _selC.name + (last4 ? ' (···' + last4 + ')' : '');
-                    disp.style.color = '#111';
-                }
-                /* main scroll container'ını yeniden tetikle (iOS tile cache) */
-                _forceRepaint(document.querySelector('main'));
-                window._custJustSelected = false;
-            });
-        });
+        _pickBusy = false;
+        return;
     }
+
+    /* --- Tekil seçim --- */
+    var hiddenInp = document.getElementById('customer_id_input');
+    if (hiddenInp) hiddenInp.value = c.id;
+
+    var last4    = c.phone ? c.phone.toString().slice(-4) : '';
+    var dispText = c.name + (last4 ? ' (···' + last4 + ')' : '');
+
+    /* 1. Aninda güncelle (senkron) */
+    var disp = document.getElementById('customerDisplay');
+    if (disp) { disp.textContent = dispText; disp.style.color = '#111'; }
+
+    /* 2. Modal'i kapat - SONRA degil ONCE senkron guncelle, sonra kapat */
+    window._custJustSelected = true;
+    closeCustModal();
+
+    /* 3. iOS overflow-y tile cache icin modal kapandiktan sonra tekrar set et */
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+            var d = document.getElementById('customerDisplay');
+            if (d) { d.textContent = dispText; d.style.color = '#111'; }
+            /* scroll layer'i tetikle */
+            var m = document.querySelector('main');
+            if (m) { var s = m.scrollTop; m.scrollTop = s + 1; m.scrollTop = s; }
+            setTimeout(function() {
+                window._custJustSelected = false;
+                _pickBusy = false;
+            }, 400);
+        });
+    });
 }
 
 var groupCustomers = [];
@@ -380,11 +360,11 @@ function renderGroupCustomers() {
     } else {
         list.innerHTML = groupCustomers.map(function(c) {
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-            return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">' +
-                '<span><strong>' + escHtml(c.name) + '</strong> <span class="text-gray-400 text-xs">···' + last4 + '</span></span>' +
-                '<input type="hidden" name="customer_ids[]" value="' + c.id + '">' +
-                '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>' +
-                '</div>';
+            return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">'
+                + '<span><strong>' + escHtml(c.name) + '</strong> <span class="text-gray-400 text-xs">···' + last4 + '</span></span>'
+                + '<input type="hidden" name="customer_ids[]" value="' + c.id + '">'
+                + '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>'
+                + '</div>';
         }).join('');
     }
 }
