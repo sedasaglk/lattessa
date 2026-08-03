@@ -199,34 +199,23 @@
 <script>
 window._dbg = function() {};
 
-// ---- Yardımcı ----
 function escHtml(s) {
-    return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ---- Veri ----
 var allCustomers = @json($customers->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'phone' => $c->phone ?? '']));
 var _custModalMode = 'single';
 var _custResults   = [];
 
-// ---- Filtre ----
 function filterCust(q) {
     q = (q || '').trim().toLowerCase();
     if (!q) return allCustomers.slice(0, 60);
     return allCustomers.filter(function(c) {
         return c.name.toLowerCase().includes(q) ||
-               (c.phone && (
-                   c.phone.toString().includes(q) ||
-                   c.phone.toString().slice(-4).includes(q)
-               ));
+               (c.phone && (c.phone.toString().includes(q) || c.phone.toString().slice(-4).includes(q)));
     }).slice(0, 60);
 }
 
-// ---- Modal Aç/Kapat ----
 function openCustModal(mode) {
     if (window._custJustSelected) { window._custJustSelected = false; return; }
     _custModalMode = mode || 'single';
@@ -240,56 +229,35 @@ function openCustModal(mode) {
 function closeCustModal() {
     var modal = document.getElementById('custModal');
     if (modal) modal.style.display = 'none';
-    // Klavyeyi güvenli kapat
     if (document.activeElement) document.activeElement.blur();
 }
 
-// ---- Liste Render ----
 function renderCustList(q) {
     _custResults = filterCust(q);
     var list = document.getElementById('custModalList');
     list.innerHTML = '';
-
     if (!_custResults.length) {
         list.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:14px;">Müşteri bulunamadı</div>';
         return;
     }
-
     _custResults.forEach(function(c, i) {
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         var row = document.createElement('div');
-        row.setAttribute('data-index', i);
-        // touch-action:manipulation → 300ms gecikme yok
-        // pointer-events child elemanlarda none → tıklama hedefi şaşmaz
-        row.style.cssText = [
-            'padding:18px',
-            'border-bottom:1px solid #f3f4f6',
-            'font-size:15px',
-            'cursor:pointer',
-            'background:#fff',
-            '-webkit-tap-highlight-color:rgba(0,0,0,0.08)',
-            'touch-action:manipulation',
-            'user-select:none',
-            '-webkit-user-select:none'
-        ].join(';');
-        row.innerHTML =
-            '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>' +
+        row.style.cssText = 'padding:18px;border-bottom:1px solid #f3f4f6;font-size:15px;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,0.08);touch-action:manipulation;user-select:none;-webkit-user-select:none';
+        (function(idx) { row.onclick = function() { _pickFromModal(idx); }; })(i);
+        row.innerHTML = '<strong style="color:#111;pointer-events:none;">' + escHtml(c.name) + '</strong>' +
             (last4 ? ' <span style="color:#9ca3af;font-size:13px;pointer-events:none;">···' + last4 + '</span>' : '');
         list.appendChild(row);
     });
 }
 
-// ---- Seçim ----
 function _pickFromModal(i) {
     var c = _custResults[i];
-    _dbg('pick i=' + i + ' c=' + (c ? c.name : 'NULL') + ' mode=' + _custModalMode);
     if (!c) return;
-
     if (_custModalMode === 'group') {
         addGroupCustomer(parseInt(c.id), c.name, String(c.phone || ''));
         document.getElementById('custModalInput').value = '';
         renderCustList('');
-        _dbg('grup eklendi');
     } else {
         var hiddenInp = document.getElementById('customer_id_input');
         if (hiddenInp) hiddenInp.value = c.id;
@@ -303,76 +271,26 @@ function _pickFromModal(i) {
                 disp.textContent = _selC.name + (last4 ? ' (···' + last4 + ')' : '');
                 disp.style.color = '#111';
             }
-        }, 50);
+        }, 100);
     }
 }
 
-// ---- Grup Randevusu ----
 var groupCustomers = [];
 
-// ---- Event'leri başlat ----
 (function initCustModal() {
-    _dbg('initCustModal başladı');
-
-    // 1. Modal'ı body'ye taşı
     var modal = document.getElementById('custModal');
-    _dbg('modal: ' + (modal ? 'bulundu' : 'YOK'));
-    if (modal && modal.parentElement !== document.body) {
-        document.body.appendChild(modal);
-        _dbg('modal body\'e taşındı');
-    }
-
-    // 2. Müşteri alanı — inline onclick HTML'de, burada ek listener gerekmez
-    _dbg('customerDisplay inline onclick aktif');
-
-    // 3. Kapat butonları
+    if (modal && modal.parentElement !== document.body) { document.body.appendChild(modal); }
     var closeBtn = document.getElementById('closeCustModalBtn');
     if (closeBtn) closeBtn.addEventListener('click', closeCustModal);
-
     var doneBtn = document.getElementById('doneCustModalBtn');
     if (doneBtn) doneBtn.addEventListener('click', closeCustModal);
-
-    // 4. Arama input
     var searchInput = document.getElementById('custModalInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() { renderCustList(this.value); });
-    }
-
-    // 5. Liste seçimi — click + touchend (iOS WKWebView)
-    var list = document.getElementById('custModalList');
-    _dbg('custModalList: ' + (list ? 'bulundu' : 'YOK'));
-    if (list) {
-        var _lastTouchIdx = -1;
-        list.addEventListener('touchend', function(e) {
-            var target = e.target.closest('[data-index]');
-            if (!target) return;
-            var index = parseInt(target.getAttribute('data-index'), 10);
-            if (isNaN(index)) return;
-            e.preventDefault(); // sentetik click üretimini engelle (modal kapandıktan sonra customerDisplay'e çarpmasın)
-            _dbg('satır touchend: ' + index);
-            _lastTouchIdx = index;
-            _pickFromModal(index);
-        }, { passive: false });
-        list.addEventListener('click', function(e) {
-            var target = e.target.closest('[data-index]');
-            if (!target) return;
-            var index = parseInt(target.getAttribute('data-index'), 10);
-            if (isNaN(index)) return;
-            if (_lastTouchIdx === index) { _lastTouchIdx = -1; return; } // touchend zaten seçti
-            _dbg('satır click: ' + index);
-            _pickFromModal(index);
-        });
-    }
-
-    // 6. Toggle'lar
+    if (searchInput) { searchInput.addEventListener('input', function() { renderCustList(this.value); }); }
     var isGroupChk = document.getElementById('isGroup');
     if (isGroupChk) isGroupChk.addEventListener('change', toggleGroupMode);
-
     var isRecurringChk = document.getElementById('isRecurring');
     if (isRecurringChk) isRecurringChk.addEventListener('change', toggleRecurring);
-
     renderGroupCustomers();
-    _dbg('init tamamlandı. Müşteri sayısı: ' + allCustomers.length);
 })();
 
 function toggleGroupMode() {
@@ -390,9 +308,8 @@ function toggleGroupMode() {
 }
 
 function toggleRecurring() {
-    var cb   = document.getElementById('isRecurring');
-    var opts = document.getElementById('recurringOptions');
-    opts.classList.toggle('hidden', !cb.checked);
+    var cb = document.getElementById('isRecurring');
+    document.getElementById('recurringOptions').classList.toggle('hidden', !cb.checked);
 }
 
 function addGroupCustomer(id, name, phone) {
@@ -415,14 +332,13 @@ function renderGroupCustomers() {
         list.innerHTML = groupCustomers.map(function(c) {
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
             return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">' +
-                '<span><strong>' + escHtml(c.name) + '</strong>' +
-                ' <span class="text-gray-400 text-xs">···' + last4 + '</span></span>' +
+                '<span><strong>' + escHtml(c.name) + '</strong> <span class="text-gray-400 text-xs">···' + last4 + '</span></span>' +
                 '<input type="hidden" name="customer_ids[]" value="' + c.id + '">' +
-                '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" ' +
-                'class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>' +
+                '<button type="button" onclick="removeGroupCustomer(' + c.id + ')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>' +
                 '</div>';
         }).join('');
     }
 }
+
 </script>
 @endsection
