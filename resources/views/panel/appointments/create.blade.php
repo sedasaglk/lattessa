@@ -53,7 +53,6 @@
                    placeholder="İsim veya son 4 hane telefon..."
                    onfocus="custOpen()"
                    oninput="custOpen()"
-                   onblur="setTimeout(custClose,200)"
                    style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
@@ -72,7 +71,6 @@
                        placeholder="Müşteri ekle..."
                        onfocus="grpOpen()"
                        oninput="grpOpen()"
-                       onblur="setTimeout(grpClose,200)"
                        style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;">
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
@@ -161,9 +159,9 @@
 <script>
 /* ── Müşteri verisi ── */
 var _AC = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone??'']));
-
-function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
+function _esc(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function _filter(q){
     q = (q||'').trim().toLowerCase();
     if(!q) return _AC.slice(0,50);
@@ -172,14 +170,11 @@ function _filter(q){
         return c.name.toLowerCase().includes(q) || p.includes(q) || p.slice(-4) === q;
     }).slice(0,50);
 }
-
-/* ── Dropdown yardımcı ── */
 function _getDD(id){
     var d = document.getElementById(id);
     if(!d){
         d = document.createElement('div');
         d.id = id;
-        /* Tüm stiller inline — CSS bağımlılığı yok */
         d.style.position   = 'fixed';
         d.style.zIndex     = '2147483647';
         d.style.background = '#fff';
@@ -193,23 +188,21 @@ function _getDD(id){
     }
     return d;
 }
-
 function _placeDD(dd, anchor){
     var r  = anchor.getBoundingClientRect();
     var vh = window.innerHeight;
     dd.style.left  = r.left + 'px';
     dd.style.width = r.width + 'px';
-    if(vh - r.bottom >= 120){
-        dd.style.top       = (r.bottom + 2) + 'px';
-        dd.style.bottom    = 'auto';
-        dd.style.maxHeight = Math.min(260, vh - r.bottom - 8) + 'px';
+    if(vh - r.bottom >= 140 || r.top < 200){
+        dd.style.top        = (r.bottom + 4) + 'px';
+        dd.style.bottom     = 'auto';
+        dd.style.maxHeight  = Math.min(220, vh - r.bottom - 16) + 'px';
     } else {
-        dd.style.top       = 'auto';
-        dd.style.bottom    = (vh - r.top + 2) + 'px';
-        dd.style.maxHeight = Math.min(260, r.top - 8) + 'px';
+        dd.style.top        = 'auto';
+        dd.style.bottom     = (vh - r.top + 4) + 'px';
+        dd.style.maxHeight  = Math.min(220, r.top - 16) + 'px';
     }
 }
-
 function _fillDD(dd, list, onPick){
     dd.innerHTML = '';
     if(!list.length){
@@ -221,16 +214,19 @@ function _fillDD(dd, list, onPick){
     }
     list.forEach(function(c){
         var row = document.createElement('div');
-        row.style.cssText = 'padding:13px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;color:#111;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,.06);';
+        row.style.cssText = 'padding:12px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;color:#111;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,.06);user-select:none;';
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         row.innerHTML = '<strong>'+_esc(c.name)+'</strong>'+(last4?' <span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>':'');
-        /* onclick: onblur'dan sonra tetiklenir → 200ms timeout yeterli */
-        row.onclick = function(){ onPick(c); };
+        var handleSelect = function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            onPick(c);
+        };
+        row.addEventListener('touchstart', handleSelect, {passive: false});
+        row.addEventListener('mousedown', handleSelect);
         dd.appendChild(row);
     });
 }
-
-/* ── TEKİL MÜŞTERİ — global fonksiyonlar (onfocus/oninput için) ── */
 function custOpen(){
     var inp = document.getElementById('custSearch');
     var dd  = _getDD('_custDD');
@@ -240,19 +236,16 @@ function custOpen(){
         inp.value = c.name + (last4 ? ' (···'+last4+')' : '');
         document.getElementById('customer_id_input').value = c.id;
         custClose();
+        inp.blur();
     });
     _placeDD(dd, inp);
     dd.style.display = 'block';
 }
-
 function custClose(){
     var dd = document.getElementById('_custDD');
     if(dd) dd.style.display = 'none';
 }
-
-/* ── GRUP MÜŞTERİ ── */
 var _GC = [];
-
 function grpOpen(){
     var inp = document.getElementById('groupCustSearch');
     var dd  = _getDD('_grpDD');
@@ -260,27 +253,24 @@ function grpOpen(){
         _addGC(parseInt(c.id), c.name, String(c.phone||''));
         inp.value = '';
         grpClose();
+        inp.blur();
     });
     _placeDD(dd, inp);
     dd.style.display = 'block';
 }
-
 function grpClose(){
     var dd = document.getElementById('_grpDD');
     if(dd) dd.style.display = 'none';
 }
-
 function _addGC(id, name, phone){
     if(_GC.find(function(c){ return c.id==id; })) return;
     _GC.push({id:id,name:name,phone:phone});
     _renderGC();
 }
-
 function removeGroupCustomer(id){
     _GC = _GC.filter(function(c){ return c.id!=id; });
     _renderGC();
 }
-
 function _renderGC(){
     var el = document.getElementById('groupCustomerList');
     if(!el) return;
@@ -294,8 +284,22 @@ function _renderGC(){
             +'</div>';
     }).join('');
 }
-
-/* ── Toggle'lar ── */
+document.addEventListener('touchstart', function(e) {
+    var cInp = document.getElementById('custSearch');
+    var gInp = document.getElementById('groupCustSearch');
+    var cDD  = document.getElementById('_custDD');
+    var gDD  = document.getElementById('_grpDD');
+    if (cDD && !cDD.contains(e.target) && e.target !== cInp) custClose();
+    if (gDD && !gDD.contains(e.target) && e.target !== gInp) grpClose();
+}, {passive: true});
+document.addEventListener('click', function(e) {
+    var cInp = document.getElementById('custSearch');
+    var gInp = document.getElementById('groupCustSearch');
+    var cDD  = document.getElementById('_custDD');
+    var gDD  = document.getElementById('_grpDD');
+    if (cDD && !cDD.contains(e.target) && e.target !== cInp) custClose();
+    if (gDD && !gDD.contains(e.target) && e.target !== gInp) grpClose();
+});
 (function(){
     _renderGC();
     var g = document.getElementById('isGroup');
