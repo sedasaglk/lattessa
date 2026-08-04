@@ -47,7 +47,7 @@
         </div>
 
         {{-- Tekil Müşteri --}}
-        <div id="singleCustomerSection">
+        <div id="singleCustomerSection" style="position: relative;">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <input type="text" id="custSearch" autocomplete="off"
                    placeholder="İsim veya son 4 hane telefon..."
@@ -64,7 +64,7 @@
                 <input type="number" name="group_capacity" min="1" max="500" value="10"
                        class="w-32 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
             </div>
-            <div>
+            <div style="position: relative;">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 <input type="text" id="groupCustSearch" autocomplete="off"
@@ -159,9 +159,11 @@
 <script>
 /* ── Müşteri verisi ── */
 var _AC = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone??'']));
+
 function _esc(s){
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
 function _filter(q){
     q = (q||'').trim().toLowerCase();
     if(!q) return _AC.slice(0,50);
@@ -170,107 +172,114 @@ function _filter(q){
         return c.name.toLowerCase().includes(q) || p.includes(q) || p.slice(-4) === q;
     }).slice(0,50);
 }
-function _getDD(id){
+
+/* ── Dropdown Oluşturucu (Absolute Yapı) ── */
+function _getDD(id, parentEl){
     var d = document.getElementById(id);
     if(!d){
         d = document.createElement('div');
         d.id = id;
-        d.style.position   = 'fixed';
-        d.style.zIndex     = '2147483647';
+        d.style.position   = 'absolute';
+        d.style.top        = '100%';
+        d.style.left       = '0';
+        d.style.right      = '0';
+        d.style.marginTop  = '4px';
+        d.style.zIndex     = '999999';
         d.style.background = '#fff';
         d.style.border     = '1px solid #e5e7eb';
         d.style.borderRadius = '10px';
-        d.style.boxShadow  = '0 8px 24px rgba(0,0,0,.14)';
+        d.style.boxShadow  = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)';
+        d.style.maxHeight  = '220px';
         d.style.overflowY  = 'auto';
         d.style.webkitOverflowScrolling = 'touch';
         d.style.display    = 'none';
-        document.body.appendChild(d);
+        parentEl.appendChild(d);
     }
     return d;
 }
-function _placeDD(dd, anchor){
-    var r  = anchor.getBoundingClientRect();
-    var vh = window.innerHeight;
-    dd.style.left  = r.left + 'px';
-    dd.style.width = r.width + 'px';
-    if(vh - r.bottom >= 140 || r.top < 200){
-        dd.style.top        = (r.bottom + 4) + 'px';
-        dd.style.bottom     = 'auto';
-        dd.style.maxHeight  = Math.min(220, vh - r.bottom - 16) + 'px';
-    } else {
-        dd.style.top        = 'auto';
-        dd.style.bottom     = (vh - r.top + 4) + 'px';
-        dd.style.maxHeight  = Math.min(220, r.top - 16) + 'px';
-    }
-}
+
 function _fillDD(dd, list, onPick){
     dd.innerHTML = '';
     if(!list.length){
         var empty = document.createElement('div');
-        empty.style.cssText = 'padding:16px;text-align:center;color:#9ca3af;font-size:14px;';
+        empty.style.cssText = 'padding:14px;text-align:center;color:#9ca3af;font-size:14px;';
         empty.textContent = 'Müşteri bulunamadı';
         dd.appendChild(empty);
         return;
     }
     list.forEach(function(c){
         var row = document.createElement('div');
-        row.style.cssText = 'padding:12px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;color:#111;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,.06);user-select:none;';
+        row.style.cssText = 'padding:12px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;color:#111;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,.05);user-select:none;';
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         row.innerHTML = '<strong>'+_esc(c.name)+'</strong>'+(last4?' <span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>':'');
-        var handleSelect = function(e){
+
+        // Mobil dokunma olayı için mousedown & touchstart
+        var handlePick = function(e){
             e.preventDefault();
             e.stopPropagation();
             onPick(c);
         };
-        row.addEventListener('touchstart', handleSelect, {passive: false});
-        row.addEventListener('mousedown', handleSelect);
+
+        row.addEventListener('touchstart', handlePick, {passive: false});
+        row.addEventListener('mousedown', handlePick);
+
         dd.appendChild(row);
     });
 }
+
+/* ── TEKİL MÜŞTERİ ── */
 function custOpen(){
     var inp = document.getElementById('custSearch');
-    var dd  = _getDD('_custDD');
+    var parent = inp.parentElement;
+    var dd  = _getDD('_custDD', parent);
+
     document.getElementById('customer_id_input').value = '';
     _fillDD(dd, _filter(inp.value), function(c){
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         inp.value = c.name + (last4 ? ' (···'+last4+')' : '');
         document.getElementById('customer_id_input').value = c.id;
         custClose();
-        inp.blur();
     });
-    _placeDD(dd, inp);
     dd.style.display = 'block';
 }
+
 function custClose(){
     var dd = document.getElementById('_custDD');
     if(dd) dd.style.display = 'none';
 }
+
+/* ── GRUP MÜŞTERİ ── */
 var _GC = [];
+
 function grpOpen(){
     var inp = document.getElementById('groupCustSearch');
-    var dd  = _getDD('_grpDD');
+    var parent = inp.parentElement;
+    var dd  = _getDD('_grpDD', parent);
+
     _fillDD(dd, _filter(inp.value), function(c){
         _addGC(parseInt(c.id), c.name, String(c.phone||''));
         inp.value = '';
         grpClose();
-        inp.blur();
     });
-    _placeDD(dd, inp);
     dd.style.display = 'block';
 }
+
 function grpClose(){
     var dd = document.getElementById('_grpDD');
     if(dd) dd.style.display = 'none';
 }
+
 function _addGC(id, name, phone){
     if(_GC.find(function(c){ return c.id==id; })) return;
     _GC.push({id:id,name:name,phone:phone});
     _renderGC();
 }
+
 function removeGroupCustomer(id){
     _GC = _GC.filter(function(c){ return c.id!=id; });
     _renderGC();
 }
+
 function _renderGC(){
     var el = document.getElementById('groupCustomerList');
     if(!el) return;
@@ -284,22 +293,19 @@ function _renderGC(){
             +'</div>';
     }).join('');
 }
-document.addEventListener('touchstart', function(e) {
+
+/* ── Ekranın herhangi bir yerine tıklandığında/dokunulduğunda kapat ── */
+document.addEventListener('pointerdown', function(e) {
     var cInp = document.getElementById('custSearch');
     var gInp = document.getElementById('groupCustSearch');
     var cDD  = document.getElementById('_custDD');
     var gDD  = document.getElementById('_grpDD');
-    if (cDD && !cDD.contains(e.target) && e.target !== cInp) custClose();
-    if (gDD && !gDD.contains(e.target) && e.target !== gInp) grpClose();
-}, {passive: true});
-document.addEventListener('click', function(e) {
-    var cInp = document.getElementById('custSearch');
-    var gInp = document.getElementById('groupCustSearch');
-    var cDD  = document.getElementById('_custDD');
-    var gDD  = document.getElementById('_grpDD');
+
     if (cDD && !cDD.contains(e.target) && e.target !== cInp) custClose();
     if (gDD && !gDD.contains(e.target) && e.target !== gInp) grpClose();
 });
+
+/* ── Toggle'lar ── */
 (function(){
     _renderGC();
     var g = document.getElementById('isGroup');
