@@ -4,35 +4,6 @@
 
 @section('content')
 
-<style>
-#_custDD, #_grpDD {
-    position: fixed;
-    z-index: 2147483647;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.14);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    display: none;
-}
-#_custDD .cr, #_grpDD .cr {
-    padding: 13px 16px;
-    border-bottom: 1px solid #f3f4f6;
-    font-size: 14px;
-    color: #111;
-    cursor: pointer;
-    background: #fff;
-    -webkit-tap-highlight-color: rgba(0,0,0,.06);
-    touch-action: manipulation;
-    user-select: none;
-    -webkit-user-select: none;
-}
-#_custDD .cr:last-child, #_grpDD .cr:last-child { border-bottom: none; }
-#_custDD .cr:active, #_grpDD .cr:active { background: #f9fafb; }
-.cr-empty { padding: 16px; text-align: center; color: #9ca3af; font-size: 14px; }
-</style>
-
 <div class="mb-6 flex items-center gap-3">
     <a href="{{ route('panel.appointments.index', ['tenant_slug' => $tenant->slug]) }}"
        class="text-gray-400 hover:text-gray-900">← Geri</a>
@@ -80,6 +51,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <input type="text" id="custSearch" autocomplete="off"
                    placeholder="İsim veya son 4 hane telefon..."
+                   onfocus="custOpen()"
+                   oninput="custOpen()"
+                   onblur="setTimeout(custClose,200)"
                    style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;">
             <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
         </div>
@@ -96,6 +70,9 @@
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
                 <input type="text" id="groupCustSearch" autocomplete="off"
                        placeholder="Müşteri ekle..."
+                       onfocus="grpOpen()"
+                       oninput="grpOpen()"
+                       onblur="setTimeout(grpClose,200)"
                        style="width:100%;padding:10px 16px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;color:#111;background:#fff;box-sizing:border-box;outline:none;font-family:inherit;">
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
@@ -104,7 +81,7 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Hizmet</label>
             <select name="service_id" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm">
-                <option value="">Hizmet secin</option>
+                <option value="">Hizmet seçin</option>
                 @foreach($services as $service)
                     <option value="{{ $service->id }}" {{ old('service_id') == $service->id ? 'selected' : '' }}>
                         {{ $service->name }} ({{ $service->duration_minutes }} dk - {{ number_format($service->price, 0) }} TL)
@@ -182,166 +159,158 @@
 </div>
 
 <script>
-/* ─── VERİ ─────────────────────────────────────────────── */
-var allCustomers = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone??'']));
+/* ── Müşteri verisi ── */
+var _AC = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone??'']));
 
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-function filter(q,n){
-    q=(q||'').trim().toLowerCase(); n=n||50;
-    if(!q) return allCustomers.slice(0,n);
-    return allCustomers.filter(function(c){
-        var p=c.phone?c.phone.toString():'';
-        return c.name.toLowerCase().includes(q)||p.includes(q)||p.slice(-4)===q;
-    }).slice(0,n);
+function _filter(q){
+    q = (q||'').trim().toLowerCase();
+    if(!q) return _AC.slice(0,50);
+    return _AC.filter(function(c){
+        var p = c.phone ? c.phone.toString() : '';
+        return c.name.toLowerCase().includes(q) || p.includes(q) || p.slice(-4) === q;
+    }).slice(0,50);
 }
 
-/* ─── DROPDOWN (position:fixed, body'de) ───────────────── */
-function makeDD(id){
-    var d=document.getElementById(id);
-    if(!d){ d=document.createElement('div'); d.id=id; document.body.appendChild(d); }
+/* ── Dropdown yardımcı ── */
+function _getDD(id){
+    var d = document.getElementById(id);
+    if(!d){
+        d = document.createElement('div');
+        d.id = id;
+        /* Tüm stiller inline — CSS bağımlılığı yok */
+        d.style.position   = 'fixed';
+        d.style.zIndex     = '2147483647';
+        d.style.background = '#fff';
+        d.style.border     = '1px solid #e5e7eb';
+        d.style.borderRadius = '10px';
+        d.style.boxShadow  = '0 8px 24px rgba(0,0,0,.14)';
+        d.style.overflowY  = 'auto';
+        d.style.webkitOverflowScrolling = 'touch';
+        d.style.display    = 'none';
+        document.body.appendChild(d);
+    }
     return d;
 }
 
-function placeDD(dd, anchor){
-    var r   = anchor.getBoundingClientRect();
-    var vh  = window.innerHeight;
-    var bot = vh - r.bottom;   /* boşluk: input altı   */
-    var top = r.top;           /* boşluk: input üstü   */
-    var mh  = 260;
-
-    dd.style.left  = r.left  + 'px';
+function _placeDD(dd, anchor){
+    var r  = anchor.getBoundingClientRect();
+    var vh = window.innerHeight;
+    dd.style.left  = r.left + 'px';
     dd.style.width = r.width + 'px';
-
-    if(bot >= 120 || bot >= top){          /* alta aç */
-        dd.style.top    = (r.bottom + 2) + 'px';
-        dd.style.bottom = 'auto';
-        dd.style.maxHeight = Math.min(mh, bot - 8) + 'px';
-    } else {                               /* üste aç */
-        dd.style.top    = 'auto';
-        dd.style.bottom = (vh - r.top + 2) + 'px';
-        dd.style.maxHeight = Math.min(mh, top - 8) + 'px';
+    if(vh - r.bottom >= 120){
+        dd.style.top       = (r.bottom + 2) + 'px';
+        dd.style.bottom    = 'auto';
+        dd.style.maxHeight = Math.min(260, vh - r.bottom - 8) + 'px';
+    } else {
+        dd.style.top       = 'auto';
+        dd.style.bottom    = (vh - r.top + 2) + 'px';
+        dd.style.maxHeight = Math.min(260, r.top - 8) + 'px';
     }
 }
 
-function fillDD(dd, list, onPick){
+function _fillDD(dd, list, onPick){
     dd.innerHTML = '';
     if(!list.length){
-        dd.innerHTML='<div class="cr-empty">Müşteri bulunamadı</div>';
+        var empty = document.createElement('div');
+        empty.style.cssText = 'padding:16px;text-align:center;color:#9ca3af;font-size:14px;';
+        empty.textContent = 'Müşteri bulunamadı';
+        dd.appendChild(empty);
         return;
     }
     list.forEach(function(c){
+        var row = document.createElement('div');
+        row.style.cssText = 'padding:13px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;color:#111;cursor:pointer;background:#fff;-webkit-tap-highlight-color:rgba(0,0,0,.06);';
         var last4 = c.phone ? c.phone.toString().slice(-4) : '';
-        var row   = document.createElement('div');
-        row.className = 'cr';
-        row.innerHTML = '<strong>'+esc(c.name)+'</strong>'+(last4?' <span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>':'');
-        row.addEventListener('pointerdown', function(e){ e.preventDefault(); onPick(c); });
-        row.addEventListener('touchend',    function(e){ e.preventDefault(); onPick(c); },{passive:false});
+        row.innerHTML = '<strong>'+_esc(c.name)+'</strong>'+(last4?' <span style="color:#9ca3af;font-size:12px;">···'+last4+'</span>':'');
+        /* onclick: onblur'dan sonra tetiklenir → 200ms timeout yeterli */
+        row.onclick = function(){ onPick(c); };
         dd.appendChild(row);
     });
 }
 
-function showDD(dd, anchor, list, onPick){
-    fillDD(dd, list, onPick);
-    placeDD(dd, anchor);
+/* ── TEKİL MÜŞTERİ — global fonksiyonlar (onfocus/oninput için) ── */
+function custOpen(){
+    var inp = document.getElementById('custSearch');
+    var dd  = _getDD('_custDD');
+    document.getElementById('customer_id_input').value = '';
+    _fillDD(dd, _filter(inp.value), function(c){
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
+        inp.value = c.name + (last4 ? ' (···'+last4+')' : '');
+        document.getElementById('customer_id_input').value = c.id;
+        custClose();
+    });
+    _placeDD(dd, inp);
     dd.style.display = 'block';
 }
 
-function hideDD(dd){ dd.style.display = 'none'; }
-
-/* Herhangi bir dış tıklamada tüm dd'leri kapat */
-function outsideClose(anchor, dd){
-    function close(e){
-        if(!anchor.contains(e.target) && !dd.contains(e.target)) hideDD(dd);
-    }
-    document.addEventListener('pointerdown', close);
-    document.addEventListener('touchstart',  close, {passive:true});
+function custClose(){
+    var dd = document.getElementById('_custDD');
+    if(dd) dd.style.display = 'none';
 }
 
-/* ─── TEKİL MÜŞTERİ ────────────────────────────────────── */
-(function(){
-    var inp    = document.getElementById('custSearch');
-    var hidden = document.getElementById('customer_id_input');
-    if(!inp) return;
-    var dd = makeDD('_custDD');
+/* ── GRUP MÜŞTERİ ── */
+var _GC = [];
 
-    function open(q){
-        hidden.value = '';
-        showDD(dd, inp, filter(q), function(c){
-            var last4=c.phone?c.phone.toString().slice(-4):'';
-            inp.value    = c.name+(last4?' (···'+last4+')':'');
-            hidden.value = c.id;
-            hideDD(dd);
-            inp.blur();
-        });
-    }
-
-    inp.addEventListener('focus', function(){ open(inp.value); });
-    inp.addEventListener('click', function(){ open(inp.value); }); /* ekstra güvenlik */
-    inp.addEventListener('input', function(){ open(inp.value); });
-    outsideClose(inp, dd);
-})();
-
-/* ─── GRUP MÜŞTERİ ─────────────────────────────────────── */
-var groupCustomers = [];
-
-(function(){
+function grpOpen(){
     var inp = document.getElementById('groupCustSearch');
-    if(!inp) return;
-    var dd  = makeDD('_grpDD');
-
-    function open(q){
-        showDD(dd, inp, filter(q), function(c){
-            addGC(parseInt(c.id), c.name, String(c.phone||''));
-            inp.value = '';
-            hideDD(dd);
-        });
-    }
-
-    inp.addEventListener('focus', function(){ open(inp.value); });
-    inp.addEventListener('click', function(){ open(inp.value); });
-    inp.addEventListener('input', function(){ open(inp.value); });
-    outsideClose(inp, dd);
-})();
-
-function addGC(id, name, phone){
-    if(groupCustomers.find(function(c){ return c.id==id; })) return;
-    groupCustomers.push({id:id,name:name,phone:phone});
-    renderGC();
+    var dd  = _getDD('_grpDD');
+    _fillDD(dd, _filter(inp.value), function(c){
+        _addGC(parseInt(c.id), c.name, String(c.phone||''));
+        inp.value = '';
+        grpClose();
+    });
+    _placeDD(dd, inp);
+    dd.style.display = 'block';
 }
+
+function grpClose(){
+    var dd = document.getElementById('_grpDD');
+    if(dd) dd.style.display = 'none';
+}
+
+function _addGC(id, name, phone){
+    if(_GC.find(function(c){ return c.id==id; })) return;
+    _GC.push({id:id,name:name,phone:phone});
+    _renderGC();
+}
+
 function removeGroupCustomer(id){
-    groupCustomers=groupCustomers.filter(function(c){ return c.id!=id; });
-    renderGC();
+    _GC = _GC.filter(function(c){ return c.id!=id; });
+    _renderGC();
 }
-function renderGC(){
-    var el=document.getElementById('groupCustomerList'); if(!el) return;
-    if(!groupCustomers.length){ el.innerHTML='<p class="text-xs text-gray-400 italic">Henüz katılımcı eklenmedi.</p>'; return; }
-    el.innerHTML=groupCustomers.map(function(c){
-        var last4=c.phone?c.phone.toString().slice(-4):'';
+
+function _renderGC(){
+    var el = document.getElementById('groupCustomerList');
+    if(!el) return;
+    if(!_GC.length){ el.innerHTML='<p class="text-xs text-gray-400 italic">Henüz katılımcı eklenmedi.</p>'; return; }
+    el.innerHTML = _GC.map(function(c){
+        var last4 = c.phone ? c.phone.toString().slice(-4) : '';
         return '<div class="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm">'
-            +'<span><strong>'+esc(c.name)+'</strong>'+(last4?' <span class="text-gray-400 text-xs">···'+last4+'</span>':'')+'</span>'
+            +'<span><strong>'+_esc(c.name)+'</strong>'+(last4?' <span class="text-gray-400 text-xs">···'+last4+'</span>':'')+'</span>'
             +'<input type="hidden" name="customer_ids[]" value="'+c.id+'">'
             +'<button type="button" onclick="removeGroupCustomer('+c.id+')" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>'
             +'</div>';
     }).join('');
 }
 
-/* ─── TOGGLE'LAR ────────────────────────────────────────── */
+/* ── Toggle'lar ── */
 (function(){
-    renderGC();
-    var g=document.getElementById('isGroup');
-    if(g) g.addEventListener('change',function(){
-        var on=this.checked;
-        document.getElementById('singleCustomerSection').classList.toggle('hidden',on);
-        document.getElementById('groupSection').classList.toggle('hidden',!on);
-        var r=document.getElementById('isRecurring');
+    _renderGC();
+    var g = document.getElementById('isGroup');
+    if(g) g.addEventListener('change', function(){
+        var on = this.checked;
+        document.getElementById('singleCustomerSection').classList.toggle('hidden', on);
+        document.getElementById('groupSection').classList.toggle('hidden', !on);
+        var r = document.getElementById('isRecurring');
         if(r){ r.checked=false; r.disabled=on; }
-        var ro=document.getElementById('recurringOptions');
+        var ro = document.getElementById('recurringOptions');
         if(ro) ro.classList.add('hidden');
     });
-    var r=document.getElementById('isRecurring');
-    if(r) r.addEventListener('change',function(){
-        document.getElementById('recurringOptions').classList.toggle('hidden',!this.checked);
+    var r = document.getElementById('isRecurring');
+    if(r) r.addEventListener('change', function(){
+        document.getElementById('recurringOptions').classList.toggle('hidden', !this.checked);
     });
 })();
 </script>
