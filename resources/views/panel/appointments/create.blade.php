@@ -59,7 +59,7 @@
                 <input type="hidden" name="customer_id" id="customer_id_input" value="{{ old('customer_id') }}">
 
                 {{-- Dropdown Container --}}
-                <div id="_custDD" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto"></div>
+                <div id="_custDD" class="hidden bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto" style="position:fixed; z-index:9999; left:0; top:0; width:0;"></div>
             </div>
         </div>
         {{-- Grup Müşteri --}}
@@ -80,7 +80,7 @@
                        style="-webkit-user-select: text; user-select: text;">
 
                 {{-- Dropdown Container --}}
-                <div id="_grpDD" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto"></div>
+                <div id="_grpDD" class="hidden bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto" style="position:fixed; z-index:9999; left:0; top:0; width:0;"></div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -169,6 +169,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     var _AC = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone??'']));
     var _GC = [];
+
     function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function _filter(q){
         q = (q||'').trim().toLowerCase();
@@ -178,68 +179,97 @@ document.addEventListener('DOMContentLoaded', function () {
             return c.name.toLowerCase().includes(q) || p.includes(q) || p.slice(-4) === q;
         }).slice(0,50);
     }
-    function _renderList(container, list, onSelect) {
+    function _positionDD(inp, dd) {
+        var rect = inp.getBoundingClientRect();
+        var viewportH = window.innerHeight;
+        var spaceBelow = viewportH - rect.bottom;
+        var spaceAbove = rect.top;
+        dd.style.left  = rect.left + 'px';
+        dd.style.width = rect.width + 'px';
+        if (spaceBelow >= 180 || spaceBelow >= spaceAbove) {
+            dd.style.top = (rect.bottom + 4) + 'px';
+            dd.style.bottom = 'auto';
+            dd.style.maxHeight = Math.min(240, spaceBelow - 12) + 'px';
+        } else {
+            dd.style.bottom = (viewportH - rect.top + 4) + 'px';
+            dd.style.top = 'auto';
+            dd.style.maxHeight = Math.min(240, spaceAbove - 12) + 'px';
+        }
+    }
+    function _showDD(inp, dd) { _positionDD(inp, dd); dd.classList.remove('hidden'); }
+    function _hideDD(dd) { dd.classList.add('hidden'); }
+    function _renderList(inp, container, list, onSelect) {
         container.innerHTML = '';
         if(!list.length){
             container.innerHTML = '<div class="p-3 text-center text-gray-400 text-sm">Müşteri bulunamadı</div>';
-            container.classList.remove('hidden');
-            return;
+            _showDD(inp, container); return;
         }
         list.forEach(function(c){
             var row = document.createElement('div');
-            row.className = 'px-4 py-3 border-b border-gray-100 text-sm text-gray-900 cursor-pointer active:bg-gray-100 hover:bg-gray-50 flex justify-between items-center';
+            row.className = 'px-4 py-3 border-b border-gray-100 text-sm text-gray-900 cursor-pointer flex justify-between items-center';
             var last4 = c.phone ? c.phone.toString().slice(-4) : '';
             row.innerHTML = '<span><strong>'+_esc(c.name)+'</strong></span>' + (last4 ? '<span class="text-xs text-gray-400">···'+last4+'</span>' : '');
-
-            // Event Listener bağlama (Mobil uyumlu)
-            row.addEventListener('pointerdown', function(e){
+            var touchMoved = false;
+            row.addEventListener('touchstart', function(){ touchMoved = false; }, {passive: true});
+            row.addEventListener('touchmove',  function(){ touchMoved = true;  }, {passive: true});
+            row.addEventListener('touchend', function(e){
+                if(touchMoved) return;
                 e.preventDefault();
                 onSelect(c);
             });
+            row.addEventListener('mousedown', function(e){ e.preventDefault(); onSelect(c); });
             container.appendChild(row);
         });
-        container.classList.remove('hidden');
+        _showDD(inp, container);
     }
-    // Tekil Müşteri Elemanları
-    var cInp = document.getElementById('custSearch');
-    var cDD = document.getElementById('_custDD');
-    var cVal = document.getElementById('customer_id_input');
-    if(cInp){
-        ['focus', 'input', 'click', 'touchstart'].forEach(function(evtName){
-            cInp.addEventListener(evtName, function(e){
-                cVal.value = '';
-                var res = _filter(cInp.value);
-                _renderList(cDD, res, function(selected){
-                    var last4 = selected.phone ? selected.phone.toString().slice(-4) : '';
-                    cInp.value = selected.name + (last4 ? ' (···'+last4+')' : '');
-                    cVal.value = selected.id;
-                    cDD.classList.add('hidden');
-                });
-            });
-        });
+    function _onScroll() {
+        if(cDD && !cDD.classList.contains('hidden')) _positionDD(cInp, cDD);
+        if(gDD && !gDD.classList.contains('hidden')) _positionDD(gInp, gDD);
     }
-    // Grup Müşteri Elemanları
-    var gInp = document.getElementById('groupCustSearch');
-    var gDD = document.getElementById('_grpDD');
-    if(gInp){
-        ['focus', 'input', 'click', 'touchstart'].forEach(function(evtName){
-            gInp.addEventListener(evtName, function(e){
-                var res = _filter(gInp.value);
-                _renderList(gDD, res, function(selected){
-                    _addGC(parseInt(selected.id), selected.name, String(selected.phone||''));
-                    gInp.value = '';
-                    gDD.classList.add('hidden');
-                });
-            });
-        });
-    }
-    // Dışarı tıklayınca kapatma
-    document.addEventListener('pointerdown', function(e){
-        if(cDD && !cInp.contains(e.target) && !cDD.contains(e.target)) cDD.classList.add('hidden');
-        if(gDD && !gInp.contains(e.target) && !gDD.contains(e.target)) gDD.classList.add('hidden');
-    });
+    window.addEventListener('scroll', _onScroll, true);
+    window.addEventListener('resize', _onScroll);
 
-    // Grup müşteri fonksiyonları
+    var cInp = document.getElementById('custSearch');
+    var cDD  = document.getElementById('_custDD');
+    var cVal = document.getElementById('customer_id_input');
+    if(cInp && cDD){
+        function _openCust(){
+            cVal.value = '';
+            _renderList(cInp, cDD, _filter(cInp.value), function(selected){
+                var last4 = selected.phone ? selected.phone.toString().slice(-4) : '';
+                cInp.value = selected.name + (last4 ? ' (···'+last4+')' : '');
+                cVal.value = selected.id;
+                _hideDD(cDD);
+            });
+        }
+        cInp.addEventListener('focus', _openCust);
+        cInp.addEventListener('input', _openCust);
+        cInp.addEventListener('click', _openCust);
+        cInp.addEventListener('touchstart', function(){ setTimeout(_openCust, 50); }, {passive: true});
+    }
+    var gInp = document.getElementById('groupCustSearch');
+    var gDD  = document.getElementById('_grpDD');
+    if(gInp && gDD){
+        function _openGrp(){
+            _renderList(gInp, gDD, _filter(gInp.value), function(selected){
+                _addGC(parseInt(selected.id), selected.name, String(selected.phone||''));
+                gInp.value = '';
+                _hideDD(gDD);
+            });
+        }
+        gInp.addEventListener('focus', _openGrp);
+        gInp.addEventListener('input', _openGrp);
+        gInp.addEventListener('click', _openGrp);
+        gInp.addEventListener('touchstart', function(){ setTimeout(_openGrp, 50); }, {passive: true});
+    }
+    document.addEventListener('mousedown', function(e){
+        if(cDD && cInp && !cInp.contains(e.target) && !cDD.contains(e.target)) _hideDD(cDD);
+        if(gDD && gInp && !gInp.contains(e.target) && !gDD.contains(e.target)) _hideDD(gDD);
+    });
+    document.addEventListener('touchstart', function(e){
+        if(cDD && cInp && !cInp.contains(e.target) && !cDD.contains(e.target)) _hideDD(cDD);
+        if(gDD && gInp && !gInp.contains(e.target) && !gDD.contains(e.target)) _hideDD(gDD);
+    }, {passive: true});
     function _renderGC(){
         var el = document.getElementById('groupCustomerList');
         if(!el) return;
@@ -263,10 +293,8 @@ document.addEventListener('DOMContentLoaded', function () {
         _renderGC();
     };
     _renderGC();
-
-    // Toggle'lar
-    var g = document.getElementById('isGroup');
-    if(g) g.addEventListener('change', function(){
+    var gChk = document.getElementById('isGroup');
+    if(gChk) gChk.addEventListener('change', function(){
         var on = this.checked;
         document.getElementById('singleCustomerSection').classList.toggle('hidden', on);
         document.getElementById('groupSection').classList.toggle('hidden', !on);
@@ -275,10 +303,11 @@ document.addEventListener('DOMContentLoaded', function () {
         var ro = document.getElementById('recurringOptions');
         if(ro) ro.classList.add('hidden');
     });
-    var r = document.getElementById('isRecurring');
-    if(r) r.addEventListener('change', function(){
+    var rChk = document.getElementById('isRecurring');
+    if(rChk) rChk.addEventListener('change', function(){
         document.getElementById('recurringOptions').classList.toggle('hidden', !this.checked);
     });
+
 });
 </script>
 @endsection
