@@ -361,9 +361,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Tekil müşteri ─────────────────────────────────────────────────────────
-    var cInp = document.getElementById('custSearch');
-    // cDD ve gDD yukarıda body'ye append edildi
-    var cVal = document.getElementById('customer_id_input');
+    // Layout içeriği 2x render edilir (desktop hidden + mobile). getElementById
+    // her zaman display:none olan desktop versiyonunu döndürür → BRC={0,0,0,0}.
+    // Görünür (offsetWidth>0) olanı seç:
+    var cInp = (function() {
+        var all = document.querySelectorAll('#custSearch');
+        for (var i = 0; i < all.length; i++) { if (all[i].offsetWidth > 0) return all[i]; }
+        return all[0] || null;
+    })();
+    var cVal = (function() {
+        var all = document.querySelectorAll('#customer_id_input');
+        for (var i = 0; i < all.length; i++) { if (all[i].closest('form')) return all[i]; }
+        return all[0] || null;
+    })();
 
     bindDD(cInp, cDD, function (c) {
         var l4 = last4(c.phone);
