@@ -187,23 +187,43 @@
     </form>
 </div>
 
-{{-- Dropdown: viewport'a fixed, hiçbir overflow clip edemez --}}
-<div id="_custDD"
-     style="display:none; position:fixed; z-index:99999; background:#fff;
-            border:1px solid #E5E7EB; border-radius:12px;
-            box-shadow:0 8px 24px rgba(0,0,0,0.12);
-            overflow-y:auto; -webkit-overflow-scrolling:touch;"></div>
-
-<div id="_grpDD"
-     style="display:none; position:fixed; z-index:99999; background:#fff;
-            border:1px solid #E5E7EB; border-radius:12px;
-            box-shadow:0 8px 24px rgba(0,0,0,0.12);
-            overflow-y:auto; -webkit-overflow-scrolling:touch;"></div>
+{{-- Dropdown div'leri script tarafından body'ye eklenir --}}
 
 <script>
-(function () {
-    var _AC = @json($customers->map(fn($c) => ['id'=>$c->id,'name'=>$c->name,'phone'=>$c->phone??'']));
+// Müşteri verisi — global, debug edilebilir
+window._AC = [];
+try {
+    window._AC = @json($customers->map(fn($c) => ['id'=>(int)$c->id, 'name'=> (string)$c->name, 'phone'=> (string)($c->phone ?? '')]));
+} catch(e) {
+    console.error('Müşteri veri hatası:', e);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var _AC = window._AC;
     var _GC = [];
+
+    // Dropdown'ları doğrudan body'ye ekle — layout'un hiçbir overflow/transform'u clip edemez
+    var _ddStyle = [
+        'display:none',
+        'position:fixed',
+        'z-index:2147483647',   /* maksimum z-index */
+        'background:#fff',
+        'border:1px solid #E5E7EB',
+        'border-radius:12px',
+        'box-shadow:0 8px 24px rgba(0,0,0,0.14)',
+        'overflow-y:auto',
+        '-webkit-overflow-scrolling:touch',
+    ].join(';');
+
+    var cDD = document.createElement('div');
+    cDD.id = '_custDD';
+    cDD.setAttribute('style', _ddStyle);
+    document.body.appendChild(cDD);
+
+    var gDD = document.createElement('div');
+    gDD.id = '_grpDD';
+    gDD.setAttribute('style', _ddStyle);
+    document.body.appendChild(gDD);
 
     function esc(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -342,7 +362,7 @@
 
     // ── Tekil müşteri ─────────────────────────────────────────────────────────
     var cInp = document.getElementById('custSearch');
-    var cDD  = document.getElementById('_custDD');
+    // cDD ve gDD yukarıda body'ye append edildi
     var cVal = document.getElementById('customer_id_input');
 
     bindDD(cInp, cDD, function (c) {
@@ -360,7 +380,7 @@
 
     // ── Grup müşteri ──────────────────────────────────────────────────────────
     var gInp = document.getElementById('groupCustSearch');
-    var gDD  = document.getElementById('_grpDD');
+    // gDD yukarıda body'ye append edildi
 
     bindDD(gInp, gDD, function (c) {
         addGC(c.id, c.name, c.phone);
@@ -423,6 +443,8 @@
     if (rChk) rChk.addEventListener('change', function () {
         document.getElementById('recurringOptions').classList.toggle('hidden', !this.checked);
     });
-})();
+
+    console.log('Lattessa: Müşteri arama hazır,', _AC.length, 'müşteri yüklendi.');
+}); // DOMContentLoaded sonu
 </script>
 @endsection
