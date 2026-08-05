@@ -172,8 +172,9 @@ class AppointmentController extends Controller
             $staff = User::where('id', $authUser->id)->get();
         }
 
-        // Kullanıcının şubesi (firma_sahibi için null olabilir, o zaman tüm şubeler gösterilir)
-        $userBranchId = $authUser->branch_id;
+        // Kullanıcının şubesi — branches tablosunda gerçekten var mı kontrol et
+        $rawBranchId = $authUser->branch_id;
+        $userBranchId = $rawBranchId && $branches->contains('id', $rawBranchId) ? $rawBranchId : null;
 
         return view('panel.appointments.create', compact(
             'tenant', 'customers', 'services', 'staff', 'branches', 'defaultDate', 'userBranchId', 'authUser'
@@ -187,7 +188,7 @@ class AppointmentController extends Controller
         $isGroup = $request->boolean('is_group');
 
         $rules = [
-            'branch_id'        => ['required'],
+            'branch_id'        => ['required', 'exists:branches,id'],
             'staff_id'         => ['required'],
             'service_id'       => ['required'],
             'start_time'       => ['required', 'date', 'after:now'],
