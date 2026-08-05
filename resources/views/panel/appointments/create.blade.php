@@ -361,19 +361,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Tekil müşteri ─────────────────────────────────────────────────────────
-    // Layout içeriği 2x render edilir (desktop hidden + mobile). getElementById
-    // her zaman display:none olan desktop versiyonunu döndürür → BRC={0,0,0,0}.
-    // Görünür (offsetWidth>0) olanı seç:
-    var cInp = (function() {
-        var all = document.querySelectorAll('#custSearch');
-        for (var i = 0; i < all.length; i++) { if (all[i].offsetWidth > 0) return all[i]; }
-        return all[0] || null;
-    })();
-    var cVal = (function() {
-        var all = document.querySelectorAll('#customer_id_input');
-        for (var i = 0; i < all.length; i++) { if (all[i].closest('form')) return all[i]; }
-        return all[0] || null;
-    })();
+    // Layout içeriği 2x render edilir (desktop + mobile).
+    // Mobil <main> class'ı 'main-content' içerir, desktop içermez.
+    // Bu sayede doğru input'u seçiyoruz:
+    var cInp = document.querySelector('main.main-content #custSearch')
+            || document.querySelector('#custSearch');
+    var cVal = document.querySelector('main.main-content #customer_id_input')
+            || document.querySelector('#customer_id_input');
 
     bindDD(cInp, cDD, function (c) {
         var l4 = last4(c.phone);
