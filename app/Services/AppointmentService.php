@@ -48,26 +48,25 @@ class AppointmentService
             'price' => $service->price,
         ]);
 
-        // Musteri, personel ve tenant bilgilerini yukle
-        $customer = \App\Models\Customer::find($appointment->customer_id);
-        $staff    = \App\Models\User::find($appointment->staff_id);
-        $tenant   = \Illuminate\Support\Facades\DB::table('tenants')->where('id', $appointment->tenant_id)->first();
-
         // Push notification gonder (firma sahibine)
         try {
             $pushService = app(\App\Services\Notification\PushNotificationService::class);
             $pushService->sendToTenant(
                 $appointment->tenant_id,
                 'Yeni Randevu!',
-                ($customer->name ?? 'Musteri') . ' - ' . $service->name . ' - ' . $start->format('d.m.Y H:i'),
-                ['type' => 'new_appointment']
+                "{$customer->name} - {$service->name} - " . $start->format('d.m.Y H:i'),
+                ['url' => '/' . $tenant_slug . '/randevular/' . $appointment->id, 'type' => 'new_appointment']
             );
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Push notification hatasi: ' . $e->getMessage());
         }
 
         // WhatsApp onay mesaji gonder
         try {
+            $customer = \App\Models\Customer::find($appointment->customer_id);
+            $staff = \App\Models\User::find($appointment->staff_id);
+            $tenant = \Illuminate\Support\Facades\DB::table('tenants')->where('id', $appointment->tenant_id)->first();
+
             if ($customer && $customer->phone) {
                 $dateText = $start->format('d.m.Y');
                 $timeText = $start->format('H:i');
@@ -86,10 +85,12 @@ class AppointmentService
                     $message,
                     'appointment_confirmation',
                     $customer->id,
-                    'auto'
+                    'auto',
+                    null,
+                    $appointment->staff_id
                 );
             }
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Randevu onay mesaji gonderilemedi: ' . $e->getMessage());
         }
 

@@ -13,6 +13,9 @@ class NotificationService
         protected SmsService $smsService
     ) {}
 
+    /**
+     * Bildirim ayarlarını getir
+     */
     public function getSetting(int $tenantId, string $event): ?object
     {
         return DB::table('notification_settings')
@@ -21,6 +24,9 @@ class NotificationService
             ->first();
     }
 
+    /**
+     * Event için şablon değişkenlerini doldur
+     */
     public static function fillTemplate(string $template, array $vars): string
     {
         foreach ($vars as $key => $value) {
@@ -30,7 +36,7 @@ class NotificationService
     }
 
     /**
-     * auto modda WhatsApp VE SMS aynı anda gönderilir.
+     * WhatsApp VE SMS kanallarına aynı anda gönderir.
      * channel = 'auto'     → WhatsApp + SMS (her ikisi birden)
      * channel = 'whatsapp' → Yalnızca WhatsApp
      * channel = 'sms'      → Yalnızca SMS
@@ -43,8 +49,10 @@ class NotificationService
         string $type = 'general',
         ?int $customerId = null,
         string $channel = 'auto',
-        ?string $event = null
+        ?string $event = null,
+        ?int $staffId = null
     ): array {
+        // Bildirim ayarı kontrolü
         if ($event) {
             $setting = $this->getSetting($tenantId, $event);
             if ($setting) {
@@ -64,15 +72,16 @@ class NotificationService
         $wpSent  = false;
         $smsSent = false;
 
+        // WhatsApp gönderimi
         if (in_array($channel, ['auto', 'whatsapp'])) {
             try {
-                $wpSent = $this->sendWhatsApp($tenantId, $phone, $message, $type, $customerId);
+                $wpSent = $this->sendWhatsApp($tenantId, $phone, $message, $type, $customerId, $staffId);
             } catch (\Throwable $e) {
                 Log::warning('WhatsApp gonderim hatasi: ' . $e->getMessage());
             }
         }
 
-        // auto modda WhatsApp sonucundan bağımsız SMS de gönderilir
+        // SMS gönderimi — auto modda WhatsApp sonucundan bağımsız çalışır
         if (in_array($channel, ['auto', 'sms'])) {
             try {
                 $smsSent = $this->smsService->sendToCustomer($tenantId, $phone, $message, $type, $customerId);
@@ -99,13 +108,29 @@ class NotificationService
         string $phone,
         string $message,
         string $type,
-        ?int $customerId
+        ?int $customerId,
+        ?int $staffId = null
     ): bool {
-        $connection = DB::table('whatsapp_connections')
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'connected')
-            ->first();
+        // Önce personelin kendi WhatsApp bağlantısına bak
+        $connection = null;
+        if ($staffId) {
+            $connection = DB::table('whatsapp_connections')
+                ->where('tenant_id', $tenantId)
+                ->where('staff_id', $staffId)
+                ->where('status', 'connected')
+                ->first();
+        }
 
+        // Personelin bağlantısı yoksa işletme bağlantısına düş
+        if (!$connection) {
+            $connection = DB::table('whatsapp_connections')
+                ->where('tenant_id', $tenantId)
+                ->whereNull('staff_id')
+                ->where('status', 'connected')
+                ->first();
+        }
+
+        // Son çare: sistem genel bağlantısı
         if (!$connection) {
             $connection = DB::table('whatsapp_connections')
                 ->whereNull('tenant_id')
@@ -140,15 +165,15 @@ class NotificationService
     ): void {
         try {
             DB::table('whatsapp_logs')->insert([
-                'tenant_id'   => $tenantId,
-                'customer_id' => $customerId,
-                'phone'       => $phone,
-                'message'     => $message,
-                'type'        => $type,
-                'status'      => $status,
-                'response'    => $response ? json_encode($response) : null,
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'tenant_id'  => $tenantId,
+                'customer_id'=> $customerId,
+                'phone'      => $phone,
+                'message'    => $message,
+                'type'       => $type,
+                'status'     => $status,
+                'response'   => $response ? json_encode($response) : null,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         } catch (\Exception $e) {
             Log::error('WhatsApp log hatasi: ' . $e->getMessage());

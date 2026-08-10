@@ -34,6 +34,7 @@ use App\Http\Controllers\Panel\ServicePackageController;
 use App\Http\Controllers\Panel\SupportController;
 use App\Http\Controllers\Panel\NotificationController;
 use App\Http\Controllers\Panel\WhatsAppConnectionController;
+use App\Http\Controllers\Panel\StaffWhatsAppController;
 use App\Http\Controllers\Panel\ClientFileController;
 use App\Http\Controllers\Booking\OnlineBookingController;
 use App\Http\Controllers\Panel\BranchSwitchController;
@@ -318,6 +319,12 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
             Route::post('/whatsapp-baglanti/giris/qr', [WhatsAppConnectionController::class, 'startQrLogin'])->name('panel.whatsapp.login.qr');
             Route::get('/whatsapp-baglanti/{id}/durum', [WhatsAppConnectionController::class, 'checkStatus'])->name('panel.whatsapp.check');
             Route::post('/whatsapp-baglanti/{id}/baglanti-kes', [WhatsAppConnectionController::class, 'disconnect'])->name('panel.whatsapp.disconnect');
+
+            // Personel kisisel WhatsApp baglantisi
+            Route::get('/whatsapp-personel', [StaffWhatsAppController::class, 'index'])->name('panel.whatsapp.staff.index');
+            Route::post('/whatsapp-personel/giris/telefon', [StaffWhatsAppController::class, 'startPhoneLogin'])->name('panel.whatsapp.staff.login.phone');
+            Route::get('/whatsapp-personel/{id}/durum', [StaffWhatsAppController::class, 'checkStatus'])->name('panel.whatsapp.staff.check');
+            Route::post('/whatsapp-personel/{id}/baglanti-kes', [StaffWhatsAppController::class, 'disconnect'])->name('panel.whatsapp.staff.disconnect');
         });
 
         // ── Yalnızca firma_sahibi ─────────────────────────────────────────────
