@@ -21,19 +21,19 @@ class NotificationSettingsController extends Controller
                 'label' => 'Randevu Onayı',
                 'desc'  => 'Müşteri randevu aldığında gönderilir.',
                 'default' => "Sayin {musteri_adi}, randevunuz alinmistir.\nTarih: {tarih}\nSaat: {saat}\nHizmet: {hizmet_adi}\nPersonel: {personel_adi}\n- {salon_adi}",
-                'vars'  => ['{musteri_adi}', '{tarih}', '{saat}', '{hizmet_adi}', '{personel_adi}', '{salon_adi}'],
+                'vars'  => ['{musteri_adi}', '{tarih}', '{saat}', '{hizmet_adi}', '{personel_adi}', '{salon_adi}', '{konum}'],
             ],
             'appointment_reminder_24h' => [
                 'label' => 'Hatırlatma (24 saat önce)',
                 'desc'  => 'Randevudan 24 saat önce gönderilir.',
                 'default' => "Sayin {musteri_adi}, yarin saat {saat} randevunuz var.\nHizmet: {hizmet_adi}\n- {salon_adi}",
-                'vars'  => ['{musteri_adi}', '{tarih}', '{saat}', '{hizmet_adi}', '{salon_adi}'],
+                'vars'  => ['{musteri_adi}', '{tarih}', '{saat}', '{hizmet_adi}', '{salon_adi}', '{konum}'],
             ],
             'appointment_reminder_2h' => [
                 'label' => 'Hatırlatma (2 saat önce)',
                 'desc'  => 'Randevudan 2 saat önce gönderilir.',
                 'default' => "Sayin {musteri_adi}, bugun saat {saat} randevunuz var.\nHizmet: {hizmet_adi}\n- {salon_adi}",
-                'vars'  => ['{musteri_adi}', '{tarih}', '{saat}', '{hizmet_adi}', '{salon_adi}'],
+                'vars'  => ['{musteri_adi}', '{tarih}', '{saat}', '{hizmet_adi}', '{salon_adi}', '{konum}'],
             ],
             'review_request' => [
                 'label' => 'Değerlendirme İsteği',

@@ -59,13 +59,29 @@ class AppointmentService
             if ($customer && $customer->phone) {
                 $dateText = $start->format('d.m.Y');
                 $timeText = $start->format('H:i');
-                $message = "Sayin {$customer->name}, randevunuz olusturulmustur.\n\n"
-                    . "Tarih: {$dateText}\n"
-                    . "Saat: {$timeText}\n"
-                    . "Hizmet: {$service->name}\n"
-                    . "Personel: " . ($staff->name ?? '') . "\n\n"
-                    . "Iptal icin lutfen bizi arayin.\n"
-                    . "- " . ($tenant->company_name ?? 'Lattessa');
+
+                // Şube adresinden Google Maps linki
+                $branch  = \Illuminate\Support\Facades\DB::table('branches')->where('id', $appointment->branch_id)->first();
+                $address = $branch->address ?? '';
+                $konum   = $address ? 'https://maps.google.com/?q=' . rawurlencode($address) : '';
+
+                // Notification settings'ten template al, yoksa varsayılan kullan
+                $setting = \Illuminate\Support\Facades\DB::table('notification_settings')
+                    ->where('tenant_id', $appointment->tenant_id)
+                    ->where('event', 'appointment_confirmation')
+                    ->first();
+                $defaultTemplate = "Sayin {musteri_adi}, randevunuz olusturulmustur.\n\nTarih: {tarih}\nSaat: {saat}\nHizmet: {hizmet_adi}\nPersonel: {personel_adi}\n\nIptal icin lutfen bizi arayin.\n- {salon_adi}";
+                $template = ($setting && !empty($setting->template)) ? $setting->template : $defaultTemplate;
+
+                $message = \App\Services\Notification\NotificationService::fillTemplate($template, [
+                    'musteri_adi'  => $customer->name,
+                    'tarih'        => $dateText,
+                    'saat'         => $timeText,
+                    'hizmet_adi'   => $service->name,
+                    'personel_adi' => $staff->name ?? '',
+                    'salon_adi'    => $tenant->company_name ?? 'Lattessa',
+                    'konum'        => $konum,
+                ]);
 
                 $notificationService = app(\App\Services\Notification\NotificationService::class);
                 $notificationService->notify(

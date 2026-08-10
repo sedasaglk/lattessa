@@ -50,9 +50,31 @@ class SendAppointmentReminder implements ShouldQueue
         $hourText = $startTime->format('H:i');
         $dateText = $startTime->format('d.m.Y');
 
-        $message = "Sayin {$appointment->customer_name}, {$dateText} {$hourText} saatindeki "
-            . "{$appointment->service_name} randevunuzu hatirlatiyoruz. "
-            . "Iptal icin lutfen bizi arayin.";
+        // Şube adresi → Google Maps linki
+        $branch  = \Illuminate\Support\Facades\DB::table('branches')->where('id', $appointment->branch_id ?? null)->first();
+        $address = $branch->address ?? '';
+        $konum   = $address ? 'https://maps.google.com/?q=' . rawurlencode($address) : '';
+
+        // Notification settings'ten template al
+        $eventKey = $this->reminderType === '24h' ? 'appointment_reminder_24h' : 'appointment_reminder_2h';
+        $setting  = \Illuminate\Support\Facades\DB::table('notification_settings')
+            ->where('tenant_id', $appointment->tenant_id)
+            ->where('event', $eventKey)
+            ->first();
+        $tenant   = \Illuminate\Support\Facades\DB::table('tenants')->where('id', $appointment->tenant_id)->first();
+
+        $defaultTemplate = "Sayin {musteri_adi}, {tarih} {saat} saatindeki {hizmet_adi} randevunuzu hatirlatiyoruz. Iptal icin lutfen bizi arayin.";
+        $template = ($setting && !empty($setting->template)) ? $setting->template : $defaultTemplate;
+
+        $message = \App\Services\Notification\NotificationService::fillTemplate($template, [
+            'musteri_adi'  => $appointment->customer_name,
+            'tarih'        => $dateText,
+            'saat'         => $hourText,
+            'hizmet_adi'   => $appointment->service_name,
+            'personel_adi' => $appointment->staff_name ?? '',
+            'salon_adi'    => $tenant->company_name ?? 'Lattessa',
+            'konum'        => $konum,
+        ]);
 
         // WhatsApp varsa WhatsApp, yoksa otomatik SMS'e duser
         $result = $notificationService->notify(
