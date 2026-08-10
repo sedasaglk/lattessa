@@ -511,7 +511,7 @@ function loadSlots() {
     document.getElementById('slotsList').innerHTML = '<p style="color:#9CA3AF;font-size:13px;">Uygun saatler yükleniyor...</p>';
     showStep(5);
 
-    fetch(`/${tenantSlug}/randevu/saatler?staff_id=${sel.staffId}&service_id=${sel.serviceId}&date=${sel.date}`)
+    fetch(`/${tenantSlug}/randevu/saatler?staff_id=${sel.staffId}&service_id=${sel.serviceId}&date=${sel.date}&branch_id=${sel.branchId || ''}`)
         .then(r => r.json())
         .then(data => {
             const list = document.getElementById('slotsList');
