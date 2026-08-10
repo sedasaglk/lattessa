@@ -66,7 +66,7 @@ class VatanSmsService
     public function sendBulk(array $phones, string $message): array
     {
         try {
-            $phones    = array_map([$this, 'normalizePhone'], $phones);
+            $phones = array_map([$this, 'normalizePhone'], $phones);
             $numaralar = implode(',', $phones);
 
             $xml = "<sms>"
@@ -83,7 +83,7 @@ class VatanSmsService
                 ->asForm()
                 ->post($this->apiUrl, ['data' => $xml]);
 
-            $body    = trim($response->body());
+            $body = trim($response->body());
             $success = $response->successful() && $body === '00';
 
             return [
@@ -114,13 +114,13 @@ class VatanSmsService
         $digits = preg_replace('/\D/', '', $phone);
 
         if (str_starts_with($digits, '90')) {
-            return '0' . substr($digits, 2); // 905xx → 05xx
+            return substr($digits, 2); // VatanSMS XML API 05xx formatı ister
         }
         if (str_starts_with($digits, '0')) {
             return $digits; // 05xx olarak bırak
         }
         if (str_starts_with($digits, '5')) {
-            return '0' . $digits; // 5xx → 05xx
+            return '0' . $digits; // 05xx yap
         }
 
         return $digits;

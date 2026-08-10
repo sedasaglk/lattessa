@@ -91,8 +91,13 @@
                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kullanici Adi</label>
-                    <input type="text" name="username"
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Musteri No (kno) — orn: 46252</label>
+                    <input type="text" name="kno" placeholder="46252"
+                           class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Kullanici Adi (kulad) — orn: 905357677689</label>
+                    <input type="text" name="kulad" placeholder="905357677689"
                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900">
                 </div>
                 <div>

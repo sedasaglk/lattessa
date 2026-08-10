@@ -38,9 +38,9 @@ class SmsProviderController extends Controller
         $validated = $request->validate([
             'provider'     => ['required', 'in:vatansms,netgsm,iletimerkezi,mutlucell'],
             'display_name' => ['required', 'string', 'max:100'],
-            'kno'          => ['required', 'string'],
-            'kulad'        => ['required', 'string'],
-            'password'     => ['required', 'string'],
+            'kno'          => ['required', 'string'],   // Müşteri No (46252)
+            'kulad'        => ['required', 'string'],   // Kullanıcı Adı (905357677689)
+            'password'     => ['required', 'string'],   // Şifre
             'sender'       => ['required', 'string', 'max:20'],
             'priority'     => ['required', 'integer', 'min:1'],
         ]);
@@ -69,8 +69,14 @@ class SmsProviderController extends Controller
 
     public function setDefault(string $id): RedirectResponse
     {
-        DB::table('sms_providers')->whereNull('tenant_id')->update(['is_system_default' => false]);
-        DB::table('sms_providers')->where('id', $id)->update(['is_system_default' => true, 'updated_at' => now()]);
+        DB::table('sms_providers')
+            ->whereNull('tenant_id')
+            ->update(['is_system_default' => false]);
+
+        DB::table('sms_providers')
+            ->where('id', $id)
+            ->update(['is_system_default' => true, 'updated_at' => now()]);
+
         return back()->with('success', 'Varsayilan SMS saglayici guncellendi.');
     }
 
@@ -78,7 +84,12 @@ class SmsProviderController extends Controller
     {
         $provider = DB::table('sms_providers')->where('id', $id)->first();
         if (!$provider) abort(404);
-        DB::table('sms_providers')->where('id', $id)->update(['is_active' => !$provider->is_active, 'updated_at' => now()]);
+
+        DB::table('sms_providers')->where('id', $id)->update([
+            'is_active'  => !$provider->is_active,
+            'updated_at' => now(),
+        ]);
+
         return back()->with('success', 'Saglayici durumu guncellendi.');
     }
 
