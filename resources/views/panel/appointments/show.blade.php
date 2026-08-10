@@ -245,12 +245,16 @@ var servicePrice = {{ (float) $appointment->price }};
 var addedProducts = {}; // id -> {name, price, qty, unit}
 
 function openCompleteModal() {
-    document.getElementById('completeModal').classList.remove('hidden');
-    document.getElementById('completeModal').style.display = 'flex';
+    var main = document.querySelector('main.main-content') || document;
+    var modal = main.querySelector('#completeModal') || document.getElementById('completeModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
 }
 function closeCompleteModal() {
-    document.getElementById('completeModal').classList.add('hidden');
-    document.getElementById('completeModal').style.display = 'none';
+    document.querySelectorAll('#completeModal').forEach(function(m) {
+        m.classList.add('hidden');
+        m.style.display = 'none';
+    });
 }
 
 function setStatus(val) {
