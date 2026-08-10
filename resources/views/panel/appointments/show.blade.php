@@ -254,13 +254,18 @@ function closeCompleteModal() {
 }
 
 function setStatus(val) {
-    document.getElementById('statusInput').value = val;
-    document.querySelectorAll('.status-btn').forEach(function(btn) {
+    // Görünür (mobil) formu hedef al
+    var main = document.querySelector('main.main-content') || document;
+    var statusInput = main.querySelector('#statusInput') || document.getElementById('statusInput');
+    var updateBtn   = main.querySelector('#updateBtn')   || document.getElementById('updateBtn');
+
+    statusInput.value = val;
+    main.querySelectorAll('.status-btn').forEach(function(btn) {
         var active = btn.dataset.status === val;
         btn.className = btn.className.replace(/bg-gray-900 text-white border-gray-900|border-gray-200 text-gray-600 hover:bg-gray-50/g, '');
         btn.classList.add(...(active ? ['bg-gray-900','text-white','border-gray-900'] : ['border-gray-200','text-gray-600','hover:bg-gray-50']));
     });
-    document.getElementById('updateBtn').classList.remove('hidden');
+    updateBtn.classList.remove('hidden');
 }
 
 function updatePaymentOpt() {
