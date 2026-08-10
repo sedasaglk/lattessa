@@ -318,10 +318,15 @@
 const tenantSlug = '{{ $tenant->slug }}';
 const hasBranches = {{ $branches->count() > 1 ? 'true' : 'false' }};
 const showPriceOnline = {{ $tenant->show_price_online ? 'true' : 'false' }};
-// Tek şube varsa otomatik seç
+// URL'den gelen şube veya tek şube otomatik seçilir
+@isset($selectedBranch)
+const _preselectedBranch = { id: {{ $selectedBranch->id }}, name: '{{ addslashes($selectedBranch->name) }}' };
+@else
+const _preselectedBranch = null;
+@endisset
 let sel = {
-    branchId: {{ $branches->count() === 1 ? $branches->first()->id : 'null' }},
-    branchName: '{{ $branches->count() === 1 ? addslashes($branches->first()->name) : '' }}',
+    branchId: _preselectedBranch ? _preselectedBranch.id : {{ $branches->count() === 1 ? $branches->first()->id : 'null' }},
+    branchName: _preselectedBranch ? _preselectedBranch.name : '{{ $branches->count() === 1 ? addslashes($branches->first()->name) : '' }}',
     serviceId: null, serviceName: '', serviceDuration: 0, servicePrice: 0,
     staffId: null, staffName: '', date: '', time: ''
 };
@@ -359,7 +364,12 @@ function selectService(id, name, duration, price) {
     document.getElementById('serviceIdInput').value = id;
     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
     event.currentTarget.classList.add('selected');
-    setTimeout(() => hasBranches ? showStep(2) : loadStaff(), 200);
+    // Şube URL'den geliyorsa veya tek şube varsa direkt personele geç
+    const skipBranch = !hasBranches || !!_preselectedBranch;
+    if (_preselectedBranch) {
+        document.getElementById('branchIdInput').value = _preselectedBranch.id;
+    }
+    setTimeout(() => skipBranch ? loadStaff() : showStep(2), 200);
 }
 
 // ── Takvim ──────────────────────────────────────────────────────────────
