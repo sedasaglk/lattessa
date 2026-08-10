@@ -308,31 +308,38 @@ function _fillDD(inp, dd, items, onPick) {
 
 // ── Contact Picker ────────────────────────────────────────────────────────────
 (function() {
-    if ('contacts' in navigator && 'ContactsManager' in window) {
-        var btn = document.getElementById('contactPickerBtn');
-        if (btn) btn.style.display = 'block';
+    // Butonu her cihazda göster
+    var _btn = document.getElementById('contactPickerBtn');
+    var _hasContactPicker = ('contacts' in navigator && 'ContactsManager' in window);
+    if (_btn) {
+        _btn.style.display = 'block';
+        _btn.textContent   = _hasContactPicker ? '📱 Rehberimden Ekle' : '➕ Yeni Müşteri Ekle';
     }
 
     window._pickContact = async function() {
-        try {
-            var list = await navigator.contacts.select(['name','tel'], {multiple:false});
-            if (!list || !list.length) return;
-            var c     = list[0];
-            var name  = (c.name && c.name[0]) ? c.name[0].trim() : '';
-            var phone = (c.tel  && c.tel[0])  ? c.tel[0].replace(/\s+/g,'').trim() : '';
-            var p4    = phone.slice(-4);
-            var found = p4 ? (window._AC||[]).find(function(ac){ return String(ac.phone||'').slice(-4)===p4; }) : null;
-            if (found) {
-                var inp = document.querySelector('main.main-content #custSearch') || document.getElementById('custSearch');
-                if (inp) inp.value = found.name + ' (···' + String(found.phone).slice(-4) + ')';
-                document.querySelectorAll('#customer_id_input').forEach(function(el){ el.value = found.id; });
-            } else {
+        if (_hasContactPicker) {
+            try {
+                var list = await navigator.contacts.select(['name','tel'], {multiple:false});
+                if (!list || !list.length) return;
+                var c     = list[0];
+                var name  = (c.name && c.name[0]) ? c.name[0].trim() : '';
+                var phone = (c.tel  && c.tel[0])  ? c.tel[0].replace(/\s+/g,'').trim() : '';
+                var p4    = phone.slice(-4);
+                var found = p4 ? (window._AC||[]).find(function(ac){ return String(ac.phone||'').slice(-4)===p4; }) : null;
+                if (found) {
+                    var inp = document.querySelector('main.main-content #custSearch') || document.getElementById('custSearch');
+                    if (inp) inp.value = found.name + ' (···' + String(found.phone).slice(-4) + ')';
+                    document.querySelectorAll('#customer_id_input').forEach(function(el){ el.value = found.id; });
+                    return;
+                }
                 document.getElementById('contactModalName').value  = name;
                 document.getElementById('contactModalPhone').value = phone;
-                var m = document.getElementById('contactModal');
-                m.style.display = 'flex';
-            }
-        } catch(e) { console.error('Contact picker:', e); }
+            } catch(e) { console.error('Contact picker:', e); }
+        } else {
+            document.getElementById('contactModalName').value  = '';
+            document.getElementById('contactModalPhone').value = '';
+        }
+        document.getElementById('contactModal').style.display = 'flex';
     };
 
     window._closeContactModal = function() {
