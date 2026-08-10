@@ -17,7 +17,6 @@ class SmsProviderController extends Controller
             ->orderBy('priority')
             ->get();
 
-        // Son 7 gun sms istatistikleri
         $stats = DB::table('sms_logs')
             ->where('created_at', '>=', now()->subDays(7))
             ->select('status', DB::raw('COUNT(*) as count'))
@@ -37,30 +36,32 @@ class SmsProviderController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'provider' => ['required', 'in:vatansms,netgsm,iletimerkezi,mutlucell'],
+            'provider'     => ['required', 'in:vatansms,netgsm,iletimerkezi,mutlucell'],
             'display_name' => ['required', 'string', 'max:100'],
-            'username' => ['required', 'string'],
-            'password' => ['required', 'string'],
-            'sender' => ['required', 'string', 'max:20'],
-            'priority' => ['required', 'integer', 'min:1'],
+            'kno'          => ['required', 'string'],
+            'kulad'        => ['required', 'string'],
+            'password'     => ['required', 'string'],
+            'sender'       => ['required', 'string', 'max:20'],
+            'priority'     => ['required', 'integer', 'min:1'],
         ]);
 
         $credentials = json_encode([
-            'username' => $validated['username'],
+            'kno'      => $validated['kno'],
+            'kulad'    => $validated['kulad'],
             'password' => $validated['password'],
-            'sender' => $validated['sender'],
+            'sender'   => $validated['sender'],
         ]);
 
         DB::table('sms_providers')->insert([
-            'tenant_id' => null,
-            'provider' => $validated['provider'],
-            'display_name' => $validated['display_name'],
-            'credentials' => $credentials,
-            'is_active' => true,
+            'tenant_id'         => null,
+            'provider'          => $validated['provider'],
+            'display_name'      => $validated['display_name'],
+            'credentials'       => $credentials,
+            'is_active'         => true,
             'is_system_default' => false,
-            'priority' => $validated['priority'],
-            'created_at' => now(),
-            'updated_at' => now(),
+            'priority'          => $validated['priority'],
+            'created_at'        => now(),
+            'updated_at'        => now(),
         ]);
 
         return back()->with('success', 'SMS saglayici eklendi.');
@@ -68,15 +69,8 @@ class SmsProviderController extends Controller
 
     public function setDefault(string $id): RedirectResponse
     {
-        // Onceki default'u kaldir
-        DB::table('sms_providers')
-            ->whereNull('tenant_id')
-            ->update(['is_system_default' => false]);
-
-        DB::table('sms_providers')
-            ->where('id', $id)
-            ->update(['is_system_default' => true, 'updated_at' => now()]);
-
+        DB::table('sms_providers')->whereNull('tenant_id')->update(['is_system_default' => false]);
+        DB::table('sms_providers')->where('id', $id)->update(['is_system_default' => true, 'updated_at' => now()]);
         return back()->with('success', 'Varsayilan SMS saglayici guncellendi.');
     }
 
@@ -84,12 +78,7 @@ class SmsProviderController extends Controller
     {
         $provider = DB::table('sms_providers')->where('id', $id)->first();
         if (!$provider) abort(404);
-
-        DB::table('sms_providers')->where('id', $id)->update([
-            'is_active' => !$provider->is_active,
-            'updated_at' => now(),
-        ]);
-
+        DB::table('sms_providers')->where('id', $id)->update(['is_active' => !$provider->is_active, 'updated_at' => now()]);
         return back()->with('success', 'Saglayici durumu guncellendi.');
     }
 
