@@ -81,14 +81,6 @@
             </div>
         </form>
 
-        <div class="text-center text-xs text-gray-400">veya</div>
-
-        <form method="POST" action="{{ route('panel.whatsapp.staff.login.qr', ['tenant_slug' => $tenant->slug]) }}">
-            @csrf
-            <button type="submit" class="w-full border border-gray-200 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
-                QR Kod ile Bağlan
-            </button>
-        </form>
     </div>
 </div>
 @endif
