@@ -243,7 +243,8 @@
             @if($can('marketing')) {!! sidebarLink('panel.marketing.index', 'Pazarlama', '◈', 'panel.marketing*', $slug) !!} @endif
             @if($isOwner) {!! sidebarLink('panel.branches.index', 'Şubeler', '⊕', 'panel.branches*', $slug) !!} @endif
             @if($can('reports')) {!! sidebarLink('panel.reports.index', 'Raporlar', '◈', 'panel.reports*', $slug) !!} @endif
-            @if($can('whatsapp')) {!! sidebarLink('panel.whatsapp.index', 'WhatsApp', '◈', 'panel.whatsapp*', $slug) !!} @endif
+            @if($can('whatsapp')) {!! sidebarLink('panel.whatsapp.index', 'WhatsApp', '◈', 'panel.whatsapp.index', $slug) !!} @endif
+            @if($can('whatsapp')) {!! sidebarLink('panel.whatsapp.staff.index', 'Kişisel WA', '📱', 'panel.whatsapp.staff*', $slug) !!} @endif
 
             <div class="pt-2 mt-2 border-t border-white/10 space-y-0.5">
                 {!! sidebarLink('panel.support.index', 'Destek', '?', 'panel.support*', $slug) !!}
@@ -432,7 +433,8 @@
                 ['route' => 'panel.marketing.index', 'label' => 'Pazarlama', 'icon' => '📢', 'match' => 'panel.marketing*', 'show' => $can('marketing')],
                 ['route' => 'panel.branches.index', 'label' => 'Şubeler', 'icon' => '🏪', 'match' => 'panel.branches*', 'show' => $isOwner],
                 ['route' => 'panel.reports.index', 'label' => 'Raporlar', 'icon' => '📈', 'match' => 'panel.reports*', 'show' => $can('reports')],
-                ['route' => 'panel.whatsapp.index', 'label' => 'WhatsApp', 'icon' => '💬', 'match' => 'panel.whatsapp*', 'show' => $can('whatsapp')],
+                ['route' => 'panel.whatsapp.index', 'label' => 'WhatsApp', 'icon' => '💬', 'match' => 'panel.whatsapp.index', 'show' => $can('whatsapp')],
+                ['route' => 'panel.whatsapp.staff.index', 'label' => 'Kişisel WA', 'icon' => '📱', 'match' => 'panel.whatsapp.staff*', 'show' => $can('whatsapp')],
                 ['route' => 'panel.support.index', 'label' => 'Destek', 'icon' => '🎧', 'match' => 'panel.support*', 'show' => true],
                 ['route' => 'panel.invoices.index', 'label' => 'Faturalar', 'icon' => '🧾', 'match' => 'panel.invoices*', 'show' => $isOwner],
                 ['route' => 'panel.subscription.index', 'label' => 'Abonelik', 'icon' => '💎', 'match' => 'panel.subscription*', 'show' => $isOwner && !(request()->userAgent() && str_contains(request()->userAgent(), 'LattessaApp'))],
