@@ -157,6 +157,7 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
         Route::get('/musteriler', [CustomerController::class, 'index'])->name('panel.customers.index');
         Route::get('/musteriler/yeni', [CustomerController::class, 'create'])->name('panel.customers.create');
         Route::post('/musteriler', [CustomerController::class, 'store'])->name('panel.customers.store');
+        Route::post('/musteriler/hizli-ekle', [CustomerController::class, 'quickStore'])->name('panel.customers.quick-store');
         Route::get('/musteriler/{id}', [CustomerController::class, 'show'])->name('panel.customers.show');
         Route::get('/musteriler/{id}/duzenle', [CustomerController::class, 'edit'])->name('panel.customers.edit');
         Route::put('/musteriler/{id}', [CustomerController::class, 'update'])->name('panel.customers.update');

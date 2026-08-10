@@ -59,14 +59,59 @@
         {{-- TEKİL MÜŞTERİ --}}
         <div id="singleCustomerSection">
             <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
-            <input type="text"
-                   id="custSearch"
-                   autocomplete="off"
-                   inputmode="search"
-                   placeholder="İsim veya son 4 hane telefon..."
-                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm bg-white"
-                   style="font-size:16px;">
-            {{-- font-size:16px iOS'ta zoom'u önler --}}
+            {{-- position:relative → dropdown absolute olarak bu div'e göre konumlanır --}}
+            <div style="position:relative;">
+                <input type="text"
+                       id="custSearch"
+                       autocomplete="off"
+                       inputmode="search"
+                       placeholder="İsim veya son 4 hane telefon..."
+                       class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm bg-white"
+                       style="font-size:16px; position:relative; z-index:1;"
+                       onfocus="window._openCust()"
+                       onclick="window._openCust()"
+                       oninput="window._openCust()">
+                {{-- Dropdown burada — position:fixed değil, absolute → overflow/transform sorunlarından etkilenmez --}}
+                <div id="_custDD"
+                     style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0;
+                            z-index:9999; background:#fff; border:1px solid #e5e7eb;
+                            border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.14);
+                            overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:260px;"></div>
+            </div>
+            <button type="button" id="contactPickerBtn"
+                    onclick="window._pickContact()"
+                    style="display:none; margin-top:8px; width:100%; padding:10px; border:1px dashed #d1d5db;
+                           border-radius:8px; background:#f9fafb; color:#6b7280; font-size:13px;
+                           cursor:pointer; text-align:center;">
+                📱 Rehberimden Ekle
+            </button>
+        </div>
+    </div>
+
+    {{-- Rehberden ekle modal --}}
+    <div id="contactModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; margin:0 16px;">
+            <h3 style="font-size:16px; font-weight:600; margin-bottom:16px;">Yeni Müşteri Ekle</h3>
+            <div style="margin-bottom:12px;">
+                <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:4px;">Ad Soyad</label>
+                <input id="contactModalName" type="text"
+                       style="width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:4px;">Telefon</label>
+                <input id="contactModalPhone" type="tel"
+                       style="width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box;">
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" onclick="window._closeContactModal()"
+                        style="flex:1; padding:10px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; background:#fff; cursor:pointer;">
+                    İptal
+                </button>
+                <button type="button" onclick="window._saveContact()"
+                        style="flex:1; padding:10px; border:none; border-radius:8px; font-size:14px; background:#111; color:#fff; cursor:pointer; font-weight:500;">
+                    Kaydet
+                </button>
+            </div>
         </div>
 
         {{-- GRUP MÜŞTERİ --}}
@@ -79,13 +124,20 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Katılımcılar</label>
                 <div id="groupCustomerList" class="space-y-2 mb-2"></div>
-                <input type="text"
-                       id="groupCustSearch"
-                       autocomplete="off"
-                       inputmode="search"
-                       placeholder="Müşteri ekle..."
-                       class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm bg-white"
-                       style="font-size:16px;">
+                <div style="position:relative;">
+                    <input type="text"
+                           id="groupCustSearch"
+                           autocomplete="off"
+                           inputmode="search"
+                           placeholder="Müşteri ekle..."
+                           class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none text-sm bg-white"
+                           style="font-size:16px; position:relative; z-index:1;">
+                    <div id="_grpDD"
+                         style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0;
+                                z-index:9999; background:#fff; border:1px solid #e5e7eb;
+                                border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.14);
+                                overflow-y:auto; max-height:240px;"></div>
+                </div>
                 <p class="text-xs text-gray-400 mt-1">Arama yaparak müşteri ekleyin.</p>
             </div>
         </div>
@@ -187,253 +239,318 @@
     </form>
 </div>
 
-{{-- Dropdown div'leri script tarafından body'ye eklenir --}}
-
 <script>
-// Müşteri verisi — global, debug edilebilir
-window._AC = [];
-try {
-    window._AC = @json($customers->map(fn($c) => ['id'=>(int)$c->id, 'name'=> (string)$c->name, 'phone'=> (string)($c->phone ?? '')]));
-} catch(e) {
-    console.error('Müşteri veri hatası:', e);
-}
+// ── Müşteri verisi ────────────────────────────────────────────────────────────
+window._AC = @json($customers->map(fn($c) => ['id'=>(int)$c->id,'name'=>(string)$c->name,'phone'=>(string)($c->phone??'')]));
+window._GC = [];
 
-document.addEventListener('DOMContentLoaded', function () {
-    var _AC = window._AC;
-    var _GC = [];
+// ── _posDD: position:absolute kullandığımız için konumlama gerekmez
+function _posDD(inp, dd) { /* absolute, CSS tarafından konumlandırılıyor */ }
 
-    // Dropdown'ları doğrudan body'ye ekle — layout'un hiçbir overflow/transform'u clip edemez
-    var _ddStyle = [
+// ── Grup dropdown'ı oluştur (body'e ekle) — sadece grup için kullanılır
+function _makeDD(id) {
+    // custDD artık HTML'de tanımlandı; sadece grpDD için oluştur
+    var existing = document.getElementById(id);
+    if (existing) return existing;
+    var d = document.createElement('div');
+    d.id = id;
+    d.style.cssText = [
         'display:none',
-        'position:fixed',
-        'z-index:2147483647',   /* maksimum z-index */
+        'position:absolute',
+        'top:calc(100% + 4px)',
+        'left:0',
+        'right:0',
+        'z-index:9999',
         'background:#fff',
-        'border:1px solid #E5E7EB',
-        'border-radius:12px',
-        'box-shadow:0 8px 24px rgba(0,0,0,0.14)',
+        'border:1px solid #e5e7eb',
+        'border-radius:10px',
+        'box-shadow:0 8px 24px rgba(0,0,0,.14)',
         'overflow-y:auto',
         '-webkit-overflow-scrolling:touch',
+        'max-height:260px',
     ].join(';');
+    return d;
+}
 
-    var cDD = document.createElement('div');
-    cDD.id = '_custDD';
-    cDD.setAttribute('style', _ddStyle);
-    document.body.appendChild(cDD);
+// ── Müşteri listesi filtrele ──────────────────────────────────────────────────
+function _filt(q) {
+    q = (q || '').trim().toLowerCase();
+    if (!q) return window._AC.slice(0, 60);
+    return window._AC.filter(function(c) {
+        var p = String(c.phone || '');
+        return c.name.toLowerCase().indexOf(q) >= 0 || p.indexOf(q) >= 0 || p.slice(-4) === q;
+    }).slice(0, 60);
+}
 
-    var gDD = document.createElement('div');
-    gDD.id = '_grpDD';
-    gDD.setAttribute('style', _ddStyle);
-    document.body.appendChild(gDD);
-
-    function esc(s) {
-        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    function filter(q) {
-        q = (q || '').trim().toLowerCase();
-        if (!q) return _AC.slice(0, 60);
-        return _AC.filter(function (c) {
-            var p = c.phone ? String(c.phone) : '';
-            return c.name.toLowerCase().includes(q) || p.includes(q) || p.slice(-4) === q;
-        }).slice(0, 60);
-    }
-
-    function last4(phone) {
-        return phone ? String(phone).slice(-4) : '';
-    }
-
-    // ── Dropdown konumlama ────────────────────────────────────────────────────
-    function positionDD(inp, dd) {
-        var rect = inp.getBoundingClientRect();
-        var vw   = window.innerWidth;
-        var vh   = window.innerHeight;
-        var spaceBelow = vh - rect.bottom - 8;
-        var spaceAbove = rect.top - 8;
-        var maxH = Math.min(280, Math.max(spaceBelow, spaceAbove) - 8);
-
-        dd.style.left  = rect.left + 'px';
-        dd.style.width = rect.width + 'px';
-        dd.style.maxHeight = maxH + 'px';
-
-        if (spaceBelow >= 120 || spaceBelow >= spaceAbove) {
-            dd.style.top    = (rect.bottom + 4) + 'px';
-            dd.style.bottom = 'auto';
-        } else {
-            dd.style.bottom = (vh - rect.top + 4) + 'px';
-            dd.style.top    = 'auto';
-        }
-    }
-
-    function showDD(inp, dd) {
-        positionDD(inp, dd);
-        dd.style.display = 'block';
-    }
-
-    function hideDD(dd) {
-        dd.style.display = 'none';
-    }
-
-    // ── Dropdown içeriği render ───────────────────────────────────────────────
-    function renderDD(inp, dd, list, onSelect) {
-        dd.innerHTML = '';
-
-        if (!list.length) {
-            dd.innerHTML = '<div style="padding:14px 16px;color:#9CA3AF;font-size:14px;text-align:center;">Müşteri bulunamadı</div>';
-            showDD(inp, dd);
-            return;
-        }
-
-        list.forEach(function (c) {
+// ── Dropdown içeriğini doldur ve göster ───────────────────────────────────────
+function _fillDD(inp, dd, items, onPick) {
+    dd.innerHTML = '';
+    if (!items.length) {
+        dd.innerHTML = '<div style="padding:14px;color:#9ca3af;font-size:14px;text-align:center;">Müşteri bulunamadı</div>';
+    } else {
+        items.forEach(function(c) {
             var row = document.createElement('div');
-            // Minimum 48px yükseklik — parmakla rahat tıklanır
-            row.style.cssText = [
-                'padding:14px 16px',
-                'border-bottom:1px solid #F3F4F6',
-                'display:flex',
-                'justify-content:space-between',
-                'align-items:center',
-                'min-height:48px',
-                'cursor:pointer',
-                '-webkit-tap-highlight-color:rgba(0,0,0,0.04)',
-                'user-select:none',
-            ].join(';');
+            var p4 = String(c.phone || '').slice(-4);
+            row.style.cssText = 'padding:13px 16px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;min-height:48px;cursor:pointer;';
+            row.innerHTML = '<span style="font-size:15px;font-weight:500;color:#111">' + c.name + '</span>' +
+                (p4 ? '<span style="font-size:12px;color:#9ca3af;background:#f9fafb;padding:2px 8px;border-radius:6px">···' + p4 + '</span>' : '');
 
-            var l4 = last4(c.phone);
-            row.innerHTML =
-                '<span style="font-size:15px;font-weight:500;color:#111;">' + esc(c.name) + '</span>' +
-                (l4 ? '<span style="font-size:12px;color:#9CA3AF;background:#F9FAFB;padding:2px 8px;border-radius:6px;flex-shrink:0;">···' + l4 + '</span>' : '');
+            // Seçim
+            function pick(e) { e.preventDefault(); onPick(c); }
+            row.addEventListener('mousedown', pick);
+            row.addEventListener('touchend',  pick);
 
-            // Hover (masaüstü)
-            row.addEventListener('mouseenter', function () { this.style.background = '#F9FAFB'; });
-            row.addEventListener('mouseleave', function () { this.style.background = ''; });
-
-            // Seçim — mobil + masaüstü
-            var moved = false;
-            row.addEventListener('touchstart', function () { moved = false; }, { passive: true });
-            row.addEventListener('touchmove',  function () { moved = true;  }, { passive: true });
-            row.addEventListener('touchend', function (e) {
-                if (moved) return;
-                e.preventDefault();
-                onSelect(c);
-            });
-            row.addEventListener('mousedown', function (e) {
-                e.preventDefault();
-                onSelect(c);
-            });
-
+            row.addEventListener('mouseenter', function(){ this.style.background='#f9fafb'; });
+            row.addEventListener('mouseleave', function(){ this.style.background=''; });
             dd.appendChild(row);
         });
+    }
+    _posDD(inp, dd);
+    dd.style.display = 'block';
+    console.log('DD gösterildi:', items.length, 'sonuç, top=' + dd.style.top);
+}
 
-        showDD(inp, dd);
+// ── Tek müşteri arama ─────────────────────────────────────────────────────────
+// ── Contact Picker API ────────────────────────────────────────────────────────
+(function() {
+    // Butonu sadece desteklenen tarayıcılarda göster
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+        var btn = document.getElementById('contactPickerBtn');
+        if (btn) btn.style.display = 'block';
     }
 
-    // ── Dropdown'ı input'a bağla ──────────────────────────────────────────────
-    function bindDD(inp, dd, onSelect) {
-        if (!inp || !dd) return;
+    window._pickContact = async function() {
+        try {
+            var contacts = await navigator.contacts.select(['name', 'tel'], { multiple: false });
+            if (!contacts || contacts.length === 0) return;
+            var c = contacts[0];
+            var name  = (c.name  && c.name[0])  ? c.name[0].trim()  : '';
+            var phone = (c.tel   && c.tel[0])   ? c.tel[0].replace(/\s+/g, '').trim() : '';
 
-        var open = function () {
-            renderDD(inp, dd, filter(inp.value), onSelect);
-        };
+            // Mevcut müşterilerde var mı? (son 4 hane ile eşleştir)
+            var p4 = phone.slice(-4);
+            var found = p4 ? window._AC.find(function(ac) {
+                return String(ac.phone || '').slice(-4) === p4;
+            }) : null;
 
-        inp.addEventListener('focus', open);
-        inp.addEventListener('input', open);
-        inp.addEventListener('click', open);
+            if (found) {
+                // Zaten kayıtlı — direkt seç
+                var inp = document.querySelector('main.main-content #custSearch') || document.getElementById('custSearch');
+                if (inp) inp.value = found.name + ' (···' + String(found.phone).slice(-4) + ')';
+                document.querySelectorAll('#customer_id_input').forEach(function(el) { el.value = found.id; });
+            } else {
+                // Kayıtlı değil — modal aç
+                document.getElementById('contactModalName').value  = name;
+                document.getElementById('contactModalPhone').value = phone;
+                var modal = document.getElementById('contactModal');
+                modal.style.display = 'flex';
+            }
+        } catch(e) {
+            console.error('Contact picker hatası:', e);
+        }
+    };
 
-        // iOS: focus gecikebilir, touchstart ile de tetikle
-        inp.addEventListener('touchstart', function () {
-            setTimeout(open, 80);
-        }, { passive: true });
+    window._closeContactModal = function() {
+        document.getElementById('contactModal').style.display = 'none';
+    };
 
-        // Scroll/resize → dropdown'ı yeniden konumlandır
-        var repos = function () {
-            if (dd.style.display !== 'none') positionDD(inp, dd);
-        };
-        window.addEventListener('scroll', repos, true);
-        window.addEventListener('resize', repos);
+    window._saveContact = async function() {
+        var name  = document.getElementById('contactModalName').value.trim();
+        var phone = document.getElementById('contactModalPhone').value.trim();
+        if (!name || !phone) { alert('Ad ve telefon zorunludur.'); return; }
 
-        // Dışarı tıklayınca kapat
-        document.addEventListener('mousedown', function (e) {
-            if (!inp.contains(e.target) && !dd.contains(e.target)) hideDD(dd);
-        });
-        document.addEventListener('touchstart', function (e) {
-            if (!inp.contains(e.target) && !dd.contains(e.target)) hideDD(dd);
-        }, { passive: true });
-    }
+        var saveBtn = document.querySelector('#contactModal button[onclick="_saveContact()"], #contactModal button[onclick="window._saveContact()"]');
+        if (saveBtn) saveBtn.textContent = 'Kaydediliyor...';
 
-    // ── Tekil müşteri ─────────────────────────────────────────────────────────
-    // Layout içeriği 2x render edilir (desktop + mobile).
-    // Mobil <main> class'ı 'main-content' içerir, desktop içermez.
-    // Bu sayede doğru input'u seçiyoruz:
-    var cInp = document.querySelector('main.main-content #custSearch')
-            || document.querySelector('#custSearch');
-    var cVal = document.querySelector('main.main-content #customer_id_input')
-            || document.querySelector('#customer_id_input');
+        try {
+            var token = document.querySelector('meta[name="csrf-token"]')?.content
+                     || document.querySelector('input[name="_token"]')?.value || '';
+            var res = await fetch('{{ route("panel.customers.quick-store", ["tenant_slug" => $tenant->slug]) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                body: JSON.stringify({ name: name, phone: phone })
+            });
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Hata');
 
-    bindDD(cInp, cDD, function (c) {
-        var l4 = last4(c.phone);
-        cInp.value  = c.name + (l4 ? ' (···' + l4 + ')' : '');
-        cVal.value  = c.id;
-        hideDD(cDD);
-        cInp.blur(); // klavyeyi kapat
-    });
+            // Listeye ekle ve seç
+            window._AC.push({ id: data.id, name: data.name, phone: data.phone || '' });
+            var inp = document.querySelector('main.main-content #custSearch') || document.getElementById('custSearch');
+            var p4  = String(data.phone || '').slice(-4);
+            if (inp) inp.value = data.name + (p4 ? ' (···' + p4 + ')' : '');
+            document.querySelectorAll('#customer_id_input').forEach(function(el) { el.value = data.id; });
+            window._closeContactModal();
+        } catch(e) {
+            alert('Müşteri eklenemedi: ' + e.message);
+        } finally {
+            if (saveBtn) saveBtn.textContent = 'Kaydet';
+        }
+    };
+})();
 
-    // Input değişince customer_id'yi sıfırla
-    if (cInp) {
-        cInp.addEventListener('input', function () { cVal.value = ''; });
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded: başlatılıyor...');
 
-    // ── Grup müşteri ──────────────────────────────────────────────────────────
+    // Dropdown'lar HTML'de tanımlı — sadece referans al
+    var cDD  = document.getElementById('_custDD');
+    var gDD  = document.getElementById('_grpDD');
+    var cInp = document.getElementById('custSearch');
+    var cVal = document.getElementById('customer_id_input');
     var gInp = document.getElementById('groupCustSearch');
-    // gDD yukarıda body'ye append edildi
 
-    bindDD(gInp, gDD, function (c) {
-        addGC(c.id, c.name, c.phone);
-        gInp.value = '';
-        hideDD(gDD);
-        gInp.blur();
+    console.log('Elementler:', {cInp: !!cInp, cVal: !!cVal, gInp: !!gInp, cDD: !!cDD});
+
+    // ── Tekil müşteri dropdown ─────────────────────────────────────────────────
+    // ── Sabit dropdown (body'e eklenmiş, overflow clip edemez) ────────────────
+    var _bodyDD = document.createElement('div');
+    _bodyDD.id = '_bodyDD';
+    _bodyDD.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'z-index:2147483647',
+        'background:#fff',
+        'border:1px solid #e5e7eb',
+        'border-radius:12px',
+        'box-shadow:0 8px 24px rgba(0,0,0,.16)',
+        'overflow-y:auto',
+        '-webkit-overflow-scrolling:touch',
+        'font-family:inherit',
+        'font-size:15px',
+    ].join(';');
+    document.body.appendChild(_bodyDD);
+
+    // Panel layout içeriği iki kez render eder (desktop hidden + mobile visible).
+    // getElementById her zaman ilk eşleşmeyi (display:none olan desktop) döndürür.
+    // getBoundingClientRect() display:none eleman için {0,0,0,0} döner.
+    // Bu yüzden görünür olanı seçiyoruz.
+    function _visibleCustSearch() {
+        var all = document.querySelectorAll('#custSearch');
+        for (var i = 0; i < all.length; i++) {
+            if (all[i].offsetWidth > 0) return all[i];
+        }
+        return all[0] || null;
+    }
+
+    // window._openCust — inline onfocus/onclick/oninput ile çağrılır
+    window._openCust = function() {
+        var inp = _visibleCustSearch();
+        if (!inp) return;
+
+        // Koordinatları şu an al (kullanıcı gerçekten input'a tıkladı)
+        var r  = inp.getBoundingClientRect();
+        var vh = window.innerHeight;
+        var spaceBelow = vh - r.bottom - 8;
+        var spaceAbove = r.top - 8;
+
+        console.log('BRC: top=' + Math.round(r.top) + ' bottom=' + Math.round(r.bottom) + ' w=' + Math.round(r.width) + ' vh=' + vh);
+
+        _bodyDD.style.left  = r.left + 'px';
+        _bodyDD.style.width = r.width + 'px';
+
+        if (spaceBelow >= 100 || spaceBelow >= spaceAbove) {
+            _bodyDD.style.top    = (r.bottom + 4) + 'px';
+            _bodyDD.style.bottom = 'auto';
+            _bodyDD.style.maxHeight = Math.min(280, spaceBelow) + 'px';
+        } else {
+            _bodyDD.style.top    = 'auto';
+            _bodyDD.style.bottom = (vh - r.top + 4) + 'px';
+            _bodyDD.style.maxHeight = Math.min(280, spaceAbove) + 'px';
+        }
+
+        // Tüm customer_id_input alanlarını temizle
+        document.querySelectorAll('#customer_id_input').forEach(function(el) { el.value = ''; });
+
+        _fillDD(inp, _bodyDD, _filt(inp.value), function(c) {
+            var p4 = String(c.phone || '').slice(-4);
+            inp.value = c.name + (p4 ? ' (···' + p4 + ')' : '');
+            // Tüm customer_id_input alanlarını güncelle (iki layout)
+            document.querySelectorAll('#customer_id_input').forEach(function(el) { el.value = c.id; });
+            _bodyDD.style.display = 'none';
+        });
+    };
+
+    // Dışarı tıklayınca kapat
+    document.addEventListener('mousedown', function(e) {
+        var clickedAny = Array.from(document.querySelectorAll('#custSearch')).some(function(el) { return el.contains(e.target); });
+        if (!clickedAny && !_bodyDD.contains(e.target)) {
+            _bodyDD.style.display = 'none';
+        }
     });
+    document.addEventListener('touchstart', function(e) {
+        var clickedAny = Array.from(document.querySelectorAll('#custSearch')).some(function(el) { return el.contains(e.target); });
+        if (!clickedAny && !_bodyDD.contains(e.target)) {
+            _bodyDD.style.display = 'none';
+        }
+    }, {passive:true});
+
+    if (cInp) {
+        console.log('_openCust hazır, bodyDD body\'e eklendi ✓');
+    }
+
+    // ── Grup müşteri dropdown ──────────────────────────────────────────────────
+    var openG = function() {
+        try {
+            _fillDD(gInp, gDD, _filt(gInp.value), function(c) {
+                window._addGC(c.id, c.name, c.phone);
+                gInp.value = '';
+                gDD.style.display = 'none';
+            });
+        } catch(e) {
+            console.error('openG hata:', e);
+        }
+    };
+
+    if (gInp) {
+        gInp.addEventListener('focus',     openG);
+        gInp.addEventListener('click',     openG);
+        gInp.addEventListener('input',     openG);
+        gInp.addEventListener('touchstart', function(){ setTimeout(openG, 50); }, {passive:true});
+    }
+
+    // Dışarı tıklayınca kapat
+    document.addEventListener('mousedown', function(e) {
+        if (cInp && !cInp.contains(e.target) && !cDD.contains(e.target)) cDD.style.display = 'none';
+        if (gInp && !gInp.contains(e.target) && !gDD.contains(e.target)) gDD.style.display = 'none';
+    });
+    document.addEventListener('touchstart', function(e) {
+        if (cInp && !cInp.contains(e.target) && !cDD.contains(e.target)) cDD.style.display = 'none';
+        if (gInp && !gInp.contains(e.target) && !gDD.contains(e.target)) gDD.style.display = 'none';
+    }, {passive:true});
 
     // ── Grup listesi ──────────────────────────────────────────────────────────
     function renderGC() {
         var el = document.getElementById('groupCustomerList');
         if (!el) return;
-        if (!_GC.length) {
-            el.innerHTML = '<p style="font-size:12px;color:#9CA3AF;font-style:italic;">Henüz katılımcı eklenmedi.</p>';
+        if (!window._GC.length) {
+            el.innerHTML = '<p style="font-size:12px;color:#9ca3af;font-style:italic">Henüz katılımcı eklenmedi.</p>';
             return;
         }
-        el.innerHTML = _GC.map(function (c) {
-            var l4 = last4(c.phone);
-            return '<div style="display:flex;justify-content:space-between;align-items:center;' +
-                'padding:10px 12px;background:#fff;border:1px solid #E5E7EB;border-radius:8px;">' +
-                '<span style="font-size:14px;"><strong>' + esc(c.name) + '</strong>' +
-                (l4 ? ' <span style="color:#9CA3AF;font-size:12px;">···' + l4 + '</span>' : '') + '</span>' +
+        el.innerHTML = window._GC.map(function(c) {
+            var p4 = String(c.phone||'').slice(-4);
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff">' +
+                '<span style="font-size:14px"><strong>' + c.name + '</strong>' + (p4?' <span style="color:#9ca3af;font-size:12px">···'+p4+'</span>':'') + '</span>' +
                 '<input type="hidden" name="customer_ids[]" value="' + c.id + '">' +
-                '<button type="button" onclick="window._removeGC(' + c.id + ')" ' +
-                'style="color:#EF4444;font-size:12px;margin-left:12px;flex-shrink:0;' +
-                'padding:4px 8px;border:1px solid #FEE2E2;border-radius:6px;background:#FEF2F2;">Kaldır</button>' +
+                '<button type="button" onclick="window._rmGC(' + c.id + ')" style="color:#ef4444;font-size:12px;padding:2px 8px;border:1px solid #fee2e2;border-radius:6px;background:#fef2f2">Kaldır</button>' +
                 '</div>';
         }).join('');
     }
 
-    function addGC(id, name, phone) {
+    window._addGC = function(id, name, phone) {
         id = parseInt(id);
-        if (_GC.find(function (c) { return c.id === id; })) return;
-        _GC.push({ id: id, name: name, phone: phone || '' });
-        renderGC();
-    }
-
-    window._removeGC = function (id) {
-        _GC = _GC.filter(function (c) { return c.id !== parseInt(id); });
+        if (window._GC.find(function(c){ return c.id===id; })) return;
+        window._GC.push({id:id, name:String(name), phone:String(phone||'')});
         renderGC();
     };
-
-    window._addGC = addGC;
-    window.removeGroupCustomer = window._removeGC;
+    window._rmGC = function(id) {
+        window._GC = window._GC.filter(function(c){ return c.id!==parseInt(id); });
+        renderGC();
+    };
+    window.removeGroupCustomer = window._rmGC;
     renderGC();
 
     // ── Toggle'lar ────────────────────────────────────────────────────────────
     var gChk = document.getElementById('isGroup');
-    if (gChk) gChk.addEventListener('change', function () {
+    if (gChk) gChk.addEventListener('change', function() {
         var on = this.checked;
         document.getElementById('singleCustomerSection').classList.toggle('hidden', on);
         document.getElementById('groupSection').classList.toggle('hidden', !on);
@@ -444,11 +561,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     var rChk = document.getElementById('isRecurring');
-    if (rChk) rChk.addEventListener('change', function () {
+    if (rChk) rChk.addEventListener('change', function() {
         document.getElementById('recurringOptions').classList.toggle('hidden', !this.checked);
     });
 
-    console.log('Lattessa: Müşteri arama hazır,', _AC.length, 'müşteri yüklendi.');
-}); // DOMContentLoaded sonu
+    console.log('Lattessa: hazır,', window._AC.length, 'müşteri');
+});
 </script>
 @endsection

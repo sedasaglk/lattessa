@@ -8,6 +8,7 @@ use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 
 class CustomerController extends Controller
 {
@@ -55,6 +56,25 @@ class CustomerController extends Controller
         return redirect()
             ->route('panel.customers.index', ['tenant_slug' => $tenant->slug])
             ->with('success', 'Musteri basariyla eklendi.');
+    }
+
+    public function quickStore(Request $request, TenantContext $ctx, string $tenant_slug): JsonResponse
+    {
+        $tenant = $ctx->get();
+
+        $validated = $request->validate([
+            'name'  => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:20'],
+        ]);
+
+        $validated['tenant_id'] = $tenant->id;
+        $customer = Customer::create($validated);
+
+        return response()->json([
+            'id'    => $customer->id,
+            'name'  => $customer->name,
+            'phone' => $customer->phone ?? '',
+        ]);
     }
 
     public function show(TenantContext $ctx, string $tenant_slug, string $id): View
