@@ -13,9 +13,6 @@ class NotificationService
         protected SmsService $smsService
     ) {}
 
-    /**
-     * Bildirim ayarlarını getir (cache ile)
-     */
     public function getSetting(int $tenantId, string $event): ?object
     {
         return DB::table('notification_settings')
@@ -24,9 +21,6 @@ class NotificationService
             ->first();
     }
 
-    /**
-     * Event için şablon değişkenlerini doldur
-     */
     public static function fillTemplate(string $template, array $vars): string
     {
         foreach ($vars as $key => $value) {
@@ -36,8 +30,11 @@ class NotificationService
     }
 
     /**
-     * Mesaji oncelikle WhatsApp uzerinden, baglanti yoksa SMS uzerinden gonderir.
-     * $event verilirse notification_settings tablosundan kanal ve enabled kontrolü yapılır.
+     * auto modda WhatsApp VE SMS aynı anda gönderilir.
+     * channel = 'auto'     → WhatsApp + SMS (her ikisi birden)
+     * channel = 'whatsapp' → Yalnızca WhatsApp
+     * channel = 'sms'      → Yalnızca SMS
+     * channel = 'none'     → Hiçbiri
      */
     public function notify(
         int $tenantId,
@@ -45,10 +42,9 @@ class NotificationService
         string $message,
         string $type = 'general',
         ?int $customerId = null,
-        string $channel = 'auto', // auto, whatsapp, sms
+        string $channel = 'auto',
         ?string $event = null
     ): array {
-        // Bildirim ayarı kontrolü
         if ($event) {
             $setting = $this->getSetting($tenantId, $event);
             if ($setting) {
@@ -65,23 +61,37 @@ class NotificationService
             return ['success' => false, 'channel' => 'none'];
         }
 
-        $sentViaWhatsApp = false;
+        $wpSent  = false;
+        $smsSent = false;
 
         if (in_array($channel, ['auto', 'whatsapp'])) {
-            $sentViaWhatsApp = $this->sendWhatsApp($tenantId, $phone, $message, $type, $customerId);
+            try {
+                $wpSent = $this->sendWhatsApp($tenantId, $phone, $message, $type, $customerId);
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp gonderim hatasi: ' . $e->getMessage());
+            }
         }
 
-        if ($sentViaWhatsApp) {
-            return ['success' => true, 'channel' => 'whatsapp'];
+        // auto modda WhatsApp sonucundan bağımsız SMS de gönderilir
+        if (in_array($channel, ['auto', 'sms'])) {
+            try {
+                $smsSent = $this->smsService->sendToCustomer($tenantId, $phone, $message, $type, $customerId);
+            } catch (\Throwable $e) {
+                Log::warning('SMS gonderim hatasi: ' . $e->getMessage());
+            }
         }
 
-        if ($channel === 'whatsapp') {
-            return ['success' => false, 'channel' => 'whatsapp'];
-        }
+        $sentChannels = array_filter([
+            $wpSent  ? 'whatsapp' : null,
+            $smsSent ? 'sms'      : null,
+        ]);
 
-        $smsSuccess = $this->smsService->sendToCustomer($tenantId, $phone, $message, $type, $customerId);
-
-        return ['success' => $smsSuccess, 'channel' => 'sms'];
+        return [
+            'success'  => $wpSent || $smsSent,
+            'channel'  => implode('+', $sentChannels) ?: 'none',
+            'whatsapp' => $wpSent,
+            'sms'      => $smsSent,
+        ];
     }
 
     protected function sendWhatsApp(
@@ -110,7 +120,11 @@ class NotificationService
         $whatsAppService = new VatanWhatsAppService();
         $result = $whatsAppService->send($connection->reg_id, $phone, $message);
 
-        $this->logWhatsApp($tenantId, $customerId, $phone, $message, $type, $result['success'] ? 'sent' : 'failed', $result['response'] ?? null);
+        $this->logWhatsApp(
+            $tenantId, $customerId, $phone, $message, $type,
+            $result['success'] ? 'sent' : 'failed',
+            $result['response'] ?? null
+        );
 
         return $result['success'];
     }
@@ -126,15 +140,15 @@ class NotificationService
     ): void {
         try {
             DB::table('whatsapp_logs')->insert([
-                'tenant_id' => $tenantId,
+                'tenant_id'   => $tenantId,
                 'customer_id' => $customerId,
-                'phone' => $phone,
-                'message' => $message,
-                'type' => $type,
-                'status' => $status,
-                'response' => $response ? json_encode($response) : null,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'phone'       => $phone,
+                'message'     => $message,
+                'type'        => $type,
+                'status'      => $status,
+                'response'    => $response ? json_encode($response) : null,
+                'created_at'  => now(),
+                'updated_at'  => now(),
             ]);
         } catch (\Exception $e) {
             Log::error('WhatsApp log hatasi: ' . $e->getMessage());
