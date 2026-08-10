@@ -52,6 +52,56 @@ class OnlineBookingController extends Controller
         return view('booking.show', compact('tenant', 'services', 'branches', 'photos', 'reviews', 'avgRating'));
     }
 
+    public function showBranch(TenantContext $ctx, string $tenant_slug, string $branch_slug): View
+    {
+        $tenant = $ctx->get();
+
+        $selectedBranch = DB::table('branches')
+            ->where('tenant_id', $tenant->id)
+            ->where('booking_slug', $branch_slug)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$selectedBranch) {
+            abort(404);
+        }
+
+        $services = DB::table('services')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->where('is_online_bookable', 1)
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get();
+
+        $branches = DB::table('branches')
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get();
+
+        $photos = DB::table('salon_photos')
+            ->where('tenant_id', $tenant->id)
+            ->orderBy('order')
+            ->get();
+
+        $reviews = DB::table('reviews')
+            ->join('customers', 'reviews.customer_id', '=', 'customers.id')
+            ->where('reviews.tenant_id', $tenant->id)
+            ->where('reviews.is_published', true)
+            ->where('reviews.rating', '>', 0)
+            ->orderByDesc('reviews.created_at')
+            ->limit(10)
+            ->select('reviews.*', 'customers.name as customer_name')
+            ->get();
+
+        $avgRating = $reviews->count() ? round($reviews->avg('rating'), 1) : null;
+
+        return view('booking.show', compact('tenant', 'services', 'branches', 'photos', 'reviews', 'avgRating', 'selectedBranch'));
+    }
+
     public function getStaff(Request $request, TenantContext $ctx, string $tenant_slug): JsonResponse
     {
         $tenant = $ctx->get();

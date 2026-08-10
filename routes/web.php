@@ -123,6 +123,7 @@ Route::prefix('{tenant_slug}')->middleware('tenant')->group(function () {
     Route::post('/sifre-sifirla', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'resetPassword'])->name('password.reset');
 
     Route::get('/randevu', [OnlineBookingController::class, 'show'])->name('booking.show');
+    Route::get('/randevu/{branch_slug}', [OnlineBookingController::class, 'showBranch'])->name('booking.show.branch');
     Route::post('/randevu', [OnlineBookingController::class, 'store'])->name('booking.store');
     Route::get('/randevu/basarili', [OnlineBookingController::class, 'success'])->name('booking.success');
     Route::get('/randevu/personel', [OnlineBookingController::class, 'getStaff'])->name('booking.staff');

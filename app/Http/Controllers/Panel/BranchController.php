@@ -94,14 +94,23 @@ class BranchController extends Controller
             }
         }
 
+        // Booking slug oluştur
+        $slug = \Illuminate\Support\Str::slug($validated['name'], '-') ?: 'sube';
+        $baseSlug = $slug;
+        $i = 1;
+        while (DB::table('branches')->where('tenant_id', $tenant->id)->where('booking_slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $i++;
+        }
+
         DB::table('branches')->insert([
-            'tenant_id' => $tenant->id,
-            'name' => $validated['name'],
-            'phone' => $validated['phone'] ?? null,
-            'address' => $validated['address'] ?? null,
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'tenant_id'    => $tenant->id,
+            'name'         => $validated['name'],
+            'phone'        => $validated['phone'] ?? null,
+            'address'      => $validated['address'] ?? null,
+            'booking_slug' => $slug,
+            'status'       => 'active',
+            'created_at'   => now(),
+            'updated_at'   => now(),
         ]);
 
         return back()->with('success', 'Sube eklendi.');
@@ -112,11 +121,24 @@ class BranchController extends Controller
         $tenant = $ctx->get();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'status' => ['required', 'in:active,inactive'],
+            'name'         => ['required', 'string', 'max:255'],
+            'phone'        => ['nullable', 'string', 'max:20'],
+            'address'      => ['nullable', 'string', 'max:500'],
+            'status'       => ['required', 'in:active,inactive'],
+            'booking_slug' => ['nullable', 'string', 'max:100', 'alpha_dash'],
         ]);
+
+        // Slug benzersizliği kontrol
+        if (!empty($validated['booking_slug'])) {
+            $slugExists = DB::table('branches')
+                ->where('tenant_id', $tenant->id)
+                ->where('booking_slug', $validated['booking_slug'])
+                ->where('id', '!=', $id)
+                ->exists();
+            if ($slugExists) {
+                return back()->withErrors(['booking_slug' => 'Bu link zaten kullanımda.'])->withInput();
+            }
+        }
 
         DB::table('branches')
             ->where('id', $id)

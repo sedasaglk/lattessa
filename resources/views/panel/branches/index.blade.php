@@ -80,6 +80,17 @@
             </div>
         </div>
 
+        @if($branch->booking_slug)
+        <div class="mb-3 px-3 py-2 bg-blue-50 rounded-lg flex items-center justify-between gap-2">
+            <span class="text-xs text-blue-600 truncate">
+                🔗 {{ config('app.url') }}/{{ $tenant->slug }}/randevu/{{ $branch->booking_slug }}
+            </span>
+            <button type="button"
+                    onclick="navigator.clipboard.writeText('{{ config('app.url') }}/{{ $tenant->slug }}/randevu/{{ $branch->booking_slug }}').then(()=>alert('Link kopyalandı!'))"
+                    class="text-xs text-blue-700 font-medium whitespace-nowrap hover:underline">Kopyala</button>
+        </div>
+        @endif
+
         <div class="flex gap-2 pt-4 border-t border-gray-100">
             <button onclick='openEditModal(@json($branch))'
                     class="flex-1 bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
@@ -223,6 +234,16 @@
                            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Randevu Link Kodu</label>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400 whitespace-nowrap">.../randevu/</span>
+                        <input type="text" id="editBookingSlug" name="booking_slug"
+                               placeholder="carsi-sube"
+                               class="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Sadece harf, rakam ve tire kullanın.</p>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
                     <select id="editStatus" name="status"
                             class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 outline-none">
@@ -262,6 +283,7 @@ function openEditModal(branch) {
     document.getElementById('editName').value = branch.name || '';
     document.getElementById('editPhone').value = branch.phone || '';
     document.getElementById('editAddress').value = branch.address || '';
+    document.getElementById('editBookingSlug').value = branch.booking_slug || '';
     document.getElementById('editStatus').value = branch.status || 'active';
     document.getElementById('editForm').action = `/${tenantSlug}/subeler/${branch.id}`;
     document.getElementById('editModal').classList.remove('hidden');
