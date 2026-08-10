@@ -176,6 +176,11 @@ class OnlineBookingController extends Controller
             return response()->json(['slots' => [], 'message' => 'Bu gun personel musait degil.']);
         }
 
+        // Personelin o günkü şubesi seçilen şube ile uyuşmuyor mu?
+        if ($request->branch_id && $schedule->branch_id && $schedule->branch_id != $request->branch_id) {
+            return response()->json(['slots' => [], 'message' => 'Personel bu sube icin musait degil.']);
+        }
+
         // Personelin izin günü mü?
         $isOnLeave = DB::table('staff_leaves')
             ->where('user_id', $request->staff_id)
