@@ -78,7 +78,34 @@
                             border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.14);
                             overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:260px;"></div>
             </div>
+            <button type="button" id="contactPickerBtn" onclick="window._pickContact()"
+                    style="display:none; margin-top:8px; width:100%; padding:10px 14px;
+                           border:1px dashed #d1d5db; border-radius:8px; background:#f9fafb;
+                           color:#374151; font-size:13px; cursor:pointer; text-align:center;">
+                📱 Rehberimden Ekle
+            </button>
         </div>
+
+        {{-- Contact picker: yeni müşteri modal --}}
+        <div id="contactModal" style="display:none; position:fixed; inset:0; z-index:99999;
+                                      background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+            <div style="background:#fff; border-radius:16px; padding:24px; width:90%; max-width:360px; margin:auto;">
+                <h3 style="font-size:16px; font-weight:600; margin:0 0 16px;">Yeni Müşteri Ekle</h3>
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:4px;">Ad Soyad</label>
+                    <input id="contactModalName" type="text" style="width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:4px;">Telefon</label>
+                    <input id="contactModalPhone" type="tel" style="width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" onclick="window._closeContactModal()"
+                            style="flex:1; padding:10px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; background:#fff; cursor:pointer;">İptal</button>
+                    <button type="button" id="contactSaveBtn" onclick="window._saveContact()"
+                            style="flex:1; padding:10px; border:none; border-radius:8px; font-size:14px; background:#111; color:#fff; cursor:pointer; font-weight:500;">Kaydet</button>
+                </div>
+            </div>
         </div>
 
         {{-- GRUP MÜŞTERİ --}}
@@ -278,6 +305,70 @@ function _fillDD(inp, dd, items, onPick) {
 }
 
 // ── Tek müşteri arama ─────────────────────────────────────────────────────────
+
+// ── Contact Picker ────────────────────────────────────────────────────────────
+(function() {
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+        var btn = document.getElementById('contactPickerBtn');
+        if (btn) btn.style.display = 'block';
+    }
+
+    window._pickContact = async function() {
+        try {
+            var list = await navigator.contacts.select(['name','tel'], {multiple:false});
+            if (!list || !list.length) return;
+            var c     = list[0];
+            var name  = (c.name && c.name[0]) ? c.name[0].trim() : '';
+            var phone = (c.tel  && c.tel[0])  ? c.tel[0].replace(/\s+/g,'').trim() : '';
+            var p4    = phone.slice(-4);
+            var found = p4 ? (window._AC||[]).find(function(ac){ return String(ac.phone||'').slice(-4)===p4; }) : null;
+            if (found) {
+                var inp = document.querySelector('main.main-content #custSearch') || document.getElementById('custSearch');
+                if (inp) inp.value = found.name + ' (···' + String(found.phone).slice(-4) + ')';
+                document.querySelectorAll('#customer_id_input').forEach(function(el){ el.value = found.id; });
+            } else {
+                document.getElementById('contactModalName').value  = name;
+                document.getElementById('contactModalPhone').value = phone;
+                var m = document.getElementById('contactModal');
+                m.style.display = 'flex';
+            }
+        } catch(e) { console.error('Contact picker:', e); }
+    };
+
+    window._closeContactModal = function() {
+        document.getElementById('contactModal').style.display = 'none';
+    };
+
+    window._saveContact = async function() {
+        var name  = document.getElementById('contactModalName').value.trim();
+        var phone = document.getElementById('contactModalPhone').value.trim();
+        if (!name || !phone) { alert('Ad ve telefon zorunludur.'); return; }
+        var btn = document.getElementById('contactSaveBtn');
+        if (btn) btn.textContent = 'Kaydediliyor...';
+        try {
+            var token = (document.querySelector('meta[name="csrf-token"]')||{}).content
+                     || (document.querySelector('input[name="_token"]')||{}).value || '';
+            var res  = await fetch('{{ route("panel.customers.quick-store", ["tenant_slug" => $tenant->slug]) }}', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','X-CSRF-TOKEN':token,'Accept':'application/json'},
+                body: JSON.stringify({name:name, phone:phone})
+            });
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Hata');
+            window._AC = window._AC || [];
+            window._AC.push({id:data.id, name:data.name, phone:data.phone||''});
+            var inp = document.querySelector('main.main-content #custSearch') || document.getElementById('custSearch');
+            var p4  = String(data.phone||'').slice(-4);
+            if (inp) inp.value = data.name + (p4 ? ' (···'+p4+')' : '');
+            document.querySelectorAll('#customer_id_input').forEach(function(el){ el.value = data.id; });
+            window._closeContactModal();
+        } catch(e) {
+            alert('Hata: ' + e.message);
+        } finally {
+            if (btn) btn.textContent = 'Kaydet';
+        }
+    };
+})();
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded: başlatılıyor...');
