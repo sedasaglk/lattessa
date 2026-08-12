@@ -1,2 +1,7 @@
 User-agent: *
-Disallow:
+Disallow: /giris
+Disallow: /kayit
+Disallow: /*/panel/
+Disallow: /*/api/
+
+Sitemap: https://lattessa.com/sitemap.xml

@@ -41,6 +41,7 @@ use App\Http\Controllers\Panel\BranchSwitchController;
 use App\Http\Controllers\Panel\FcmTokenController;
 
 Route::get('/', function () { return view('welcome'); });
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 Route::get('/gizlilik', function () { return view('gizlilik'); })->name('gizlilik');
 Route::get('/kullanim-sartlari', function () { return view('kullanim-sartlari'); })->name('kullanim-sartlari');
 Route::get('/destek', function () { return view('destek'); })->name('public.destek');

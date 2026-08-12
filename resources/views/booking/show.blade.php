@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Online Randevu — {{ $tenant->company_name }}</title>
+    <title>Online Randevu – {{ $tenant->company_name }}</title>
+    <meta name="description" content="{{ $tenant->company_name }} için online randevu alın. Hizmet seçin, personel belirleyin ve uygun saati kolayca rezerve edin.">
+    <link rel="canonical" href="https://lattessa.com/{{ $tenant->slug }}/randevu">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lattessa.com/{{ $tenant->slug }}/randevu">
+    <meta property="og:title" content="Online Randevu – {{ $tenant->company_name }}">
+    <meta property="og:description" content="{{ $tenant->company_name }} için hızlıca online randevu alın.">
+    <meta property="og:site_name" content="{{ $tenant->company_name }}">
+    <meta name="robots" content="index, follow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
