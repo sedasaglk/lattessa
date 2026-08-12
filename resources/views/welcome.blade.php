@@ -3,7 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lattessa - Salon ve Klinik Yonetim Yazilimi</title>
+    <title>Lattessa – Salon ve Klinik Yönetim Yazılımı | Online Randevu</title>
+    <meta name="description" content="Lattessa ile salonunuzu ve kliniğinizi kolayca yönetin. Online randevu, müşteri takibi, personel yönetimi, kasa ve raporlama tek platformda. Hemen ücretsiz başlayın.">
+    <link rel="canonical" href="https://lattessa.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lattessa.com/">
+    <meta property="og:title" content="Lattessa – Salon ve Klinik Yönetim Yazılımı">
+    <meta property="og:description" content="Randevu, müşteri, personel, kasa ve raporlarınızı tek platformda yönetin. Online randevu sayfanız anında hazır.">
+    <meta property="og:image" content="https://lattessa.com/og-image.png">
+    <meta property="og:locale" content="tr_TR">
+    <meta property="og:site_name" content="Lattessa">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lattessa – Salon ve Klinik Yönetim Yazılımı">
+    <meta name="twitter:description" content="Randevu, müşteri, personel, kasa ve raporlarınızı tek platformda yönetin.">
+    <meta name="twitter:image" content="https://lattessa.com/og-image.png">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Lattessa",
+        "url": "https://lattessa.com",
+        "description": "Salon ve klinikler için online randevu, müşteri, personel ve kasa yönetim yazılımı.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web, iOS, Android",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "TRY",
+            "description": "14 gün ücretsiz deneme"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Lattessa",
+            "url": "https://lattessa.com"
+        },
+        "featureList": [
+            "Online randevu sistemi",
+            "Müşteri yönetimi",
+            "Personel yönetimi",
+            "Kasa ve ödeme takibi",
+            "SMS ve WhatsApp bildirimleri",
+            "Çoklu şube yönetimi",
+            "Gelir ve raporlama"
+        ],
+        "inLanguage": "tr"
+    }
+    </script>
+    <meta name="description" content="Lattessa ile salonunuzu ve kliginizi kolayca yonetin. Online randevu, musteri takibi, personel yonetimi, kasa ve raporlama tek platformda. Hemen ucretsiz baslayin.">
+    <link rel="canonical" href="https://lattessa.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lattessa.com/">
+    <meta property="og:title" content="Lattessa - Salon ve Klinik Yonetim Yazilimi">
+    <meta property="og:description" content="Randevu, musteri, personel, kasa ve raporlarinizi tek platformda yonetin. Online randevu sayfaniz aninda hazir.">
+    <meta property="og:image" content="https://lattessa.com/og-image.png">
+    <meta property="og:locale" content="tr_TR">
+    <meta property="og:site_name" content="Lattessa">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lattessa - Salon ve Klinik Yonetim Yazilimi">
+    <meta name="twitter:description" content="Randevu, musteri, personel, kasa ve raporlarinizi tek platformda yonetin.">
+    <meta name="twitter:image" content="https://lattessa.com/og-image.png">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Lattessa",
+        "url": "https://lattessa.com",
+        "description": "Salon ve klinikler icin online randevu, musteri, personel ve kasa yonetim yazilimi.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web, iOS, Android",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TRY"},
+        "publisher": {"@type": "Organization", "name": "Lattessa", "url": "https://lattessa.com"},
+        "featureList": ["Online randevu", "Musteri yonetimi", "Personel yonetimi", "Kasa takibi", "SMS bildirimleri"],
+        "inLanguage": "tr"
+    }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-white text-gray-900">
