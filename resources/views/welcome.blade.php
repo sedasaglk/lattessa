@@ -19,21 +19,21 @@
     <meta name="twitter:image" content="https://lattessa.com/og-image.png">
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
+        "@@context": "https://schema.org",
+        "@@type": "SoftwareApplication",
         "name": "Lattessa",
         "url": "https://lattessa.com",
         "description": "Salon ve klinikler için online randevu, müşteri, personel ve kasa yönetim yazılımı.",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web, iOS, Android",
         "offers": {
-            "@type": "Offer",
+            "@@type": "Offer",
             "price": "0",
             "priceCurrency": "TRY",
             "description": "14 gün ücretsiz deneme"
         },
         "publisher": {
-            "@type": "Organization",
+            "@@type": "Organization",
             "name": "Lattessa",
             "url": "https://lattessa.com"
         },
@@ -64,15 +64,15 @@
     <meta name="twitter:image" content="https://lattessa.com/og-image.png">
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
+        "@@context": "https://schema.org",
+        "@@type": "SoftwareApplication",
         "name": "Lattessa",
         "url": "https://lattessa.com",
         "description": "Salon ve klinikler icin online randevu, musteri, personel ve kasa yonetim yazilimi.",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web, iOS, Android",
-        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TRY"},
-        "publisher": {"@type": "Organization", "name": "Lattessa", "url": "https://lattessa.com"},
+        "offers": {"@@type": "Offer", "price": "0", "priceCurrency": "TRY"},
+        "publisher": {"@@type": "Organization", "name": "Lattessa", "url": "https://lattessa.com"},
         "featureList": ["Online randevu", "Musteri yonetimi", "Personel yonetimi", "Kasa takibi", "SMS bildirimleri"],
         "inLanguage": "tr"
     }
